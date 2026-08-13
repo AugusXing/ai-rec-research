@@ -4,40 +4,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <link rel="stylesheet" href="style.css">
-<meta name="description" content="面向推荐、搜索与LLM算法工程师的AI技术研究简报。">
+<meta name="description" content="面向推荐、搜索与LLM算法工程师的AI技术研究资料库：技术演进、论文精读、代码与中文解读。">
 </head><body>
-<header><div class="wrap nav">
-<div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div>
-<nav><a href="index.html#latest">最新进展</a><a href="year.html">年度综述</a><a href="index.html#archive">每日归档</a></nav>
-</div></header>
-<main>
-<div class="wrap hero">
+<header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="index.html#latest">最新进展</a><a href="year.html">年度综述</a><a href="index.html#archive">每日归档</a></nav></div></header>
+<main><div class="wrap hero">
 <span class="kicker">持续更新 · AI / Recommendation / Search / Agent</span>
 <h1>追踪真正值得读的<br>AI × 推荐算法技术进展</h1>
-<p class="lead">优先一手论文、Technical Report、官方研究博客与 GitHub。重点论文按“背景 → 问题 → 方案 → 效果 → 局限 → 未来方向 → 工程启发”拆解。</p>
+<p class="lead">不只收集论文标题。这里重点梳理技术为什么这样演进、上一阶段解决了什么又留下什么问题，并对关键论文做精读：背景 → 问题 → 架构/训练/Serving → 实验与线上 A/B → 局限 → 未来方向 → 工程启发；同时尽可能附原始 Paper、官方代码、项目页和高质量中文解读。</p>
 <div class="grid">
-<a class="card" href="year.html"><span class="badge">年度综述</span><h3>过去一年技术演进</h3><p>Generative Recommendation、User Foundation Model、Semantic ID、RL/Reasoning、Agentic Search、Model Routing。</p></a>
-<a class="card" href="daily/2026-08-13.html"><span class="badge">最新日报</span><h3>2026.08.13</h3><p>ConnectionMind、REAM、LLM Reranker 复现研究、DocsChisel 等。</p></a>
-<a class="card" href="daily/2026-08-12.html"><span class="badge">前一日</span><h3>2026.08.12</h3><p>Sona、Context Interference、TimeRoute、Nemotron 3.5、Switchyard。</p></a>
-</div>
-</div>
+<a class="card" href="year.html"><span class="badge">深度年度综述</span><h3>过去一年技术演进脉络</h3><p>从 Generative Retrieval、Semantic ID、Scaling/Serving，到 Foundation Model、RL/Reasoning、Full-stack Generative Rec、Agentic Search 与 Model Routing；关键 Paper 逐篇解读并附资源。</p></a>
+<a class="card" href="daily/2026-08-13.html"><span class="badge">最新深度日报</span><h3>2026.08.13</h3><p>ConnectionMind、REAM、LLM Reranker 复现研究、DocsChisel、DistilVDR 等：先概览，再论文精读。</p></a>
+<a class="card" href="daily/2026-08-12.html"><span class="badge">深度日报</span><h3>2026.08.12</h3><p>Sona、Context Interference、TimeRoute、Nemotron 3.5、Switchyard：架构、效果、局限与资源链接。</p></a>
+</div></div>
 <section id="latest"><div class="wrap">
 <div class="section-title"><div><h2>今日结论 / 最值得看</h2><p>2026.08.13</p></div></div>
 <div class="callout"><strong>今日主线：</strong>LLM 推荐开始深入社交图推理；Recommendation Reasoning 的效率成为独立问题；搜索重排则开始从“所有 Query 都重排”转向按 Retriever 质量动态决定是否调用昂贵 LLM Reranker。</div>
-<table class="table" style="margin-top:18px">
-<tr><th>优先级</th><th>工作</th><th>核心判断</th></tr>
-<tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#connectionmind">ConnectionMind</a></td><td>LLM + Social Graph + RL + Teacher–Student Serving 进入工业推荐。</td></tr>
-<tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#ream">REAM</a></td><td>Recommendation Reasoning 从“会不会 Think”转向“怎么少 Think”。</td></tr>
-<tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#reranker">Anchor-based LLM Reranker Study</a></td><td>Retriever 越强，昂贵 Reranker 的剩余收益可能越小。</td></tr>
-<tr><td>★★★★☆</td><td><a href="daily/2026-08-13.html#docschisel">DocsChisel</a></td><td>Agent Tool Documentation 本身也需要自适应优化。</td></tr>
-</table>
+<table class="table" style="margin-top:18px"><tr><th>优先级</th><th>工作</th><th>核心判断</th></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#connectionmind">ConnectionMind</a></td><td>LLM + Social Graph + RL + Teacher–Student Serving 进入工业推荐。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#ream">REAM</a></td><td>Recommendation Reasoning 从“会不会 Think”转向“怎么少 Think”。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#reranker">Anchor-based LLM Reranker Study</a></td><td>Retriever 越强，昂贵 Reranker 的剩余收益可能越小。</td></tr><tr><td>★★★★☆</td><td><a href="daily/2026-08-13.html#docschisel">DocsChisel</a></td><td>Agent Tool Documentation 本身也需要自适应优化。</td></tr></table>
 </div></section>
-<section id="archive"><div class="wrap">
-<div class="section-title"><div><h2>每日进展归档</h2><p>后续按日期持续新增，不覆盖历史内容。</p></div></div>
-<div class="grid">
+<section id="archive"><div class="wrap"><div class="section-title"><div><h2>每日进展归档</h2><p>每天新增独立页面，历史内容永久保留。</p></div></div><div class="grid">
 <a class="card" href="daily/2026-08-13.html"><span class="badge">2026.08.13</span><h3>LLM 社交推荐与自适应重排</h3><p>ConnectionMind · REAM · Reranker Study · DocsChisel · DistilVDR</p></a>
 <a class="card" href="daily/2026-08-12.html"><span class="badge">2026.08.12</span><h3>全链路生成式推荐与 Context Ranking</h3><p>Sona · Context Interference · TimeRoute · Nemotron 3.5 · Switchyard</p></a>
-</div>
-</div></section>
-</main><footer><div class="wrap">AI × 推荐算法研究站 · 优先一手来源 · 最后更新：2026-08-13</div></footer>
+</div></div></section>
+</main><footer><div class="wrap">AI × 推荐算法研究站 · 一手来源优先 · Paper / Code / 解读链接持续补充 · 最后更新：2026-08-13</div></footer>
 </body></html>
