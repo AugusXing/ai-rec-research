@@ -15,17 +15,18 @@
 <a class="card" href="year.html"><span class="badge">深度年度综述</span><h3>过去一年技术演进脉络</h3><p>从 Generative Retrieval、Semantic ID、Scaling/Serving，到 Foundation Model、RL/Reasoning、Full-stack Generative Rec、Agentic Search 与 Model Routing；关键 Paper 逐篇解读并附资源。</p></a>
 <a class="card" href="paper-map.html"><span class="badge">技术树</span><h3>Paper Map</h3><p>按研究问题组织论文依赖关系、成熟度、研究价值和推荐精读路线。</p></a>
 <a class="card" href="pipeline-map.html"><span class="badge">推荐系统链路</span><h3>召回 → 粗排 → 精排 → 重排/混排</h3><p>按工业推荐 Pipeline 分类 Paper；同时展示 Research Impact Score、工业成熟度、开源和线上 A/B。</p></a>
-<a class="card" href="daily/2026-08-13.html"><span class="badge">最新深度日报</span><h3>2026.08.13</h3><p>ConnectionMind、REAM、LLM Reranker 复现研究、DocsChisel、DistilVDR 等：先概览，再论文精读。</p></a>
-<a class="card" href="daily/2026-08-12.html"><span class="badge">深度日报</span><h3>2026.08.12</h3><p>Sona、Context Interference、TimeRoute、Nemotron 3.5、Switchyard：架构、效果、局限与资源链接。</p></a>
+<a class="card" href="daily/2026-08-14.html"><span class="badge">最新深度日报</span><h3>2026.08.14</h3><p>OneRank、TM20K、Progressive Alignment、MixRAGRec、HD-Rec、MISO：KDD 收官后的 Ranking、长序列与 Foundation Model 主线。</p></a>
+<a class="card" href="daily/2026-08-13.html"><span class="badge">深度日报</span><h3>2026.08.13</h3><p>ConnectionMind、REAM、LLM Reranker 复现研究、DocsChisel、DistilVDR 等：先概览，再论文精读。</p></a>
 </div></div>
 <section id="latest"><div class="wrap">
-<div class="section-title"><div><h2>今日结论 / 最值得看</h2><p>2026.08.13</p></div></div>
-<div class="callout"><strong>今日主线：</strong>LLM 推荐开始深入社交图推理；Recommendation Reasoning 的效率成为独立问题；搜索重排则开始从“所有 Query 都重排”转向按 Retriever 质量动态决定是否调用昂贵 LLM Reranker。</div>
-<table class="table" style="margin-top:18px"><tr><th>优先级</th><th>工作</th><th>核心判断</th></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#connectionmind">ConnectionMind</a></td><td>LLM + Social Graph + RL + Teacher–Student Serving 进入工业推荐。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#ream">REAM</a></td><td>Recommendation Reasoning 从“会不会 Think”转向“怎么少 Think”。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-13.html#reranker">Anchor-based LLM Reranker Study</a></td><td>Retriever 越强，昂贵 Reranker 的剩余收益可能越小。</td></tr><tr><td>★★★★☆</td><td><a href="daily/2026-08-13.html#docschisel">DocsChisel</a></td><td>Agent Tool Documentation 本身也需要自适应优化。</td></tr></table>
+<div class="section-title"><div><h2>今日结论 / 最值得看</h2><p>2026.08.14</p></div></div>
+<div class="callout"><strong>今日主线：</strong>KDD 2026 收官后，工业推荐的重点越来越不是“再堆一个模型”，而是把任务、Token、Reward、Expert 与计算预算变成可路由、可对齐的系统资源。OneRank 统一多任务 Ranking 信息流，TM20K 把 20K 长序列能力从 Teacher 蒸馏到 Token-Merged Student，Progressive Alignment 则把 Foundation Model 的下游适配和业务目标对齐拆成不同训练阶段。</div>
+<table class="table" style="margin-top:18px"><tr><th>优先级</th><th>工作</th><th>核心判断</th></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-14.html#onerank">OneRank</a></td><td>Transformer-native 多任务排序开始直接移除 Encoder–Predictor 边界，Shopee 线上 GMV/UU +1.01%。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-14.html#tm20k">TM20K</a></td><td>ByteDance 将电商广告行为序列扩到 20K，ADSS +1.036%，Serving Latency 仅 +5.6%。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-14.html#progressive">Progressive Alignment</a></td><td>Recommendation Foundation Model 的 Post-training 进入 LP → FFT → RFT 分阶段对齐。</td></tr><tr><td>★★★★☆</td><td><a href="daily/2026-08-14.html#mixragrec">MixRAGRec</a></td><td>KG-RAG 的 retrieval granularity 变成可学习 Router，多 Agent 在统一 Policy Objective 下协同。</td></tr></table>
 </div></section>
 <section id="archive"><div class="wrap"><div class="section-title"><div><h2>每日进展归档</h2><p>每天新增独立页面，历史内容永久保留。</p></div></div><div class="grid">
+<a class="card" href="daily/2026-08-14.html"><span class="badge">2026.08.14</span><h3>Ranking 原生化、20K 长序列与 Foundation Model Alignment</h3><p>OneRank · TM20K · Progressive Alignment · MixRAGRec · HD-Rec · MISO</p></a>
 <a class="card" href="daily/2026-08-13.html"><span class="badge">2026.08.13</span><h3>LLM 社交推荐与自适应重排</h3><p>ConnectionMind · REAM · Reranker Study · DocsChisel · DistilVDR</p></a>
 <a class="card" href="daily/2026-08-12.html"><span class="badge">2026.08.12</span><h3>全链路生成式推荐与 Context Ranking</h3><p>Sona · Context Interference · TimeRoute · Nemotron 3.5 · Switchyard</p></a>
 </div></div></section>
-</main><footer><div class="wrap">AI × 推荐算法研究站 · 一手来源优先 · Paper / Code / 解读链接持续补充 · 最后更新：2026-08-13</div></footer>
+</main><footer><div class="wrap">AI × 推荐算法研究站 · 一手来源优先 · Paper / Code / 解读链接持续补充 · 最后更新：2026-08-14</div></footer>
 </body></html>
