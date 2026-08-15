@@ -15,18 +15,19 @@
 <a class="card" href="year.html"><span class="badge">深度年度综述</span><h3>过去一年技术演进脉络</h3><p>从 Generative Retrieval、Semantic ID、Scaling/Serving，到 Foundation Model、RL/Reasoning、Full-stack Generative Rec、Agentic Search 与 Model Routing；关键 Paper 逐篇解读并附资源。</p></a>
 <a class="card" href="paper-map.html"><span class="badge">技术树</span><h3>Paper Map</h3><p>按研究问题组织论文依赖关系、成熟度、研究价值和推荐精读路线。</p></a>
 <a class="card" href="pipeline-map.html"><span class="badge">推荐系统链路</span><h3>召回 → 粗排 → 精排 → 重排/混排</h3><p>按工业推荐 Pipeline 分类 Paper；同时展示 Research Impact Score、工业成熟度、开源和线上 A/B。</p></a>
-<a class="card" href="daily/2026-08-14.html"><span class="badge">最新深度日报</span><h3>2026.08.14</h3><p>OneRank、TM20K、Progressive Alignment、MixRAGRec、HD-Rec、MISO：KDD 收官后的 Ranking、长序列与 Foundation Model 主线。</p></a>
-<a class="card" href="daily/2026-08-13.html"><span class="badge">深度日报</span><h3>2026.08.13</h3><p>ConnectionMind、REAM、LLM Reranker 复现研究、DocsChisel、DistilVDR 等：先概览，再论文精读。</p></a>
+<a class="card" href="daily/2026-08-15.html"><span class="badge">最新深度日报</span><h3>2026.08.15</h3><p>EAHR、CoinRAG、Pre-Inference Routing、DocMemo：从固定 Pipeline 走向 request-aware 的检索深度、KV Cache、模型路由与证据探索。</p></a>
+<a class="card" href="daily/2026-08-14.html"><span class="badge">深度日报</span><h3>2026.08.14</h3><p>OneRank、TM20K、Progressive Alignment、MixRAGRec、HD-Rec、MISO：Ranking、长序列与 Foundation Model 主线。</p></a>
 </div></div>
 <section id="latest"><div class="wrap">
-<div class="section-title"><div><h2>今日结论 / 最值得看</h2><p>2026.08.14</p></div></div>
-<div class="callout"><strong>今日主线：</strong>KDD 2026 收官后，工业推荐的重点越来越不是“再堆一个模型”，而是把任务、Token、Reward、Expert 与计算预算变成可路由、可对齐的系统资源。OneRank 统一多任务 Ranking 信息流，TM20K 把 20K 长序列能力从 Teacher 蒸馏到 Token-Merged Student，Progressive Alignment 则把 Foundation Model 的下游适配和业务目标对齐拆成不同训练阶段。</div>
-<table class="table" style="margin-top:18px"><tr><th>优先级</th><th>工作</th><th>核心判断</th></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-14.html#onerank">OneRank</a></td><td>Transformer-native 多任务排序开始直接移除 Encoder–Predictor 边界，Shopee 线上 GMV/UU +1.01%。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-14.html#tm20k">TM20K</a></td><td>ByteDance 将电商广告行为序列扩到 20K，ADSS +1.036%，Serving Latency 仅 +5.6%。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-14.html#progressive">Progressive Alignment</a></td><td>Recommendation Foundation Model 的 Post-training 进入 LP → FFT → RFT 分阶段对齐。</td></tr><tr><td>★★★★☆</td><td><a href="daily/2026-08-14.html#mixragrec">MixRAGRec</a></td><td>KG-RAG 的 retrieval granularity 变成可学习 Router，多 Agent 在统一 Policy Objective 下协同。</td></tr></table>
+<div class="section-title"><div><h2>今日结论 / 最值得看</h2><p>2026.08.15</p></div></div>
+<div class="callout"><strong>今日主线：</strong>周末没有新的 arXiv 公告批次，因此今天不硬凑“刚发布”标题，而是补齐最近一批对系统设计最有长期价值的工作。共同趋势非常清晰：Retrieval depth、Context/KV 粒度、大小模型选择和 Agent 证据探索都在从固定配置变成 <b>request-aware execution policy</b>；与此同时，Coverage / Freshness 也正在重新成为推荐评估的一等问题。</div>
+<table class="table" style="margin-top:18px"><tr><th>优先级</th><th>工作</th><th>核心判断</th></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-15.html#eahr">EAHR</a></td><td>Hybrid Retrieval 不再固定每路 Top-L，而是按当前 Query 的 ranking bound 动态决定读取深度，并保持 exact complete-list Top-K。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-15.html#coinrag">CoinRAG</a></td><td>RAG Serving 从 Chunk-level KV reuse 推进到 query-relevant information nugget 级缓存复用。</td></tr><tr><td>★★★★☆</td><td><a href="daily/2026-08-15.html#routing">Pre-Inference Routing</a></td><td>是否值得做 Model Routing，关键先看“小模型失败够不够多、失败能不能廉价预测”。</td></tr><tr><td>★★★★☆</td><td><a href="daily/2026-08-15.html#docmemo">DocMemo</a></td><td>Agentic Retrieval 开始显式维护跨轮 probabilistic belief，并用探索策略选择下一份证据。</td></tr></table>
 </div></section>
 <section id="archive"><div class="wrap"><div class="section-title"><div><h2>每日进展归档</h2><p>每天新增独立页面，历史内容永久保留。</p></div></div><div class="grid">
+<a class="card" href="daily/2026-08-15.html"><span class="badge">2026.08.15</span><h3>Adaptive Retrieval、RAG KV Cache 与 Model Routing</h3><p>EAHR · CoinRAG · Pre-Inference Routing · DocMemo · Coverage Audit · Audio Embedding / GenRec</p></a>
 <a class="card" href="daily/2026-08-14.html"><span class="badge">2026.08.14</span><h3>Ranking 原生化、20K 长序列与 Foundation Model Alignment</h3><p>OneRank · TM20K · Progressive Alignment · MixRAGRec · HD-Rec · MISO</p></a>
 <a class="card" href="daily/2026-08-13.html"><span class="badge">2026.08.13</span><h3>LLM 社交推荐与自适应重排</h3><p>ConnectionMind · REAM · Reranker Study · DocsChisel · DistilVDR</p></a>
 <a class="card" href="daily/2026-08-12.html"><span class="badge">2026.08.12</span><h3>全链路生成式推荐与 Context Ranking</h3><p>Sona · Context Interference · TimeRoute · Nemotron 3.5 · Switchyard</p></a>
 </div></div></section>
-</main><footer><div class="wrap">AI × 推荐算法研究站 · 一手来源优先 · Paper / Code / 解读链接持续补充 · 最后更新：2026-08-14</div></footer>
+</main><footer><div class="wrap">AI × 推荐算法研究站 · 一手来源优先 · Paper / Code / 解读链接持续补充 · 最后更新：2026-08-15</div></footer>
 </body></html>
