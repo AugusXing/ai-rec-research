@@ -15,19 +15,24 @@
 <a class="card" href="year.html"><span class="badge">深度年度综述</span><h3>过去一年技术演进脉络</h3><p>从 Generative Retrieval、Semantic ID、Scaling/Serving，到 Foundation Model、RL/Reasoning、Full-stack Generative Rec、Agentic Search 与 Model Routing；关键 Paper 逐篇解读并附资源。</p></a>
 <a class="card" href="paper-map.html"><span class="badge">技术树</span><h3>Paper Map</h3><p>按研究问题组织论文依赖关系、成熟度、研究价值和推荐精读路线。</p></a>
 <a class="card" href="pipeline-map.html"><span class="badge">推荐系统链路</span><h3>召回 → 粗排 → 精排 → 重排/混排</h3><p>按工业推荐 Pipeline 分类 Paper；同时展示 Research Impact Score、工业成熟度、开源和线上 A/B。</p></a>
-<a class="card" href="daily/2026-08-15.html"><span class="badge">最新深度日报</span><h3>2026.08.15</h3><p>EAHR、CoinRAG、Pre-Inference Routing、DocMemo：从固定 Pipeline 走向 request-aware 的检索深度、KV Cache、模型路由与证据探索。</p></a>
-<a class="card" href="daily/2026-08-14.html"><span class="badge">深度日报</span><h3>2026.08.14</h3><p>OneRank、TM20K、Progressive Alignment、MixRAGRec、HD-Rec、MISO：Ranking、长序列与 Foundation Model 主线。</p></a>
+<a class="card" href="daily/2026-08-16.html"><span class="badge">最新深度日报</span><h3>2026.08.16</h3><p>周末系统回看：SilverTorch、Adaptive Ranking、SIRA、KernelEvolve、SGLang，串起 Retrieval Model 化、Request-aware Compute 与 Serving Co-design。</p></a>
+<a class="card" href="daily/2026-08-15.html"><span class="badge">深度日报</span><h3>2026.08.15</h3><p>EAHR、CoinRAG、Pre-Inference Routing、DocMemo：从固定 Pipeline 走向 request-aware 的检索深度、KV Cache、模型路由与证据探索。</p></a>
 </div></div>
 <section id="latest"><div class="wrap">
-<div class="section-title"><div><h2>今日结论 / 最值得看</h2><p>2026.08.15</p></div></div>
-<div class="callout"><strong>今日主线：</strong>周末没有新的 arXiv 公告批次，因此今天不硬凑“刚发布”标题，而是补齐最近一批对系统设计最有长期价值的工作。共同趋势非常清晰：Retrieval depth、Context/KV 粒度、大小模型选择和 Agent 证据探索都在从固定配置变成 <b>request-aware execution policy</b>；与此同时，Coverage / Freshness 也正在重新成为推荐评估的一等问题。</div>
-<table class="table" style="margin-top:18px"><tr><th>优先级</th><th>工作</th><th>核心判断</th></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-15.html#eahr">EAHR</a></td><td>Hybrid Retrieval 不再固定每路 Top-L，而是按当前 Query 的 ranking bound 动态决定读取深度，并保持 exact complete-list Top-K。</td></tr><tr><td>★★★★★</td><td><a href="daily/2026-08-15.html#coinrag">CoinRAG</a></td><td>RAG Serving 从 Chunk-level KV reuse 推进到 query-relevant information nugget 级缓存复用。</td></tr><tr><td>★★★★☆</td><td><a href="daily/2026-08-15.html#routing">Pre-Inference Routing</a></td><td>是否值得做 Model Routing，关键先看“小模型失败够不够多、失败能不能廉价预测”。</td></tr><tr><td>★★★★☆</td><td><a href="daily/2026-08-15.html#docmemo">DocMemo</a></td><td>Agentic Retrieval 开始显式维护跨轮 probabilistic belief，并用探索策略选择下一份证据。</td></tr></table>
+<div class="section-title"><div><h2>今日结论 / 最值得看</h2><p>2026.08.16</p></div></div>
+<div class="callout"><strong>今日主线：</strong>周日没有新的常规 arXiv 公告批次，本轮扫描也未发现值得强行替换主线的一手新发布，因此今天做高价值的系统回看。最清晰的共同趋势是：<b>推荐 Retrieval 正从微服务拼装走向统一 Model Graph；Ranking 正从固定计算走向 Request-aware Compute；Agentic Search 正从多轮盲搜走向 Corpus-aware Retrieval；模型优化与 Kernel/Cache/Serving 也开始进入同一个设计空间。</b></div>
+<table class="table" style="margin-top:18px"><tr><th>优先级</th><th>工作</th><th>核心判断</th></tr>
+<tr><td>★★★★★</td><td><a href="daily/2026-08-16.html#silvertorch">SilverTorch</a></td><td>Index、Filter、ANN、Rerank、Multi-task Scoring 统一进 GPU-native Model Graph，Retrieval 基础设施与模型边界被打穿。</td></tr>
+<tr><td>★★★★★</td><td><a href="daily/2026-08-16.html#adaptive-ranking">Meta Adaptive Ranking Model</a></td><td>LLM-scale Ranking 的核心不是全量堆算力，而是 request-oriented computation sharing、动态路由、Selective FP8 与多卡 Serving。</td></tr>
+<tr><td>★★★★★</td><td><a href="daily/2026-08-16.html#sira">SIRA</a></td><td>Agentic Search 不一定需要更多轮调用；Corpus-aware Query Construction 可以把探索压缩成一次高判别力检索。</td></tr>
+<tr><td>★★★★☆</td><td><a href="daily/2026-08-16.html#kernelevolve">KernelEvolve</a></td><td>Agent 开始直接优化推荐系统基础设施，把 Kernel 调优从人工专家流程变成自动搜索闭环。</td></tr></table>
 </div></section>
 <section id="archive"><div class="wrap"><div class="section-title"><div><h2>每日进展归档</h2><p>每天新增独立页面，历史内容永久保留。</p></div></div><div class="grid">
+<a class="card" href="daily/2026-08-16.html"><span class="badge">2026.08.16</span><h3>Retrieval Model 化、Request-aware Ranking 与 Agentic Infra</h3><p>SilverTorch · Adaptive Ranking · SIRA · KernelEvolve · SGLang v0.5.17 · LLM Serving in the Wild</p></a>
 <a class="card" href="daily/2026-08-15.html"><span class="badge">2026.08.15</span><h3>Adaptive Retrieval、RAG KV Cache 与 Model Routing</h3><p>EAHR · CoinRAG · Pre-Inference Routing · DocMemo · Coverage Audit · Audio Embedding / GenRec</p></a>
 <a class="card" href="daily/2026-08-14.html"><span class="badge">2026.08.14</span><h3>Ranking 原生化、20K 长序列与 Foundation Model Alignment</h3><p>OneRank · TM20K · Progressive Alignment · MixRAGRec · HD-Rec · MISO</p></a>
 <a class="card" href="daily/2026-08-13.html"><span class="badge">2026.08.13</span><h3>LLM 社交推荐与自适应重排</h3><p>ConnectionMind · REAM · Reranker Study · DocsChisel · DistilVDR</p></a>
 <a class="card" href="daily/2026-08-12.html"><span class="badge">2026.08.12</span><h3>全链路生成式推荐与 Context Ranking</h3><p>Sona · Context Interference · TimeRoute · Nemotron 3.5 · Switchyard</p></a>
 </div></div></section>
-</main><footer><div class="wrap">AI × 推荐算法研究站 · 一手来源优先 · Paper / Code / 解读链接持续补充 · 最后更新：2026-08-15</div></footer>
+</main><footer><div class="wrap">AI × 推荐算法研究站 · 一手来源优先 · Paper / Code / 解读链接持续补充 · 最后更新：2026-08-16</div></footer>
 </body></html>
