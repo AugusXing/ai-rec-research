@@ -1,1 +1,3 @@
-GitHub Pages first-deployment trigger: 2026-08-13 14:08 Asia/Shanghai
+GitHub Pages rebuild trigger
+Last update: 2026-08-27
+Daily: daily/2026-08-27.html
