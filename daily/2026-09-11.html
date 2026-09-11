@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.11｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-11 AI × 推荐算法研究日报：LiteRAG、KVShareArena、低比特向量检索决策保持、CHyD、KV Cache 拼接感知微调、RobustSGPO、WRP。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.11</span><h1>今天的主线：检索与 Serving 开始从“复用表示”转向“验证复用是否仍保持决策”</h1><p class="lead">观察窗口：<b>2026-09-10 10:00 → 2026-09-11 10:00（Asia/Shanghai）</b>。今天筛选 7 项真正值得跟进的工作。最强的共同信号不是再造一个更大的模型，而是围绕<b>检索结构、KV state、低比特表示、证据 span、Agent harness</b>建立可验证的复用与控制机制：LiteRAG 把 GraphRAG 的 query-time LLM traversal 换成算法化图搜索；KVShareArena 揭示“KV 能复用”不等于“跨上下文仍正确”；低比特向量检索论文则进一步把量化风险落到真正被 ANN 排序与图剪枝消费的 pairwise decision 上。</p><p class="muted">时间口径：arXiv 的 v1 提交时间、new/recent feed 出现时间与站点抓取时间可能不同。本文按过去 24 小时可确认的公开更新与 2026-09-10 recent/new feed 信号筛选，并显式保留原始提交日期，避免把“今日进入公开 feed”误写成“今日首投”。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>RAG 的下一轮效率竞争会从“减少一次 LLM 调用”升级为“把 retrieval control 从 LLM 中拿出来”</b>，LiteRAG 是代表性信号；② <b>KV Cache reuse 需要 compatibility contract</b>，位置校正、跨 source attention、checkpoint compatibility 必须分开验证；③ <b>向量量化应该看 decision flip，而不只是平均重构误差或全局 rank correlation</b>；④ 对高可靠搜索/RAG，CHyD 表明“引用必须逐字来自证据”可以直接写成 decoding constraint；⑤ 对 Agent 与推荐研发平台，RobustSGPO 把 harness self-improvement 从自由文本改 prompt 推向 typed edit + replay + retention 的可控搜索。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 LiteRAG · Algorithmic Graph Retrieval</h3><p>不再用 LLM 在 query-time 驱动图遍历，而是 semantic/lexical/community anchor → query-adaptive expansion → reasoning-chain context。DistComp 上质量 0.798，延迟 1.42s；相对 GraphRAG Global/DRIFT，论文报告超过 100× latency reduction 与 99%+ cost reduction。</p></div>
+<div class="paper"><h3>🥈 KVShareArena · KV Reuse Contract</h3><p>把“非 prefix KV reuse”拆成 context shift 与 checkpoint shift 两个轴，并同时记质量恢复、重算量、KV bytes 与 TTFT。关键发现：单 source 只做 position correction 常常够用，多 source 需要重新建立 cross-source attention；错误复用甚至可能低于 no-cache floor。</p></div>
+<div class="paper"><h3>🥉 Low-bit Vector Search · Decision-level Quantization</h3><p>真正决定 ANN 是否坏掉的不是平均 distortion，而是 exact margin 附近的 boundary mass + quantization residual tail。对 Vamana，论文进一步证明 pruning action 的局部 flip 会沿 frozen trace 组合成最终邻居集合差异。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Retrieval controller 去 LLM 化</h3><p>图结构仍有价值，但 query-time LLM orchestration 太贵。LiteRAG 的方向是让模型负责 embedding / final generation，把 traversal、threshold、hub penalty 变成算法。</p></div>
+<div class="paper"><h3>Reusable state 进入 compatibility 时代</h3><p>过去只问“能不能 cache”；现在要问 cache 的 birth context、position、跨 source attention、producer checkpoint、dtype/layout 是否仍兼容。</p></div>
+<div class="paper"><h3>Quality metric 从 representation 走向 decision</h3><p>低比特向量检索工作提醒：对推荐召回，最该监控的是 top-k pair flip / graph prune flip / hard-margin slice，而非只看 cosine reconstruction。</p></div>
+<div class="paper"><h3>Hard constraint 回到 RAG 可信性核心</h3><p>CHyD 不再用 soft faithfulness score 希望模型少幻觉，而是把 extractive span 的合法 token 集直接写进 logits mask。</p></div>
+</div>
+
+<h2>论文优先级表</h2><p class="muted">Research Impact Score 参考：范式变化 25%、工业证据 20%、技术创新 20%、与推荐/搜索相关度 15%、后续研究空间 10%、开放/可复现性 10%。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>工业成熟度</th><th>最关键证据</th></tr></thead><tbody>
+<tr><td>S</td><td><a href="#literag">LiteRAG</a></td><td>Graph RAG / Retrieval</td><td>8.9/10</td><td>★★★☆☆</td><td>DistComp 0.798；1.42s/query；相对 LLM-heavy GraphRAG 100×+ latency、99%+ cost reduction</td></tr>
+<tr><td>S</td><td><a href="#kvshare">KVShareArena</a></td><td>RAG / KV Serving</td><td>8.8/10</td><td>★★★★☆</td><td>首次系统交叉 context × checkpoint；multi-source 下 free alignment 可跌到 no-cache floor 以下</td></tr>
+<tr><td>S</td><td><a href="#vectorq">Low-bit Vector Search</a></td><td>ANN / Quantization</td><td>8.8/10</td><td>★★★★☆</td><td>decision-flip bound + Vamana coupling；hard-margin slice 比全局 rank correlation 更敏感</td></tr>
+<tr><td>S</td><td><a href="#kvconcat">KV Concat-aware + Recomputation</a></td><td>Long-context RAG Serving</td><td>8.7/10</td><td>★★★★☆</td><td>124k RULER：比 CacheBlend-only +9.7 分；SSD cache 下 TTFT -80%</td></tr>
+<tr><td>S</td><td><a href="#robustsgpo">RobustSGPO</a></td><td>Agent / Recommender R&amp;D</td><td>8.7/10</td><td>★★★★☆</td><td>快手 AgentX workflow；30 held-out completion 60%→80%，20M-token budget 3.77→4.14</td></tr>
+<tr><td>A+</td><td><a href="#chyd">CHyD</a></td><td>Faithful RAG / Decoding</td><td>8.5/10</td><td>★★★☆☆</td><td>hard lexical constraint；技术域已有 hybrid 方法 exact extraction 可低于 40%，CHyD 接近完美 faithfulness</td></tr>
+<tr><td>A+</td><td><a href="#wrp">WRP</a></td><td>LLM Inference / Pruning</td><td>7.9/10</td><td>★★★☆☆</td><td>无需 calibration data / forward pass 的 depth pruning，接近 activation-based 方法</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="literag"><div class="phase">Deep Dive 01 · Graph RAG / Retrieval</div><h2>LiteRAG：GraphRAG 真正昂贵的不是“图”，而是 query-time 的 LLM 控制环</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 计划开源，当前未确认公开仓库</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>时间：</b>arXiv v1 提交于 2026-09-09 14:32 UTC。</p>
+<p><b>背景 / 业务动机：</b>Dense RAG 对 lookup query 很有效，但 multi-hop、跨文档比较和关系追踪往往需要显式结构。GraphRAG 用 entity/relation/community 提升了结构化检索，但不少实现又在 query-time 用 LLM 做 graph navigation、community summary 和 evidence aggregation，导致延迟、token 与 API cost 随 corpus/graph 扩张。</p>
+<p><b>现有问题：</b>第一，LLM-mediated traversal 把 retrieval 变成多轮生成任务；第二，检索结果常是大片 summary/raw chunks，generator 仍要自己还原“谁和谁通过什么关系连接”；第三，固定 hop 或静态中心性会让高 degree hub 把搜索带离 query intent。</p>
+<p><b>技术方案与关键模块：</b>LiteRAG 是三段式。① <b>Anchor Selection</b>：先 top-K vector search 得候选节点，再融合 semantic similarity、lexical match 和 community relevance；exact term / 专有名词因此不会完全被 embedding 吞掉。② <b>Query-conditioned Expansion</b>：动态阈值由初始 anchor 质量决定；强 anchor 时收紧探索，弱 anchor 时放宽。再叠加 community-aware hub penalty，对跨社区高 degree node 惩罚更重。③ <b>Reasoning-chain Context</b>：不把整个 subgraph 丢给 LLM，而是综合 anchor reach-rate、semantic similarity、topological proximity、PageRank/betweenness，挑实体和关系后线性化为紧凑 reasoning chain。</p>
+<p><b>训练方法：</b>核心 retrieval controller 不需要额外 LLM training。论文沿用 Microsoft GraphRAG 的 indexing 产出，在 retrieval/context construction 层替换 query-time 控制；超参数通过 validation grid search。生成统一使用 Gemini 2.5 Flash Lite，embedding 使用 gemini-embedding-001。</p>
+<p><b>推理 / Serving：</b>在线路径本质上变成 <b>embedding → top-K anchor → bounded graph traversal → compact chain → 单次 generation</b>。最大 hop 与 per-anchor expansion cap 给出了天然 budget boundary。这对搜索/推荐的价值很直接：可把 graph exploration 放进可预测 CPU/ANN runtime，而不是把 SLA 交给多次 LLM call。</p>
+<p><b>实验设置：</b>DistComp 从 2020–2022 分布式计算论文构建，5 个 corpus scale（40/80/160/640/1280 文档），最大约 50 万 token；160 个专家 query 覆盖 literal citation、local reasoning、global synthesis、drift-style multi-hop。另在 UltraDomain Mix（农业/法律/医疗）验证。对比 GraphRAG Basic/Local/Global/DRIFT、LightRAG、HiRAG、LinearRAG。</p>
+<p><b>离线指标：</b>DistComp D1280：LiteRAG Q_total=<b>0.798</b>、1.42s、2,291 tokens、$0.0003/query；LinearRAG 为 0.784、8.01s、3,077 tokens、$0.0006。GraphRAG Global 为 0.714、162.66s、643,909 tokens，DRIFT 为 0.657、142.04s、6.44M tokens。UltraDomain 上 LiteRAG 与 LinearRAG 同为 0.801，但 LiteRAG 4,862 tokens vs 68,774，约 14× 更少。</p>
+<p><b>线上 A/B：</b>无。<b>效率 / 成本收益：</b>论文报告相对 GraphRAG Global/DRIFT 的 query latency 超过 100× 改善与 cost 超过 99% 降低；相对 LinearRAG 在 UltraDomain 约 74% latency reduction、92% cost reduction。</p>
+<p><b>与主流方法优劣势：</b>相比 GraphRAG，优势是可控、低成本和上下文更密；相比 flat dense retrieval，优势是 multi-hop relation 显式化。代价是必须已有质量足够的 entity/relation graph，且 graph indexing cost 并没有被消除；算法阈值与社区结构也会引入新的 domain calibration。</p>
+<p><b>适用场景：</b>企业知识库、多跳技术问答、需要跨文档关系整合但又有严格 latency/token budget 的 RAG。<b>局限：</b>DistComp 是自建数据集；Q_total 含 LLM-as-a-judge；没有线上 workload / failure-tail latency；目前论文只承诺 GitHub release，未在 arXiv 页面看到可确认仓库链接。</p>
+<p><b>尚未解决 / 未来方向：</b>动态 graph freshness、增量 entity merge、hybrid sparse+dense anchors、query-adaptive hop budget、graph build cost amortization，以及将 traversal confidence 暴露给 model router。</p>
+<p><b>对推荐/搜索工程的启发：</b>不要把“Agentic Search”理解成所有步骤都要 Agent。最值得搬到推荐召回的是 <b>LLM offline structure + deterministic online controller</b>：在线只保留可观测、可设预算、可压测的图探索逻辑。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.10239">Paper</a>；② 官方项目页/博客：未发现；③ 官方代码/模型/数据：论文称 source code、benchmark query、config、evaluation script 将发布 GitHub，当前未确认仓库；④ 中文/第三方：<a href="https://airebao.com/">AI热报当日条目</a>有中文摘要，但截至今日未发现可靠中文深度精读，建议以原论文为准。</p></div>
+
+<div class="paper" id="kvshare"><div class="phase">Deep Dive 02 · RAG / KV Serving Benchmark</div><h2>KVShareArena：非 Prefix KV Cache 复用的真正问题，是“出生上下文”已经变了</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 论文称已开源 pip/leaderboard，URL 在 arXiv HTML 中为占位</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 业务动机：</b>Prefix caching 成功的前提是 reused tokens 仍处在原 prompt 开头。RAG 会把不同 retrieved chunks 任意重组；multi-agent coordinator 会把其他 agent 新写的 report 拼入新 prompt。此时 KV 的 position 错了，而且不同 source 在独立编码时彼此从未 attention。若 producer/consumer 还是不同 checkpoint，值分布又多了一层 shift。</p>
+<p><b>核心贡献：</b>它不是提出一个新的万能 repair，而是定义一个更合理的 benchmark contract：两个变化轴 <b>context change × checkpoint change</b>；两类 workload <b>Retrieved Evidence × Agent Reports</b>；质量用 no-cache floor 与 full-recompute ceiling 之间的 <b>PGR（performance gap recovered）</b>；成本同时记 payload recompute、KV bytes 与 TTFT。</p>
+<p><b>关键发现：</b>仅做 position correction 在单文档/弱 source interaction 场景常已足够；一旦问题需要多 source joint attention，free alignment 失效，multi-hop 中甚至可低于 no-cache floor。selective recomputation、calibration 或 trained repair 能恢复部分 gap；在论文主板上，多 source 场景的付费 repair 通常恢复约一半上下。跨 checkpoint 时，大部分 training-free repair 变化很小，而绑定某 producer KV distribution 的 trained adapter 会明显掉点，并可能“流畅地答错实体”。</p>
+<p><b>训练方法：</b>Benchmark 本身无训练；它统一纳入 CacheBlend、EPIC、APE、KVCOMM、DroidSpeak 等不同 repair family，并把训练式和 training-free 方法放在同一 cost plane 上比较。</p>
+<p><b>推理 / Serving：</b>最关键的 Serving policy 是分层：<b>single-source → 先 position alignment；multi-source → 根据 dependency 与 SLO 决定 selective recompute；cross-checkpoint → 做 compatibility gate，优先 receiver-side rebuild</b>。这比“所有 cache 一律复用”更接近生产 controller。</p>
+<p><b>实验与指标：</b>使用 LongBench 子集等官方指标，所有比较在 frozen samples 上成对评估；FRAMES autorater 还用其他模型家族交叉核验。主结果显示 multi-hop free alignment PGR 可到 -0.196；CacheBlend 等 paid repair 可拉回约 0.39–0.46 gap。跨 checkpoint 六个 cell 中，除 producer-fitted repair 外，多数方法平均 shift 保持在 ±0.02 内。</p>
+<p><b>线上 A/B：</b>无。<b>效率 / 成本：</b>这篇工作的价值是把 cache reuse 从单纯 TTFT 指标升级成 quality × recompute × bytes × latency 的 Pareto 问题，而不是给一个单一“加速倍数”。</p>
+<p><b>优势：</b>把过去分散在 RAG、Agent、checkpoint reuse 社区的实验口径统一；明确区分 build-cache 一次性成本和 request-time 成本。<b>局限：</b>主排行依赖一个 8B 模型，其他 board 只验证趋势；input cap 29K；Agent Reports pipeline 是作者构造；跨 checkpoint 只覆盖同 architecture/tokenizer/RoPE base。</p>
+<p><b>未来方向：</b>cache schema/version、producer fingerprint、cross-source dependency estimator、按 query 动态 recompute ratio、跨模型 KV adapter 的 OOD gate，以及与 disaggregated prefill/cache routing 结合。</p>
+<p><b>工程启发：</b>推荐系统里 user state / candidate state / document state 未来也会碰到同类问题：<b>reuse 不是布尔变量，而是带 birth context 和 compatibility metadata 的数据资产</b>。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.10266">Paper</a>；② 官方项目页：论文称有 public leaderboard；③ 官方代码/数据：论文写明 <code>pip install kvsharearena</code>、frozen querysets、automated submission workflow 已发布，但 arXiv HTML 当前将 repo/leaderboard/data URL 渲染为占位符，因此不猜测具体 GitHub 地址；④ 中文解读：截至今日未发现可靠深度解读。</p></div>
+
+<div class="paper" id="vectorq"><div class="phase">Deep Dive 03 · ANN / Retrieval Quantization</div><h2>低比特向量检索：从“embedding 还像不像”转向“ANN 的关键比较会不会翻转”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>背景：</b>Binary / 2-bit / PQ / BBQ 等量化能显著降内存与 bandwidth，但相同 bit budget 在不同 embedding 上可能一个保持高 recall、另一个直接崩。平均 reconstruction error、cosine correlation 或 Spearman rank correlation 往往解释不了这种 sharp failure。</p>
+<p><b>核心思想：</b>搜索算法最终消费的不是“整个向量像不像”，而是大量局部 pairwise comparison：A 是否比 B 更接近 query？Vamana pruning 时某 candidate 是否应该保留？论文把精确比较 margin 记为 Ψ，把校准后的量化 residual 记为 R，得到 distribution-free decomposition：<b>flip risk ≤ exact margin 靠近 0 的 boundary mass + residual tail</b>。因此 hard query / hard pair 天生对量化更敏感。</p>
+<p><b>关键模块：</b>① covariance-aware residual：共享 query/node 的 residual 不是独立噪声；在 Cohere selected pair 上忽略 covariance 会把 measured difference variance 高估 7.4×。② frozen-trace coupling：对 Vamana neighbor selection，把 exact candidate order 冻结后，approximate replay 最终邻居集合保持完全一致，当且仅当沿 trace 的所有 candidate-level pruning action 都一致。③ held-out block certificate：当解析分布假设不可靠时，用校准块估计 selective failure risk。</p>
+<p><b>训练 / 推理：</b>这不是新 quantizer，也无需训练主模型；它更像量化上线前的 <b>decision-risk diagnostic</b>。对生产 ANN，可在 sampling query 上记录 exact margin distribution 与 quantized residual，构造 hard-margin bucket，再决定 bit-width / rotation / fallback。</p>
+<p><b>实验设置：</b>覆盖 Cohere、MiniLM、BGE-M3、Jina、MSMARCO，视觉 Wolt-CLIP/Landmark-DINO，经典 SIFT/GIST/GloVe，以及 synthetic；维度 100–2048。局部决策实验固定 32-neighbor candidate set，每数据集 80 calibration query + 160 held-out query；cross-quantizer 使用 1,200 fit + 2,000 held-out vectors。框架覆盖 binary codes、RaBitQ、Lucene BBQ、PQ。</p>
+<p><b>离线结果：</b>即使 scalar int4 在整体 edge correlation 达 0.997、总体 ranking flip 仅 2.1%，最难 20% margin 中 flip 仍达到 10.1%。GIST 上未旋转 1-bit 的 flip 可达 100%；随机 rotation 后 margin correlation 提升并让 flip 降到 14.8%，2-bit 从 35.83% 降到 9.33%。这正说明“平均很好”不能替代 hard-boundary 分析。</p>
+<p><b>线上 A/B：</b>无。<b>效率 / 成本：</b>论文没有主打新的 latency benchmark；它提供的是更靠谱的上线风险判据，可用于避免为了节省 memory/IO 牺牲关键 top-k/prune decision。</p>
+<p><b>优劣势：</b>优势是跨量化方法、跨 ANN primitive 的统一语言；比 reconstruction MSE 更贴近 recall failure。缺点是需要 exact scorer 的 calibration/held-out sample，且 frozen-trace certificate 并不等同于完整动态图构建/搜索过程的端到端保证。</p>
+<p><b>适用场景：</b>亿级召回 embedding 压缩、edge ANN、GPU/CPU memory-tight vector store。<b>未来方向：</b>query-adaptive bit-width、hard-margin fallback、index-build-time certificate、在线 drift detector、与 learned retriever training 联合优化 margin robustness。</p>
+<p><b>工程启发：</b>你做召回量化时，监控面板最好增加 <b>top-k boundary margin、pair flip rate、graph prune flip rate、hardest quantile recall</b>，而不是只看平均 cosine error。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.09854">Paper</a>；② 官方项目页/博客：未发现；③ 官方代码/数据：未确认公开；④ 中文解读：截至今日未发现可靠中文精读。</p></div>
+
+<div class="paper" id="kvconcat"><div class="phase">Deep Dive 04 · Long-context RAG Serving</div><h2>KV Cache 拼接感知微调 + 15% 选择性重算：模型适配与 Serving 修复不是二选一</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.7/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>背景：</b>长 RAG 把大量 chunk 拼成 32k–124k context，prefill 成为 TTFT 大头。预计算 chunk KV 能节省 O(n²) prefill，但独立 chunk 的 KV 缺少拼接后的跨 chunk attention。已有两条路线：让模型在训练时适应 block-wise cache，或在线重算一部分 cache。</p>
+<p><b>方案：</b>论文把两者叠加：先从 Llama3.1-8B-Instruct / Qwen2.5-7B-Instruct 训练 <b>KV-concatenation-aware Block-attention model</b>，再用 CacheBlend-style selective recomputation，仅对约 15% payload 重算。模型降低“独立缓存”造成的 representation shift，在线重算补最关键 cross-chunk interaction。</p>
+<p><b>训练：</b>Llama 路线使用 Tulu3 40k 样本与约 20k 2Wiki / 20k TQA 数据；Block-attention 有效训练样本略少（Tulu3 33,532）。Qwen2.5-7B 学习率 5e-6，作者报告约 7.5 小时得到 Block-attention 模型。</p>
+<p><b>Serving：</b>KV 以 safetensors 在 SSD 保存；每层用 8 worker 读入 CPU，随后搬 GPU、merge + position adjustment，并通过 CUDA streams 将 I/O、H2D 和 transformer-layer recomputation 流水重叠。这一点比“只给算法分数”更接近真实系统实现。</p>
+<p><b>实验：</b>RULER 从 4k 一直到 124k，同时评 2Wiki/HQA/NQ/TQA 与通用 benchmark。124k 时 Proposed（Block-attention+15%）RULER 平均 <b>56.7</b>，CacheBlend-only 为 47.0，提升 9.7 分；full recompute 为 80.2。四个 RAG benchmark 上 Proposed 分别 70.8/72.6/58.1/75.2，均优于其他非 full-attention 方案。</p>
+<p><b>效率：</b>当 KV 从 SSD 加载，124k context TTFT 相比 full attention 降约 <b>80%</b>。但论文也给出重要反例：4k 时 full prefill 反而更快；若每个 cache file 太小导致文件数过多，优势要到 32k 左右才出现；使用 FlashAttention-2 后 full attention TTFT 也能逼近 15% recompute + FlashInfer。</p>
+<p><b>优劣势：</b>比纯 CacheBlend 更准，比纯 Block-attention 更能恢复跨 chunk interaction；但仍明显低于 full recompute 的 124k 上限，且要额外维护专门 fine-tuned checkpoint、cache file layout 与 SSD pipeline。</p>
+<p><b>局限 / 未来：</b>最佳 recompute ratio 是否随 query/source dependency 动态变化仍未解决；大规模 multi-tenant serving 的 SSD contention、KV version 与 checkpoint compatibility 也未覆盖。未来最自然是与 KVShareArena 的 compatibility/PGR protocol 结合，形成动态 repair router。</p>
+<p><b>工程启发：</b>对于推荐里的超长用户序列/多域 candidate context，也不要把“模型侧适配”和“Serving 侧近似”分开看。<b>让模型学会容忍可复用 state，再把昂贵精确计算留给少数高价值位置</b>，会是一条通用路线。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.09768">Paper</a>；② 官方项目页/博客：未发现；③ 官方代码/模型：未确认公开；④ 中文解读：截至今日未发现可靠中文深度解读。</p></div>
+
+<div class="paper" id="robustsgpo"><div class="phase">Deep Dive 05 · Agent / Industrial Recommender R&amp;D</div><h2>RobustSGPO：Agent 自我改进的瓶颈，开始从“会不会改 Prompt”变成“如何控制搜索空间”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.7/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 论文称固定表格与代码可复现实验，未确认公开仓库 URL</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>背景：</b>这篇来自武汉大学与快手，直接承接 AgentX 的工业推荐研发 workflow。原 SGPO 从失败 trace 生成 natural-language loss/semantic gradient，再编辑 agent specification，通过 paired replay 决定 accept/rollback。问题是：允许改整个 harness，并不代表 LLM 真能探索到有用的结构修改。</p>
+<p><b>核心矛盾：</b><b>nominal search space ≠ realized search space ≠ valid/effective search space</b>。自由生成倾向熟悉的 instruction rewrite，跨 agent handoff、add/remove agent、routing 等结构动作即使被允许，也可能根本生成不出来或生成无效 patch。</p>
+<p><b>技术方案：</b>RobustSGPO 显式控制三件事。① <b>Edit planning</b>：先选 scope、operation、targets，再让 LLM 写内容；② <b>Typed patch construction + exact-target check</b>：预定义 add/remove 等结构操作，检查“请求修改哪些对象”和“实际改了哪些对象”完全一致；③ <b>Category archive</b>：按 edit scope × operation 保存最好但未必成为 incumbent 的完整 harness snapshot，后续可从 retained parent 继续搜索，所有 descendant 仍必须超过当前 incumbent 才能正式接纳。</p>
+<p><b>训练 / 优化：</b>没有更新 base model weight；优化对象是 harness。每轮用 optimization traces 产生更新，validation 控制选择/retention，test feedback 不进入 search。所有 candidate 都做相同任务与 execution seed 的 paired replay，平均 validation gain 超过 0.05 且通过 safety 才 accept。</p>
+<p><b>实验：</b>120 tasks，分 local instruction failure 与 cross-agent handoff/structure failure 两类；每类 30/15/15 optimization/validation/test。95 runs、7,350 candidate attempts；五个 paired seeds；每轮 3 proposals；proposal 上限 120 changed lines / 6,000 added chars。</p>
+<p><b>结果：</b>periodic permission 1→2→3 最终 4.34，固定最大权限 α3 为 4.06，领先 0.28。完整 RobustSGPO round-30 score 4.30 vs SGPO 3.82；effective-category coverage 68% vs 48%；结构 proposal validity 通过 typed operation 明显改善。30 个 held-out tasks completion 从 18/30（60%）升到 24/30（80%）。在固定 20M-token search budget 下，SGPO 3.77，RobustSGPO 4.14。</p>
+<p><b>成本 / 局限：</b>archive 不是免费的：RobustSGPO 每轮约 0.95M tokens，固定预算下只跑到 round 21；与 Structured Search 的领先会从等轮数 0.10 缩到等 token 0.04。实验仍只覆盖 AgentX brainstorming workflow，不能直接外推为所有 Agent harness 的 SOTA。</p>
+<p><b>与推荐工程的关系：</b>这是今天最值得推荐算法工程师关注的 Agent 工作之一，因为它把“Agent 替工程师做实验”继续往平台化推进：<b>实验假设、代码修改、评估、回放、版本保留都要有 contract</b>。对长尾排序模型与重复实验任务，价值可能大于单纯换一个更强 LLM。</p>
+<p><b>未来方向：</b>typed ML experiment DSL、自动 regression suite、跨模型/业务线 archive transfer、真实线上实验 guardrail、成本感知 search scheduler，以及把 offline replay score 与真实 A/B uplift 连接起来。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.09646">Paper</a>；② 官方项目/技术博客：本论文承接 AgentX，未发现独立项目页；③ 官方代码：正文称固定 tables/code 可复现曲线，但截至今日未确认可公开访问仓库；④ 中文解读：截至今日未发现可靠深度解读。</p></div>
+
+<div class="paper" id="chyd"><div class="phase">Focused Read · Faithful RAG</div><h2>CHyD：把“引用必须来自检索证据”直接变成解码时的硬约束</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.5/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★☆</span><span><b>是否官方开源</b> 未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>方案：</b>Constrained Hybrid Decoding 在普通生成和 Evidence Extraction Constraint（EEC）两种模式间切换。模型生成“[”触发 EEC 后，下一 token 只允许属于检索上下文中某个连续 verbatim span 的合法 continuation，其他 token logits 直接设为 -∞；生成“]”退出提取模式。保证的是：<b>显式引用 span 一定逐字存在于输入 context</b>。</p>
+<p><b>实验：</b>Qwen3-4B、Llama-3.1-8B、Mistral-Nemo，覆盖 MedMCQA、MESAQA、QuoteSum 与作者构建的 SEMAeroSQuAD（航空航天、1,420 questions）。已有 hybrid 方法在技术域 exact extraction accuracy 可掉到 40% 以下，CHyD 在多模型上接近完美 extraction faithfulness；同时保持较强 answerability detection，相关设置 F1 多数高于 0.88。</p>
+<p><b>重要边界：</b>主实验对多数据集直接给 gold context，是为了隔离 retrieval error，因此它证明的是 decoding faithfulness，不是端到端 RAG factuality。span 来自 context 也不代表 span 本身相关/正确，trigger selection 仍可能错。硬约束还会牺牲一部分 MAUVE/ROUGE 类 fluency。</p>
+<p><b>工程启发：</b>高风险搜索、客服、合规问答可把输出拆成“自由解释 + 可验证 evidence span”两条 channel；推荐解释也可借鉴，要求 price/库存/政策类事实必须 pointer 到 source。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.10046">Paper</a>；② 官方项目页/博客：未发现；③ 官方代码/数据：未确认公开；④ 中文解读：截至今日未发现可靠中文精读。</p></div>
+
+<div class="paper" id="wrp"><div class="phase">Focused Read · Inference Optimization</div><h2>WRP：不用 calibration data，也不用 forward pass，直接从权重冗余做 Depth Pruning</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 7.9/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★☆</span><span><b>是否官方开源</b> 未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>方案：</b>Weight-Redundancy Pruning 比较不同 Transformer block 的 attention output projection 与 MLP down-projection 权重，再结合相对 projection scale，形成 all-pairs similarity matrix；随后 spectral-style clustering 决定哪些层属于相近 redundancy group，并分配删除预算。全程不需要 calibration corpus 或 model forward。</p>
+<p><b>结果：</b>论文在 LLaMA、Qwen、Mistral 等多设置的一次性、无恢复 depth pruning 中优于已有 forward-free magnitude baseline，并接近需要 activation 的方法；同时评估 prefill latency、decode latency 和 peak GPU memory。核心价值不是新的 dense operator，而是“拿到 checkpoint 后快速裁深度”的部署灵活性。</p>
+<p><b>局限：</b>权重相似不一定等价于具体 domain activation redundancy；没有任务自适应 calibration 也意味着极端 domain shift 下风险更难估计。对推荐 foundation model，更适合做 deployment candidate 生成，再用业务离线集/蒸馏做最终验证。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.09883">Paper</a>；② 官方项目页/博客：未发现；③ 官方代码：未确认公开；④ 中文解读：截至今日未发现可靠中文精读。</p></div>
+
+<div class="callout"><strong>今天最值得带回推荐/搜索系统的三个动作：</strong>① ANN 量化上线时加 <b>decision-flip / hard-margin</b> 监控；② 所有可复用 state 都带上 <b>birth context / version / compatibility metadata</b>；③ 对 Agent/LLM 在线链路，优先把可算法化的控制环拿出 LLM，把模型调用留给真正需要语义推理的位置。</div>
+</div></section></main>
+<footer><div class="wrap">AI × 推荐算法研究日报 · 2026-09-11 · Research impact over paper count</div></footer></body></html>
