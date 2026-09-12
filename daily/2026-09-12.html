@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.12｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-12 AI × 推荐算法研究日报：UniRec、REVA、VikingRAG、SWRouter、GeneralQPP、GLIE、TimelyRAG。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.12</span><h1>今天的主线：跨阶段联合优化 + 可复用检索资产 + 低成本控制器</h1><p class="lead">观察窗口：<b>2026-09-11 10:00 → 2026-09-12 10:00（Asia/Shanghai）</b>。今天筛选 7 项值得长期跟进的工作。最强信号有三个：推荐系统开始从“下游蒸馏给上游”推进到<b>跨阶段联合训练</b>；RAG 开始把历史执行轨迹物化成<b>可复用 evidence / retrieval asset</b>；Routing、retrieval sufficiency、temporal validity 则越来越像可解释、可设预算的轻量控制器，而不是额外再调用一次大模型。</p><p class="muted">时间口径：arXiv 的 v1 提交时间与 recent/new feed 出现时间可能不同。本文按过去 24 小时可确认的公开更新与 2026-09-11 recent feed 信号筛选，并保留原始提交日期，避免把“进入公开 feed”误写成“当天首投”。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>UniRec 是今天最值得推荐算法工程师精读的工作</b>：快手把 pre-ranking 与 ranking 的 fusion agent 放进一个训练图，线上 AppUsageTime +0.616%、TotalWatchTime +0.675%，且联合训练不增加 Serving latency；② <b>REVA 与 VikingRAG 都在把历史执行变成可复用资产</b>，前者缓存 generator attention 得到 document evidence view，后者把多轮 agentic retrieval trace 物化成 experience edge；③ <b>控制器正在轻量化</b>：GeneralQPP 用 retrieval score distribution 以 2ms 判断“检索够不够”，SWRouter 用语义窗口决定多轮上下文与模型路由；④ <b>检索存储从压缩向生成式重建推进</b>，GLIE 只存极少 late-interaction vectors，再对 top shortlist 重建全量向量；⑤ <b>时间有效性必须成为 RAG 的显式排序特征</b>，TimelyRAG 对高语义重叠的法规/政策版本尤其重要。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 UniRec · Cross-stage Recommendation</h3><p>真正把粗排/精排 fusion 从“各自优化 + 下游监督上游”改成联合训练。RecFlow 上 ASH 0.9978；快手一周 20% 流量 A/B，AppUsageTime +0.616%、Like +2.367%，已全量部署。</p></div>
+<div class="paper"><h3>🥈 REVA · Reusable Evidence Views</h3><p>不是每个 query 都重新压缩上下文，而是把目标 generator 的历史 attention 累积成 document-keyed evidence score store。四个 benchmark 质量 +1.0～5.8 points，压缩 overhead 降 5.3～15.6×，在线额外延迟 &lt;40ms。</p></div>
+<div class="paper"><h3>🥉 VikingRAG · Retrieval Trace as Asset</h3><p>结构化文档上把多轮检索 trace 物化为 experience edges，并用 evidence-sufficiency checker 决定是否升级到 agentic retrieval。E+ token 成本可降到强基线的 5.1%～32.5%。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Stage Boundary 正在被重新训练</h3><p>过去跨阶段优化通常是 ranking teacher → pre-ranking student；UniRec 让两阶段 fusion 在 shared embedding 上对称耦合，把 cascade consistency 直接写进训练目标。</p></div>
+<div class="paper"><h3>Historical Execution 变成一等资产</h3><p>REVA 保存“模型过去看过哪里”，VikingRAG 保存“Agent 过去怎么找到证据”。这与 user/document state reuse 是同一趋势：compute-once、reuse-many，但必须带 compatibility / freshness。</p></div>
+<div class="paper"><h3>Controller 比另一个 LLM 更重要</h3><p>GeneralQPP、SWRouter、TimelyRAG 都说明：是否足够、保留哪段历史、哪个版本有效，这些决策可以由低成本统计/embedding/规则化 controller 先解决。</p></div>
+<div class="paper"><h3>Embedding Storage 进入“生成式解码”</h3><p>GLIE 不只量化/裁剪 embedding，而是把少量 anchor 当 code，在 top-L 候选上再生完整 late-interaction representation，形成 retrieve cheap / rerank exact 的新设计面。</p></div>
+</div>
+
+<h2>论文优先级表</h2><p class="muted">Research Impact Score：范式变化 25%、工业证据 20%、技术创新 20%、推荐/搜索相关度 15%、后续研究空间 10%、开放/可复现性 10%。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>工业成熟度</th><th>关键证据</th></tr></thead><tbody>
+<tr><td>S+</td><td><a href="#unirec">UniRec</a></td><td>跨阶段推荐 / Fusion</td><td>9.5/10</td><td>★★★★★</td><td>快手 20% 流量 A/B；AppUsageTime +0.616%，已全量部署</td></tr>
+<tr><td>S</td><td><a href="#reva">REVA</a></td><td>RAG Serving / Compression</td><td>9.1/10</td><td>★★★★☆</td><td>质量 +1.0～5.8；compression overhead 5.3～15.6× 更低；&lt;40ms</td></tr>
+<tr><td>S</td><td><a href="#viking">VikingRAG</a></td><td>Agentic RAG / Structured Retrieval</td><td>9.0/10</td><td>★★★★☆</td><td>trace reuse + escalation 后 token 为强基线 5.1%～32.5%</td></tr>
+<tr><td>S</td><td><a href="#qpp">GeneralQPP</a></td><td>RAG Confidence / Retrieval Control</td><td>8.9/10</td><td>★★★★☆</td><td>ViDoRe AUROC 0.856，2ms/query，约比本地 LLM judge 快 3000×</td></tr>
+<tr><td>A+</td><td><a href="#swrouter">SWRouter</a></td><td>Model Routing / Multi-turn</td><td>8.8/10</td><td>★★★☆☆</td><td>40.89% eval accuracy；比 Conv-ID Context +8.22pt</td></tr>
+<tr><td>A+</td><td><a href="#glie">GLIE</a></td><td>Late-interaction Retrieval / Storage</td><td>8.8/10</td><td>★★★☆☆</td><td>4 vectors/page 保留近 80% uncompressed nDCG@5；415K 参数</td></tr>
+<tr><td>A+</td><td><a href="#timely">TimelyRAG</a></td><td>Temporal Retrieval / RAG</td><td>8.7/10</td><td>★★★☆☆</td><td>重叠演化文档 nDCG@10 最高 +28.6%；资源全开源</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="unirec"><div class="phase">Deep Dive 01 · Cascaded Recommendation</div><h2>UniRec：跨阶段推荐的下一步，不是“精排教粗排”，而是让两阶段 fusion 真正联合优化</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.5/10</span><span><b>工业成熟度</b> ★★★★★</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> UniRec 代码未确认；RecFlow 数据公开</span><span><b>是否有线上 A/B</b> 是</span><span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>工业推荐的召回→粗排→精排→重排是为 SLA 被迫切开的。问题是各阶段有不同候选分布、特征、目标与算力预算；粗排一旦把精排真正喜欢的 item 丢掉，后面再强也无法恢复。已有 COPR/Rethink/HCCP 多数把精排信号单向传给粗排，但最终决定候选去留的 multi-task fusion 仍是阶段内独立优化。</p>
+<p><b>技术方案：</b>UniRec 同时训练 pre-ranking fusion agent 与 ranking fusion agent。两者共享部分 input embedding，因此两个 stage 的 loss 都能更新同一表示；粗排用 DCN + 轻量 MLP-Mixer，精排用 DCN + AutoInt-Lite；另有一个 stop-gradient adapter 把粗排表示作为显式特征送入精排。目标函数沿两个轴对齐：<b>vertical cross-stage consistency</b> 把下游 pairwise preference 写回上游 fusion score；<b>horizontal CPPA</b> 把几十个任务的成对目标压成双向 preference evidence，使可微项从 O(MN²) 降到 O(N²)；<b>AGRR</b> 在属性 group 内做相对优势，抑制模型通过偏爱高 reward 属性区间“作弊”。</p>
+<p><b>训练 / Serving：</b>训练时在同一 computation graph 联合优化；Serving 时两个 agent 仍按原 cascade 分别导出，shared embedding table 复制到各阶段，因此论文明确指出<b>联合训练本身不增加在线 Serving latency</b>。这是工业价值非常高的一点：训练改造大，线上拓扑改造小。</p>
+<p><b>实验：</b>公开 RecFlow 含约 42K users、9.3M requests、38M exposure samples、1.9B stage-level records，候选规模 8000→3000→500→100→10→6；工业数据还覆盖 1M+ request-level samples。RecFlow 上 UniRec ranking NDCG@10/30/50 = 0.0990/0.1870/0.2409，pre-ranking NDCG@10/30/50 = 0.0993/0.1892/0.2429；cross-stage ASH=<b>0.9978</b>、Kendall τ=0.6318、Spearman ρ=0.8072，均为表中最好。</p>
+<p><b>线上 A/B：</b>一周、20% 随机线上流量；相对生产 fusion baseline：LT7 +0.142%、ActiveUsers +0.189%、AppUsageTime <b>+0.616%</b>、TotalWatchTime +0.675%、VideoWatchTime +0.755%、LongView +1.028%、Like +2.367%、Follow +1.573%、Collect +1.890%，论文报告无下降指标，随后全量部署。</p>
+<p><b>优势 / 局限：</b>优势是把“stage consistency”从 teacher-student regularizer 提升成 joint optimization，并兼顾 multi-objective fusion 的计算复杂度与 attribute bias。局限是目前只覆盖 pre-ranking + ranking fusion，未把 recall 与 rerank 纳入；共享表示也会增加训练耦合、实验归因与版本管理复杂度。</p>
+<p><b>工程启发：</b>对现有粗排/精排体系，最现实的路线不是一上来做 one-model full-stack，而是先找<b>真正决定每阶段最终排序的 fusion / calibration layer</b>作为联合优化切口；指标也不要只看单阶段 AUC，要显式建立 ASH / top-K survival / pair consistency。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11052">arXiv 2609.11052</a></li><li>官方数据：<a href="https://github.com/RecFlow-ICLR/RecFlow">RecFlow</a>；UniRec 官方实现截至今日未确认公开</li><li>官方技术博客 / 项目页：未检索到独立项目页</li><li>中文高质量解读：截至 2026-09-12 10:00 未检索到可靠的知乎/公众号精读，建议优先读原文</li></ul></div>
+
+<div class="paper" id="reva"><div class="phase">Deep Dive 02 · RAG Serving</div><h2>REVA：把“每次 query 都压缩一次”改成“历史 attention 形成可复用 evidence view”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.1/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>现有问题：</b>RAG context compressor 往往逐 query 调一个 auxiliary model 或做重写，压缩后 token 少了，但 compressor latency 可能把收益吃掉；论文还观察到 advanced compressor 对简单 truncation 的收益并不稳定。与此同时，85%～92% query 至少命中一个历史见过的 document，说明 document-level reuse 空间很大。</p>
+<p><b>方案：</b>离线/异步读取目标 generator 自己的 attention trace，把 query/response token 到 document token 的 attention 聚合成 word-unit importance；对日期、数字、连字符、专名等做 protected span；再按 document 建立 budget-agnostic score store。在线只做 lookup、quota allocation、排序选择和原顺序文本渲染，不运行当前 query 的 compressor/attention pass。</p>
+<p><b>关键工程设计：</b>compatibility key 包含 document text key、generator、tokenizer、prompt template、scoring mode、corpus version，避免“旧证据分数”在模型/模板/语料变化后被误复用。每个 word unit 主要存 score sum + count，16-bit 下约 4 bytes；113K HotpotQA query 的 score store 约 1GB。未覆盖 document 自动 fallback 到 prefix truncation。</p>
+<p><b>结果：</b>四个 benchmark 上相对先进压缩器 generation quality 提升 1.0～5.8 points；compression overhead 降低 <b>5.3～15.6×</b>，在线额外延迟 &lt;40ms。mixed any-seen 设置也稳定优于 local truncation，例如 NQ F1/EM 33.68/22.56 → 38.12/25.23。</p>
+<p><b>适用 / 局限：</b>特别适合高复用知识库、客服、内部文档、热门 SKU/政策文档。冷文档、快速变更 corpus 与 generator upgrade 会降低 coverage；attention 不是完美 causal attribution，因此它更像可复用 prior 而不是 ground-truth evidence selector。</p>
+<p><b>研究方向：</b>把 REVA 与 KV reuse、document-side reranker state、freshness TTL、online click/answer feedback 联合起来，形成统一 evidence asset store。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11209">arXiv 2609.11209</a>（ICDM 2026 accepted）</li><li>官方代码：<a href="https://github.com/UIUC-MLSys/REVA">UIUC-MLSys/REVA</a></li><li>作者项目入口：<a href="https://mtuann.github.io/">Tuan Nguyen publication page</a></li><li>中文高质量解读：截至今日未检索到可靠精读</li></ul></div>
+
+<div class="paper" id="viking"><div class="phase">Deep Dive 03 · Structured / Agentic RAG</div><h2>VikingRAG：把 Agent 的“找路经验”写回检索系统，只有证据不足时才升级到多轮 Agent</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>背景：</b>企业文档的目录、章节、段落结构本身就是检索信号。DeepRead 类结构化 Agent RAG 能提高准确率，却需要多轮 Search/List/Grep/Read，prompt 与历史轨迹不断膨胀。</p>
+<p><b>VikingRAG：</b>先构建 hierarchical semantic storage，Agent 只观察局部 search result、目录片段、lexical hit 与主动 Read 的对象；retrieval 按 evidence gap 逐轮继续，而非把全局目录一次塞进上下文。</p>
+<p><b>Experience Edge：</b>一次成功多轮检索后，把 source URI → target evidence URI 的路径与历史 query 表示物化成有向 edge。新 query 先普通 vector search，再仅在历史 query 与当前 query 相似度超过阈值时沿 experience edge 做多跳扩张，相当于把昂贵的 Agent path 编译成可复用检索资产。</p>
+<p><b>Adaptive Escalation：</b>先尝试一轮 experience-augmented retrieval；constraint-aware evidence adequacy checker 判断证据足够则直接回答，只有不足才升级到 agentic multi-round。相比 VikingRAG-E，E+ 平均只用其 49.8%～81.1% tokens、73.1%～89.8% latency。</p>
+<p><b>实验：</b>6 个结构化文档数据集，格式含 PDF/Markdown/DOCX/TXT，最大 corpus 8.78M tokens；对比 MoDora、BookRAG、DeepRead、KohakuRAG、LightRAG、HippoRAG-2、SQL-AgenticRAG、NaiveRAG。基础 VikingRAG 在保持强准确率时只消耗 SOTA 的 11.6%～51.9% tokens；加入 experience reuse + escalation 后为 5.1%～32.5%。</p>
+<p><b>局限：</b>experience edge 会陈旧，需要删除/更新与反向索引维护；相似 query 不等于同一证据路径；adequacy checker 的 false positive 比 false negative 更危险。未来值得做 edge confidence、TTL、versioned corpus 与 traffic-aware experience distillation。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11390">arXiv 2609.11390</a></li><li>官方代码：<a href="https://github.com/rucdatascience/VikingRAG">rucdatascience/VikingRAG</a></li><li>中文/第三方：目前已有社交媒体中文摘要，但未检索到足够稳定、可作为精读依据的知乎/公众号长文；本文仍以原论文为准</li></ul></div>
+
+<div class="paper" id="qpp"><div class="phase">Deep Dive 04 · Retrieval Sufficiency / Control Plane</div><h2>Your Retriever Already Knows：RAG 是否“检索够了”，可能不需要再问一个 LLM</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是（代码+数据）</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>问题：</b>RAG 最危险的状态不是“没答案”，而是 retrieval 已失败但系统不知道，于是 generator 仍自信输出。作者受捷克核监管机构 SÚJB 的私有部署场景驱动，比较 score-based QPP、本地 LLM judge 与 hybrid。</p>
+<p><b>GeneralQPP：</b>完全不读 document content，只从 retrieval score profile 与 query surface 提取 24 个 non-lexical features：15 个 distribution-shape（top gap、decay、skewness、bimodality、concentration、elbow 等）、5 个 query surface、4 个 global score range。它本质上预测的是“这条 score curve 看起来像成功检索还是失败检索”。</p>
+<p><b>结果：</b>ViDoRe 8 个视觉检索域、14,514 queries：weighted AUROC=<b>0.856</b>，2ms/query；Classic QPP pool 0.835，本地 Qwen3.5 judge 0.649，GeneralQPP 高 +0.207 且约快/便宜 3000×。SÚJB production-motivated case 含 1,510 synthetic queries；hybrid 在 Hit@5 AUROC 0.911、adversarial detection 0.954。S1-Lean 在 leave-one-domain-out 上用 13 features 恢复到 0.719。</p>
+<p><b>Serving 意义：</b>这类 confidence signal 可以直接驱动 top-K 扩大、dense→hybrid fallback、是否调用 reranker、是否升级到 Agent / web search，甚至决定拒答。最值得注意的是：LLM judge 更适合当 feature，而不是默认作为 standalone controller。</p>
+<p><b>局限：</b>SÚJB 没有真实用户日志，使用合成 query；结论针对当前 local multimodal judge 与 modest target supervision，不能泛化成“所有 LLM judge 都差”。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11646">arXiv 2609.11646</a></li><li>官方代码与数据：<a href="https://github.com/veselm73/rag-confidence">veselm73/rag-confidence</a></li><li>中文高质量解读：截至今日未检索到可靠精读</li></ul></div>
+
+<div class="paper" id="swrouter"><div class="phase">Deep Dive 05 · Model Routing</div><h2>SWRouter：多轮模型路由的瓶颈，往往先是“给 Router 看什么历史”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★☆</span><span><b>是否官方开源</b> 未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>核心问题：</b>单轮 router 只需 query→model，但多轮对话里当前 query 可能依赖旧 turn，也可能已经换话题。全历史拼接带来 information confusion，只看当前 turn 又 information loss。</p>
+<p><b>方法：</b>先用 embedding cosine similarity 对连续 turn 做 window segmentation：相似度低于阈值就开启新 window，否则累加为语义连续上下文。router 再对 context-enhanced prompt 做 model selection。训练同时使用 sample-LLM contrastive loss（拉近 query 与强候选模型 embedding）和 sample-sample contrastive loss（保持语义 cluster）。</p>
+<p><b>评估：</b>作者特别把 prompt construction accuracy、evaluation accuracy、router performance 拆开，避免把“上下文构造更好”误算成“router 模型更好”。ShareGPT + MT-Bench 上最佳 individual LLM 平均 24.63%，Conv-ID Context 32.67%，SWRouter <b>40.89%</b>；阈值 τ=0.91 最好，说明性能对 segmentation policy 很敏感。</p>
+<p><b>Serving：</b>推理只需 window construction + 单次 router forward + 被选 LLM；论文报告 similarity calculation 只占总推理时间极小比例。对 recommendation/search 更一般的启发是：<b>routing policy 与 context construction 不应分开设计</b>，否则 router 学到的是被 prompt builder 污染后的问题。</p>
+<p><b>局限：</b>最优阈值可能 domain-specific；局部连续相似不保证长程事实依赖；真实 routing 还要加入 cost、latency、privacy、tool availability 与 cache affinity。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11414">arXiv 2609.11414</a></li><li>官方代码/项目页：截至今日未确认公开</li><li>中文高质量解读：截至今日未检索到可靠精读</li></ul></div>
+
+<div class="paper" id="glie"><div class="phase">Deep Dive 06 · Retrieval Storage</div><h2>GLIE：late-interaction embedding 不一定要“存全量”，可以把少量向量当成生成代码</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>背景：</b>ColPali 一类 visual document late-interaction 方法每页约存 1000 个 vectors，检索质量高但 storage 太重。传统 pooling / subset compression 在极小预算下掉点明显。</p>
+<p><b>关键观察：</b>这些 token vectors 精确落在 unit sphere 上，并集中在 intrinsic dimension 约 5～6 的低维 manifold。标准 k-means centroid 落在球内，会系统性低估 MaxSim；仅把 centroid 重新 normalize 到球面就最多 +0.093 nDCG@5。</p>
+<p><b>GLIE：</b>每页只存 k≪N 个 refined anchor vectors。索引阶段 encoder 冻结，小型 cross-attention refiner 从 normalized centroids 出发；共享 decoder 可把 k 个 code 重建成 N 个 unit vectors。线上 Stage 1 对全库只算 k-vector MaxSim；Stage 2 仅对 top-L（默认 20）候选解码回 full vectors 并精确重排。</p>
+<p><b>训练：</b>refiner + decoder 共约 415K 参数；以 per-query-token MaxSim matching、listwise KL 与 geometry-related losses 训练，不以 reconstruction error 为主要目标。论文的核心思想是“保持检索 decision，而非像素式还原 embedding”。</p>
+<p><b>结果：</b>4 vectors/page 时保留近 <b>80%</b> uncompressed nDCG@5，而最佳 prior post-hoc 约 70%；模型在 1000 training pages 上不足 3 GPU-minutes 即可拟合。官方 repo 还报告对 ViDoRe v1 10/10 subsets、v2 4/4 subsets 各预算均优于既有 post-hoc baseline。</p>
+<p><b>局限 / 未来：</b>decoder 仍有明显 oracle gap；适合组合 quantization，因为“少存 vectors”和“每个 vector 少 bits”是正交维度。视频、多页文档、超大 token set 可能是更高价值场景。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11808">arXiv 2609.11808</a></li><li>官方代码：<a href="https://github.com/mohammad2012191/GLIE">mohammad2012191/GLIE</a></li><li>中文高质量解读：截至今日未检索到可靠精读</li></ul></div>
+
+<div class="paper" id="timely"><div class="phase">Deep Dive 07 · Temporal Retrieval</div><h2>TimelyRAG：当旧版与新版 90% 文本都一样，语义相似度本身无法回答“哪个版本现在有效”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.7/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是（代码+Benchmark）</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>问题定义：</b>法律、政策、学校规章、Terms of Service 不是“新快照完全替代旧文档”，而是 amendment 只改少数 clause，版本间高度语义重叠。普通 dense/sparse retrieval 很容易把内容相近但时间无效的旧 clause 排前面。</p>
+<p><b>方法：</b>TimelyRAG 是 retriever-agnostic 两阶段框架：第一阶段用 BM25/dense/late-interaction 拿 top-N；第二阶段把 semantic score 与 temporal compatibility 融合。时间信号拆成 Query Insert Time、Query Event Time、Document Insert Time、Document Event Time；若 query event time 落在 clause validity interval 内则时间距离为 0，否则按最近边界惩罚，并有 causality constraint 防止“未来文档回答过去问题”。α(Q) 依据 query 是否有显式事件时间与 granularity 自适应调整时间权重。</p>
+<p><b>Benchmark：</b>TimelyQABench 覆盖 law、university、company policy、terms of service 四类 regulation-heavy domain，共 12,000 synthetic QA；版本被刻意设计为高语义重叠 hard negatives，并用 GPT-4o、Claude-3.7-Sonnet、Qwen2.5-72B 多模型验证。</p>
+<p><b>结果：</b>不同 backbone retriever 上最高 <b>+28.6% nDCG@10</b>、+19.1% Hit@10。它的工程价值不是替换第一阶段，而是作为轻量 temporal reranker 插入已有检索链路。</p>
+<p><b>局限：</b>benchmark 主要是合成法规数据；现实中的 effective date 解析、retroactive clause、timezone、版本冲突与文档 provenance 更复杂。第一阶段没召回正确版本时，第二阶段无法恢复。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11572">arXiv 2609.11572</a></li><li>官方代码 / Benchmark：<a href="https://github.com/kaist-dmlab/TimelyRAG">kaist-dmlab/TimelyRAG</a></li><li>官方实验室：<a href="https://www.kaistdmlab.org/">KAIST Data Mining Lab</a></li><li>中文高质量解读：截至今日未检索到可靠精读</li></ul></div>
+
+<h2>今日收束：对推荐 / 搜索工程与职业技能的启发</h2><div class="callout"><b>1）跨阶段优化会成为推荐系统的重要主线：</b>不只是蒸馏，而是 joint training、shared state、stage consistency metric、Serving decoupling。<br><b>2）“可复用资产”正在扩张：</b>从 embedding / KV cache 到 evidence score、agent retrieval trace、temporal metadata；算法工程师需要同时懂 model 与 state lifecycle。<br><b>3）控制面比单一大模型能力更值钱：</b>retrieval sufficiency、context window、model router、temporal validity、escalation 都是独立可优化 controller。<br><b>4）检索压缩要盯最终 decision：</b>GLIE、昨天的 decision-aware quantization 都说明，未来 embedding 系统应围绕 top-k / MaxSim / prune decision 设计，而不只是 MSE。<br><b>建议精读顺序：</b>UniRec → REVA → VikingRAG → GeneralQPP；如果你在做召回/向量检索，再追加 GLIE；做 Agent/推理平台则追加 SWRouter。</div>
+</div></section></main>
+<footer><div class="wrap">AI × 推荐算法研究站 · Daily 2026-09-12 · 研究价值优先于数量</div></footer></body></html>
