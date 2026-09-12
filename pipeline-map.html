@@ -1,54 +1,58 @@
 <!doctype html><html lang="zh-CN"><head><title>推荐链路｜AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="按召回、粗排、精排、重排与混排、跨阶段统一分类推荐与搜索论文，并跟踪工业成熟度、开源、线上 A/B 与研究价值。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="index.html#latest">最新进展</a><a href="year.html">年度综述</a><a href="paper-map.html">Paper Map</a><a href="pipeline-map.html"><b>推荐链路</b></a><a href="index.html#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">Recommendation Pipeline Map · 更新至 2026.09.11</span><h1>召回 / 粗排 / 精排 / 重排与混排 / 跨阶段统一</h1><p class="lead">这个页面回答工程问题：<b>一项工作最终改变链路的哪一段？替换什么、复用什么 state、增加多少在线成本、有没有真实 A/B？</b> 今天最重要的新判断是：<b>状态复用与低比特压缩不能只看 hit rate / reconstruction error，必须验证它们有没有改变最终 retrieval / ranking decision。</b></p></div>
-<section><div class="wrap"><div class="callout"><strong>今日链路判断：</strong>未来推荐链路不会简单从“五段式”变成“一个大模型”。更可能是：<b>传统高吞吐 retrieval/ranking 主干继续存在，每一段都增加可复用 state layer，跨阶段 controller 再根据 freshness、compatibility、precision、SLO 与 hard-case uncertainty 决定复用、重算还是升级到更强模型</b>。LiteRAG、KVShareArena、低比特向量检索与 MORE 分别从召回、runtime 与精排给出了新的证据。</div>
+<main><div class="wrap hero"><span class="kicker">Recommendation Pipeline Map · 更新至 2026.09.12</span><h1>把研究放回真实推荐链路：召回 → 粗排 → 精排 → 重排 / 混排 → 跨阶段统一</h1><p class="lead">这里不按“模型名字”分类，而是看一项工作落在推荐/搜索系统的哪个阶段、解决哪个瓶颈、离工业上线还有多远。今日最重要更新是 <b>UniRec 把粗排与精排的 fusion 从阶段内独立优化推进到跨阶段联合训练</b>；同时 GeneralQPP、TimelyRAG、GLIE、REVA、VikingRAG 进一步完善召回与跨阶段 control plane。</p></div>
+<section><div class="wrap"><div class="callout"><strong>链路总判断：</strong>下一代推荐/搜索系统不会简单消灭 cascade，而会出现<b>训练时更统一、Serving 时仍按 SLA 分阶段</b>的形态。每个阶段都开始暴露 state、confidence、version 与 fallback 接口，使跨阶段 controller 能决定“算多少、复用什么、何时升级”。</div>
 
-<div class="paper" id="recall"><div class="phase">Tab 01 · 召回</div><h2>从“找候选”升级为“经营可检索空间 + 保证关键决策不翻转”</h2><p>召回侧当前最关键的状态是：<b>索引文本/扩展资产、Semantic ID namespace、dense vectors、graph structure</b>。SAM-D2Q 负责离线扩展可检索表面，LiteRAG 负责低成本多跳结构检索，Low-bit Vector Search 则回答向量压缩后 top-k / graph prune 是否还保持原 decision。</p><div class="table-wrap"><table><thead><tr><th>Paper / 路线</th><th>Research Impact</th><th>工业成熟度</th><th>创新性</th><th>与你方向相关度</th><th>官方开源</th><th>线上 A/B</th><th>阅读优先级</th></tr></thead><tbody>
-<tr><td><a href="daily/2026-09-08.html#sam"><b>SAM-D2Q</b></a></td><td>8.9/10</td><td>★★★★★</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>是</td><td>S+</td></tr>
-<tr><td><a href="daily/2026-09-11.html#literag"><b>LiteRAG</b></a></td><td>8.9/10</td><td>★★★☆☆</td><td>★★★★★</td><td>★★★★★</td><td>计划开源/未确认仓库</td><td>否</td><td>S</td></tr>
-<tr><td><a href="daily/2026-09-11.html#vectorq"><b>Low-bit Vector Search</b></a></td><td>8.8/10</td><td>★★★★☆</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>否</td><td>S</td></tr>
-<tr><td><a href="daily/2026-09-08.html#surgery"><b>Embedding Surgery</b></a></td><td>8.2/10</td><td>★★★★☆</td><td>★★★★☆</td><td>★★★★★</td><td>未确认</td><td>否</td><td>A+</td></tr>
-<tr><td><b>HypRQ-VAE</b></td><td>8.7/10</td><td>★★★☆☆</td><td>★★★★★</td><td>★★★★★</td><td>是</td><td>否</td><td>A+</td></tr>
-<tr><td><b>EPIC</b></td><td>8.6/10</td><td>★★★☆☆</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>否</td><td>A+</td></tr>
+<div class="paper" id="recall"><div class="phase">Tab 01 · 召回 / Retrieval</div><h2>从“向量相似”走向“生成资产 + 时间有效性 + 置信度 + 存储重建”</h2>
+<div class="table-wrap"><table><thead><tr><th>工作</th><th>问题</th><th>落地位置</th><th>成熟度</th><th>关键判断</th></tr></thead><tbody>
+<tr><td><b>SAM-D2Q</b></td><td>keyword vocabulary mismatch</td><td>离线生成 query/doc expansion → inverted index</td><td>★★★★★</td><td>把 VLM/RL 智能写成低延迟检索资产</td></tr>
+<tr><td><a href="daily/2026-09-11.html#literag"><b>LiteRAG</b></a></td><td>GraphRAG query-time LLM 太贵</td><td>多跳 graph retrieval controller</td><td>★★★☆☆</td><td>图可保留，在线控制器不必是 LLM</td></tr>
+<tr><td><a href="daily/2026-09-12.html#qpp"><b>GeneralQPP</b></a></td><td>不知道 retrieval 是否失败</td><td>召回后 confidence / escalation gate</td><td>★★★★☆</td><td>2ms score-shape QPP 可驱动 top-K/rerank/Agent fallback</td></tr>
+<tr><td><a href="daily/2026-09-12.html#timely"><b>TimelyRAG</b></a></td><td>旧/新版高度相似但有效期不同</td><td>first-stage 之后 temporal rerank</td><td>★★★☆☆</td><td>相关性之外还要显式建模 clause validity</td></tr>
+<tr><td><a href="daily/2026-09-12.html#glie"><b>GLIE</b></a></td><td>late-interaction vectors 存储爆炸</td><td>visual retrieval index + shortlist rerank</td><td>★★★☆☆</td><td>少量 vectors 可作为 generative code</td></tr>
+<tr><td><a href="daily/2026-09-11.html#vectorq"><b>Decision-aware Quantization</b></a></td><td>低比特平均误差小但 top-k 翻转</td><td>ANN quantization / graph index</td><td>★★★★☆</td><td>监控 boundary decision flip 而非只看 reconstruction</td></tr>
 </tbody></table></div>
-<p><b>工程判断：</b>成熟电商搜索先做 offline expansion + sparse/dense hybrid，再考虑 graph enrichment；向量量化上线时不能只看平均 cosine/MSE，要增加 <b>top-k boundary margin、pair flip、graph prune flip、hardest-quantile recall</b>。</p><p><b>值得押注：</b>小时级 local feedback、天级 generated expansion、周/月级 encoder/SID consolidation；graph/dense/sparse controller；query-adaptive quantization 与 fallback。</p></div>
+<p><b>值得押注：</b>hybrid sparse+dense+graph、temporal/provenance score、confidence-controlled depth、query-adaptive precision、generated index asset、embedding code + quantization。</p></div>
 
-<div class="paper" id="prerank"><div class="phase">Tab 02 · 粗排</div><h2>不是“更小的精排”，而是低成本保留后续最有用的状态</h2><p>粗排的核心仍是覆盖、吞吐和 state reuse。趋势不是把完整 cross-attention 前移，而是让 user/context 只算一次，候选做轻量 interaction，并把 uncertainty 暴露给后续 router。</p><div class="table-wrap"><table><thead><tr><th>Paper / 路线</th><th>Research Impact</th><th>工业成熟度</th><th>创新性</th><th>与你方向相关度</th><th>官方开源</th><th>线上 A/B</th><th>阅读优先级</th></tr></thead><tbody>
-<tr><td><b>ReST shared user state</b></td><td>9.4/10</td><td>★★★★★</td><td>★★★★☆</td><td>★★★★★</td><td>未确认</td><td>是</td><td>S</td></tr>
-<tr><td><b>UniCon context state</b></td><td>9.2/10</td><td>★★★★★</td><td>★★★★☆</td><td>★★★★★</td><td>未确认</td><td>是</td><td>S</td></tr>
-<tr><td><a href="daily/2026-09-11.html#wrp"><b>WRP / Deployment Pruning</b></a></td><td>7.9/10</td><td>★★★☆☆</td><td>★★★★☆</td><td>★★★★☆</td><td>未确认</td><td>否</td><td>A+</td></tr>
-</tbody></table></div><p><b>工程判断：</b>粗排最值得研究的是 <b>shared user/context state + candidate-adaptive compute</b>。WRP 这类 forward-free pruning 更适合作为快速生成 deployment candidate 的工具，再由业务数据验证，而不是直接替代蒸馏/裁剪评估。</p><p><b>值得押注：</b>shared prefix/state cache、candidate-adaptive depth、粗排 uncertainty → downstream route、跨阶段蒸馏、state freshness。</p></div>
-
-<div class="paper" id="rank"><div class="phase">Tab 03 · 精排</div><h2>Task-aware Backbone + Dynamic Task Dependency</h2><p>精排仍是推荐工业最成熟的收益区。过去多任务方法主要在 shared representation 之后做 expert/tower 分化；MORE 的关键推进是让 task-specific signal 从每层 backbone 内部就参与行为序列读取和特征混合。</p><div class="table-wrap"><table><thead><tr><th>Paper</th><th>Research Impact</th><th>工业成熟度</th><th>创新性</th><th>与你方向相关度</th><th>官方开源</th><th>线上 A/B</th><th>阅读优先级</th></tr></thead><tbody>
-<tr><td><a href="daily/2026-09-10.html#more"><b>MORE</b></a></td><td>9.3/10</td><td>★★★★★</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>是：duration +3.0%、interaction +3.6%、deep chat +2.0%</td><td>S+</td></tr>
-<tr><td><a href="daily/2026-09-08.html#ptdg"><b>PTDG</b></a></td><td>8.5/10</td><td>★★★★★</td><td>★★★★☆</td><td>★★★★★</td><td>未确认</td><td>是：CVR +1.2%、eCPM +1.9%</td><td>S</td></tr>
-<tr><td><b>UniCon</b></td><td>9.2/10</td><td>★★★★★</td><td>★★★★☆</td><td>★★★★★</td><td>未确认</td><td>是</td><td>S</td></tr>
-<tr><td><b>ReST</b></td><td>9.4/10</td><td>★★★★★</td><td>★★★★☆</td><td>★★★★★</td><td>未确认</td><td>是</td><td>S</td></tr>
+<div class="paper" id="prerank"><div class="phase">Tab 02 · 粗排 / Pre-ranking</div><h2>从“轻模型筛候选”走向“下游偏好感知 + 与精排联合训练”</h2>
+<p><b>核心任务：</b>在极紧 latency 下保住真正会被精排选中的 item。传统优化往往只追粗排本地 AUC/NDCG，容易出现 stage mismatch。</p>
+<div class="table-wrap"><table><thead><tr><th>工作</th><th>核心机制</th><th>工业信号</th><th>当前启发</th></tr></thead><tbody>
+<tr><td>COPR / Rethink / HCCP</td><td>ranking supervision → pre-ranking alignment</td><td>成熟工业路线</td><td>下游 preference 应进入上游训练，但仍是单向 teacher-student</td></tr>
+<tr><td><a href="daily/2026-09-12.html#unirec"><b>UniRec</b></a></td><td>shared embedding + vertical consistency + joint fusion</td><td>快手已全量部署</td><td>粗排最终 fusion 本身要与精排共同优化，而不只改 backbone score</td></tr>
+<tr><td>ReST / shared user state</td><td>长序列 user representation 复用</td><td>线上 A/B 路线</td><td>粗排要把更多预算留给 candidate interaction，而不是重复编码 user history</td></tr>
 </tbody></table></div>
-<p><b>工程判断：</b>短中期优先研究“改变 information flow / state，但兼容现有 Serving”的 MORE / PTDG / UniCon；尤其 MORE 的 request-level shared computation 说明更复杂 backbone 与更低 latency 并不矛盾。</p><p><b>值得押注：</b>task-aware anchor/token、dynamic task graph × MoE routing、context state 跨阶段复用、LTV/GMV delayed reward、candidate-adaptive compute。</p></div>
+<p><b>重点指标：</b>除本地 NDCG/AUC 外，必须看 ASH / ranking top-K survival / candidate recall、latency、feature freshness 与 downstream consistency。</p></div>
 
-<div class="paper" id="rerank"><div class="phase">Tab 04 · 重排与混排</div><h2>Reusable Candidate State + Structured Decode + Verifiable Evidence</h2><p>重排最核心的在线成本来自候选反复编码和列表逐 token 生成；搜索/RAG 的另一个风险是“解释看似有引用，但引用本身并非输入原文”。DoPR、hLLM、CHyD 分别针对三处问题。</p><div class="table-wrap"><table><thead><tr><th>Paper</th><th>Research Impact</th><th>工业成熟度</th><th>创新性</th><th>与你方向相关度</th><th>官方开源</th><th>线上 A/B</th><th>阅读优先级</th></tr></thead><tbody>
-<tr><td><b>DoPR</b></td><td>9.0/10</td><td>★★★★☆</td><td>★★★★★</td><td>★★★★★</td><td>是</td><td>否</td><td>S</td></tr>
-<tr><td><b>hLLM</b></td><td>9.1/10</td><td>★★★★☆</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>否</td><td>S</td></tr>
-<tr><td><a href="daily/2026-09-11.html#chyd"><b>CHyD</b></a></td><td>8.5/10</td><td>★★★☆☆</td><td>★★★★★</td><td>★★★★☆</td><td>未确认</td><td>否</td><td>A+</td></tr>
-<tr><td><b>SelfDR</b></td><td>8.4/10</td><td>★★★★☆</td><td>★★★★☆</td><td>★★★★★</td><td>是</td><td>否</td><td>A+</td></tr>
+<div class="paper" id="rank"><div class="phase">Tab 03 · 精排 / Ranking</div><h2>从共享 Backbone 走向 Task-aware Information Flow 与跨阶段 Fusion</h2>
+<div class="table-wrap"><table><thead><tr><th>工作</th><th>研究问题</th><th>价值</th></tr></thead><tbody>
+<tr><td>PTDG</td><td>任务依赖不应对所有 item 固定</td><td>item-conditioned dynamic task graph</td></tr>
+<tr><td>MORE</td><td>task signal 如果只在 tower 末端出现已经太晚</td><td>task anchor 进入 backbone 各层；陌陌线上多目标提升且 latency 约 -30%</td></tr>
+<tr><td><a href="daily/2026-09-12.html#unirec"><b>UniRec</b></a></td><td>精排 fusion 与粗排 fusion 独立会互相抵消</td><td>ranking agent 与 pre-ranking agent 同图优化；AppUsageTime +0.616%</td></tr>
+<tr><td>UniCon</td><td>上下文级 candidate interaction</td><td>推动 candidate/context 统一建模</td></tr>
 </tbody></table></div>
-<p><b>工程判断：</b>如果今天做 LLM rerank，优先级应是 <b>state reuse → structured output → business constraint → evidence verification</b>，而不是先把 base model 放大。</p><p><b>值得押注：</b>DoPR × hLLM、assignment 中直接加入 diversity/business constraints、candidate state quantization/versioning、evidence pointer。</p></div>
+<p><b>下一步：</b>task-aware foundation ranker + request-level user state + candidate-adaptive compute + cross-stage consistency + multi-objective group-relative regularization。</p></div>
 
-<div class="paper" id="crossstage"><div class="phase">Tab 05 · 跨阶段统一</div><h2>统一的不是“一个大模型”，而是 Namespace、State、Policy、Runtime、Compatibility 与 Budget</h2><p>跨阶段统一有两条路线：TGR 式 shared backbone/full-stack generation；以及把每一段最有价值的中间对象做成显式 contract。过去几天的工作越来越支持后者：state 只有在可以定位、版本化、验证 compatibility 并监控 decision preservation 时，才真正能规模化复用。</p><div class="table-wrap"><table><thead><tr><th>Paper / 系统</th><th>Research Impact</th><th>工业成熟度</th><th>创新性</th><th>与你方向相关度</th><th>官方开源</th><th>线上 A/B</th><th>阅读优先级</th></tr></thead><tbody>
-<tr><td><b>TGR</b></td><td>9.6/10</td><td>★★★★★</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>是</td><td>S+</td></tr>
-<tr><td><b>IGPO</b></td><td>9.0/10</td><td>★★★★★</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>是</td><td>S+</td></tr>
-<tr><td><a href="daily/2026-09-10.html#sloweave"><b>SLOWeave</b></a></td><td>8.8/10</td><td>★★★★☆</td><td>★★★★☆</td><td>★★★★★</td><td>未确认</td><td>否</td><td>S</td></tr>
-<tr><td><a href="daily/2026-09-11.html#kvshare"><b>KVShareArena</b></a></td><td>8.8/10</td><td>★★★★☆</td><td>★★★★★</td><td>★★★★★</td><td>论文称开放 package/leaderboard，URL待确认</td><td>否</td><td>S</td></tr>
-<tr><td><a href="daily/2026-09-11.html#kvconcat"><b>KV Concat-aware + Recomputation</b></a></td><td>8.7/10</td><td>★★★★☆</td><td>★★★★☆</td><td>★★★★★</td><td>未确认</td><td>否</td><td>S</td></tr>
-<tr><td><a href="daily/2026-09-11.html#robustsgpo"><b>RobustSGPO</b></a></td><td>8.7/10</td><td>★★★★☆</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>否</td><td>S</td></tr>
-<tr><td><b>SGLang HiCache MLA host-dedup</b></td><td>8.3/10</td><td>★★★★☆</td><td>★★★★☆</td><td>★★★★★</td><td>是</td><td>否</td><td>A+</td></tr>
-<tr><td><b>vLLM NVFP4 KV contract</b></td><td>8.1/10</td><td>★★★★★</td><td>★★★☆☆</td><td>★★★★★</td><td>是</td><td>否</td><td>A+</td></tr>
-<tr><td><a href="daily/2026-09-08.html#atomrec"><b>AtomRec</b></a></td><td>8.0/10</td><td>★★★☆☆</td><td>★★★★★</td><td>★★★★★</td><td>未确认</td><td>否</td><td>A+</td></tr>
+<div class="paper" id="rerank"><div class="phase">Tab 04 · 重排与混排 / Re-ranking & Slate</div><h2>从逐 item 打分走向结构化 assignment、可验证 evidence 与业务约束</h2>
+<div class="table-wrap"><table><thead><tr><th>工作</th><th>关键问题</th><th>落地启发</th></tr></thead><tbody>
+<tr><td>hLLM / Hungarian assignment</td><td>排序是 permutation，没必要自回归生成 N 个序号</td><td>single-pass score matrix + assignment 更符合结构</td></tr>
+<tr><td>CHyD</td><td>生成解释/引用可能不来自 evidence</td><td>hard lexical constraint 保证引用来自检索上下文</td></tr>
+<tr><td><a href="daily/2026-09-12.html#timely"><b>TimelyRAG</b></a></td><td>相关但过期的文档/内容应该降权</td><td>temporal validity 可看作 rerank constraint</td></tr>
+<tr><td>MORE / multi-objective ranker</td><td>不同业务目标需要不同 evidence flow</td><td>最终 slate 之前保持 task-specific representation</td></tr>
 </tbody></table></div>
-<p><b>跨阶段状态图：</b><b>Catalog State</b>（Semantic ID / generated expansion / dense vectors / graph）→ <b>User/Context State</b>（sequence/context/atomic memory）→ <b>Candidate State</b>（reusable prefix/KV）→ <b>Policy State</b>（inventory-grounded guideline / Agent harness）→ <b>Runtime State</b>（GPU/host/SSD cache、dtype/scale/layout、device/load）→ controller 决定 recall/rank/rerank/Agent 路径。</p>
-<p><b>2026-09-11 新增判断：</b>Runtime State 还必须带 <b>birth context / producer checkpoint / position / source dependency / precision</b> 等 compatibility metadata；近似 state 的评价则要增加 <b>decision flip</b>，而不是只有 cache hit 或重构误差。</p>
-<p><b>值得押注：</b>跨阶段 state schema、version/TTL、一致性、experiment attribution、state-aware routing、precision policy、dynamic recompute，以及“何时刷新 state vs 何时重训模型”的自动 controller。</p></div>
+<p><b>值得押注：</b>assignment + diversity + freshness + creator/business constraints；生成式 rerank 的目标不是“会生成列表”，而是把复杂 constraint 与 explanation 做成可验证 structured decision。</p></div>
 
-<div class="callout"><strong>如果按落地优先级排序：</strong>成熟电商搜索先看 <b>SAM-D2Q + decision-aware vector quantization</b>；多目标精排先看 <b>MORE / PTDG / UniCon</b>；LLM rerank 先看 <b>DoPR / hLLM</b>；长上下文/RAG Serving 看 <b>KVShareArena + selective recomputation</b>；Agent/Search 先看 <b>IGPO / RobustSGPO</b>。如果已经开始做大模型推荐 Serving，把 <b>state compatibility + SLO-aware compute controller</b> 当成跨阶段基础设施，而不是推理团队的旁支。</div>
-</div></section></main><footer><div class="wrap">Recommendation Pipeline Map · Last updated 2026-09-11</div></footer></body></html>
+<div class="paper" id="cross"><div class="phase">Tab 05 · 跨阶段统一 / Cross-stage Control Plane</div><h2>训练边界、状态边界、预算边界正在同时重构</h2>
+<div class="table-wrap"><table><thead><tr><th>资产 / 控制器</th><th>代表工作</th><th>跨阶段价值</th></tr></thead><tbody>
+<tr><td><b>Cross-stage Preference</b></td><td><a href="daily/2026-09-12.html#unirec">UniRec</a></td><td>让粗排与精排 fusion 在训练时共享表示与偏好约束，Serving 仍可分阶段</td></tr>
+<tr><td><b>User / Document State</b></td><td>ReST / DoPR</td><td>把不随 candidate/query 快速变化的计算移出内层循环</td></tr>
+<tr><td><b>KV Runtime State</b></td><td>KVShareArena / KV concat-aware</td><td>跨 context/checkpoint 复用前先验证 compatibility，必要时 selective recompute</td></tr>
+<tr><td><b>Evidence State</b></td><td><a href="daily/2026-09-12.html#reva">REVA</a></td><td>历史 generator attention 变成 document evidence score，可供不同 budget 复用</td></tr>
+<tr><td><b>Retrieval Experience</b></td><td><a href="daily/2026-09-12.html#viking">VikingRAG</a></td><td>Agent trace 写回 retrieval graph，相似请求先走便宜路径</td></tr>
+<tr><td><b>Confidence / Escalation</b></td><td><a href="daily/2026-09-12.html#qpp">GeneralQPP</a></td><td>决定是否扩大召回、进入 rerank、Agent 或拒答</td></tr>
+<tr><td><b>Context / Model Router</b></td><td><a href="daily/2026-09-12.html#swrouter">SWRouter</a></td><td>路由前先决定保留哪些历史；未来与 cost/cache/tool router 合并</td></tr>
+<tr><td><b>Temporal / Version State</b></td><td><a href="daily/2026-09-12.html#timely">TimelyRAG</a></td><td>把有效期、版本与 provenance 变成 ranking contract</td></tr>
+</tbody></table></div>
+<p><b>终局形态：</b>不是“一个超大模型吞掉所有阶段”，而更像 <b>统一训练/表征资产 + stage-local executors + runtime controller</b>。Controller 根据 confidence、SLO、cache/state compatibility、freshness、业务价值决定下一跳。</p></div>
+
+<div class="callout"><strong>推荐算法工程师当前最值得补的技能：</strong>① multi-stage learning / distillation / joint optimization；② retrieval + ANN + quantization；③ LLM/RAG serving 与 KV/state lifecycle；④ routing / confidence calibration / escalation；⑤ structured reranking 与 business constraint；⑥ 用线上 A/B、stage survival、latency/cost 一起判断研究价值，而不只看离线 AUC。</div>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Pipeline Map updated 2026-09-12</div></footer></body></html>
