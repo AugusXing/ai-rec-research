@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.13｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-13 AI × 推荐算法研究日报：MiniCPM5-2B、Fugu Max/Ultra v2、AgentZip、Tail-aware Agent Scheduling、RecGP、Magenta、vLLM TokenSpeed MLA。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.13</span><h1>今天的主线：小模型 Agent 化、模型编排走向 Pareto 优化、Agent Serving 开始优化“沙箱与调度”</h1><p class="lead">观察窗口：<b>2026-09-12 10:00 → 2026-09-13 10:00（Asia/Shanghai）</b>。周末没有新的 arXiv 日更批次，因此今天严格区分两类信号：<b>过去 24 小时确认更新的模型 / runtime artifact</b>，以及<b>最新一批 arXiv 中前一日报未覆盖、但对 Agent/Serving/推荐工程很重要的补位论文</b>。不为了凑数量把旧工作伪装成“今日首发”。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>MiniCPM5-2B 是今天最值得工程侧关注的更新</b>：2.52B 参数、128K context，模型、SFT/Midtrain/Base、GGUF/MLX/GPTQ 与 DSpark speculative draft 全套 artifact 已刷新，且把 500K Agent SFT、80K+ RL 数据与 RL→16 个专家→OPD 回蒸馏的训练链条公开出来；② <b>Model Routing 正在从“选一个模型”升级为“学习一个多模型执行计划”</b>，Sakana Fugu Max/Ultra v2 把能力-成本 Pareto frontier 直接当产品目标；③ Agent Serving 的系统瓶颈已从单次 LLM decode 扩展到<b>沙箱内存、ready-turn release、speculative decode backend</b>；④ 推荐系统安全值得重新进入主线：RecGP 说明攻击迁移性取决于 loss landscape flatness，而不是只在 surrogate 上把攻击 loss 做大；⑤ Magenta 再次证明<b>生成 → 形式化 → 验证 → 错误归因 → 定向修复</b>比无脑多采样更像下一代高可靠 Agent loop。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 MiniCPM5-2B · On-device Agent Model</h3><p>不是单独放一个 checkpoint，而是把 base→midtrain→SFT→RL→OPD、数据、量化、Apple Silicon、llama.cpp、vLLM/SGLang、DSpark draft model 全部连起来。对“轻量模型做 router / retrieval controller / local agent”尤其值得看。</p></div>
+<div class="paper"><h3>🥈 Fugu Max / Ultra v2 · Learned Orchestration</h3><p>把模型路由从分类器问题推进为多 Agent orchestration：Max 主打单位成本最强能力，Ultra v2 主打绝对能力；Chartography 48.3、DeepSWE 74.3，并通过 OpenAI-compatible API 直接上线。</p></div>
+<div class="paper"><h3>🥉 AgentZip · Sandbox Memory Compression</h3><p>高 fan-out Agent 的瓶颈并不只在 token：多个 sandbox 从同一模板启动并执行相似轨迹，内存高度冗余。AgentZip 将 sandbox-owned memory 最多压低 8.7×，并把激进压缩 slowdown 从 3.1× 压到 1.40×。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Small Model 不再只是“便宜聊天模型”</h3><p>MiniCPM5-2B 把 tool use、search agent、coding agent、长上下文和 speculative draft 一起设计。对推荐/搜索系统，2B 级模型更可能先成为 query understanding、router、reranker controller、memory curator，而不是替代大 ranker。</p></div>
+<div class="paper"><h3>Routing 的目标函数变成 Pareto Frontier</h3><p>真正的 router 不只预测“哪个模型最可能答对”，而是联合考虑质量、价格、延迟、工具、上下文、供应商可用性。Fugu 是这个方向非常明确的产品化信号。</p></div>
+<div class="paper"><h3>Agent Runtime 开始像分布式系统</h3><p>AgentZip 管内存，Tail-aware Scheduling 管 ready turn 的 release budget，vLLM 新 backend 管 decode kernel。Agent 系统工程会越来越像 queueing + caching + memory hierarchy + accelerator kernel 的组合题。</p></div>
+<div class="paper"><h3>可靠性从“最终答案对不对”转向过程闭环</h3><p>Magenta 的 statement judge 与 error-attribution judge、RecGP 对 transfer robustness 的研究都说明：仅看最终 reward 不够，必须显式建模验证、归因、边界与风险。</p></div>
+</div>
+
+<h2>论文 / 更新优先级表</h2><p class="muted">Research Impact Score：范式变化 25%、工业证据 20%、技术创新 20%、推荐/搜索相关度 15%、后续研究空间 10%、开放/可复现性 10%。“时间口径”单列，避免把周末补位论文误写为过去 24 小时首投。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>时间口径</th><th>关键证据</th></tr></thead><tbody>
+<tr><td>S+</td><td><a href="#minicpm">MiniCPM5-2B</a></td><td>Small LLM / Agent / Serving</td><td>9.3/10</td><td>24h 内官方 artifact 刷新</td><td>2.52B；128K；RL+OPD 平均 reasoning/general +10.96pt、agentic +6.96pt</td></tr>
+<tr><td>S+</td><td><a href="#fugu">Fugu Max / Ultra v2</a></td><td>Model Routing / Orchestration</td><td>9.2/10</td><td>周末延续信号（9/11 官方发布）</td><td>Chartography 48.3；DeepSWE 74.3；Max $2/$6 per 1M in/out tokens</td></tr>
+<tr><td>S</td><td><a href="#agentzip">AgentZip</a></td><td>Agent Serving / Sandbox</td><td>9.0/10</td><td>最新 arXiv 批次补位</td><td>memory 最多 8.7×；aggressive slowdown 3.1×→1.40×</td></tr>
+<tr><td>S</td><td><a href="#tailsched">Tail-aware Scheduling</a></td><td>Agent Runtime / Scheduling</td><td>8.9/10</td><td>最新 arXiv 批次补位</td><td>contention 下 P95 workflow flow time 最多 3.50× speedup</td></tr>
+<tr><td>A+</td><td><a href="#recgp">RecGP</a></td><td>Recommender Robustness</td><td>8.8/10</td><td>9/12 新近公开传播 / 期刊论文</td><td>Gowalla 跨 8 target models ASR 平均约 +8%；RS 版 memory -42%</td></tr>
+<tr><td>A+</td><td><a href="#magenta">Magenta</a></td><td>Reasoning / Verification Agent</td><td>8.7/10</td><td>最新 arXiv 批次补位</td><td>AIME25/26、HMMT Feb26 报告 100%；K2-Horizon-7B 解出 IMO 2026 全 6 题</td></tr>
+<tr><td>A</td><td><a href="#tokenspeed">vLLM TokenSpeed MLA</a></td><td>Inference Runtime</td><td>8.4/10</td><td>9/12 官方文档更新</td><td>Blackwell + FP8 KV 的 CuTe DSL MLA decode backend</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="minicpm"><div class="phase">Deep Dive 01 · Small Foundation Model / Agent</div><h2>MiniCPM5-2B：2B 模型真正值得看的不是参数量，而是“训练资产 + Agent 能力 + Serving 格式”一起交付</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.3/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★☆</span><span><b>是否官方开源</b> 是：权重/数据/多格式 artifact</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>在推荐、搜索、Agent 系统里，绝大多数在线决策都不值得调用最大模型：query 改写、意图分类、召回充分性判断、工具参数抽取、简单 rerank、memory write gate 更需要低成本、低延迟、可本地部署。小模型真正的价值因此不是“和大模型比聊天”，而是能否成为稳定的<b>control-plane model</b>。</p>
+<p><b>模型与关键模块：</b>MiniCPM5-2B 为 2,516,756,480 参数标准 LlamaForCausalLM，42 层，GQA 16 Q heads / 2 KV heads，原生 131,072 context。官方同时提供 BF16 final、SFT-only、midtrain、base、GGUF、MLX 4-bit、GPTQ 4-bit、LiteRT-LM，以及独立 DSpark draft model。这一点对工业部署比单一 leaderboard 分数更重要：同一训练体系可以覆盖服务器、Apple Silicon、llama.cpp 和端侧 runtime。</p>
+<p><b>训练方法：</b>训练链条分 base training、mid-training、post-training。post-training 先使用 400B tokens deep-thinking SFT，再训练 math/code/agentic/writing 等多个 RL teacher，最后用 On-Policy Distillation（OPD）把 <b>16 个 expert model（其中 5 个 agent expert）</b>回蒸馏到单一 release checkpoint。OPD 在每个位置用 teacher/student full-vocabulary reverse-KL 构造 advantage，直接复用 RL teacher prompts，不再额外造一套蒸馏 corpus。</p>
+<p><b>数据开放：</b>官方同步公开 UltraX、UltraData-Code、UltraData-SFT-Agent-2609（500K agent training samples）和 UltraData-RL-2609（80K+ math/code/general/long-context RL samples）。这使它比“只开权重”的小模型更有研究价值：可以追训练 recipe 的贡献，而不是只做黑盒 benchmark。</p>
+<p><b>实验结果：</b>官方比较集平均分 53.9；LiveCodeBench v6 69.1、AIME 2026 86.5、NoLiMa 68.1、τ²-Bench Telecom 97.1、BFCL v4 66.6、SWE-bench Verified 46.4、BrowseComp-ZH 43.5、GAIA Text-103 88.7。官方消融称 RL+OPD 相对前阶段使 reasoning/general 平均 <b>+10.96 points</b>，agentic 能力平均 <b>+6.96 points</b>。这些数字是官方报告，不等同于独立第三方复现。</p>
+<p><b>推理 / Serving：</b>官方给出 vLLM、SGLang、llama.cpp、Transformers 路线；SGLang 还可挂载 MiniCPM5-2B-DSpark 做 speculative decoding。这里最值得推荐/搜索团队借鉴的是：<b>目标模型与 draft/control model 可以被成套设计</b>，而不是推理优化阶段再临时找一个 drafter。</p>
+<p><b>效率 / 成本收益：</b>官方没有给统一的 server QPS / TTFT 成本表，因此不能仅凭 2B 参数推断线上节省比例。但从 4-bit artifact、GGUF/MLX、standard Llama architecture 和 DSpark draft 的完整性看，它明显以多硬件低成本部署为一等目标。</p>
+<p><b>与主流方法的优劣势：</b>相比 Qwen/Gemma 同量级模型，优势是 Agent 数据与多阶段 checkpoint 更开放、tool/search/coding agent 指标较突出；劣势是模型更小导致知识与复杂推理上限仍受限，且官方榜单不替代你自己的 query/rerank 分布评测。</p>
+<p><b>推荐/搜索落地：</b>优先测试四个位置：① query understanding / rewrite；② retrieval sufficiency 与 rerank gate；③ tool/router；④ offline annotation teacher 的 student。不要先拿它替代精排主模型，而应先评估“每 1ms / 每 1k token 能做多少控制决策”。</p>
+<p><b>局限 / 未解决：</b>缺线上 A/B；官方 benchmark 与业务 request distribution 有距离；长上下文 128K 不代表端侧可以经济地实际跑满；小模型在高风险 tool execution 上仍需要 verifier / policy guard。</p>
+<p><b>未来方向：</b>Small control model + large expert model 的联合训练、routing-aware distillation、推荐 query / item domain SFT、draft model 与业务 prefix cache 协同，会比单纯扩大 2B 模型参数更值得研究。</p>
+<h3>资源区</h3><ul><li>官方模型 / Model Card：<a href="https://huggingface.co/openbmb/MiniCPM5-2B">OpenBMB MiniCPM5-2B</a></li><li>官方代码：<a href="https://github.com/OpenBMB/MiniCPM">OpenBMB/MiniCPM</a></li><li>官方数据：Model Card 内 UltraData 系列链接；Agent SFT 500K、RL 80K+ 已公开</li><li>原始技术报告：Model Card 关联 MiniCPM Tech Report；MiniCPM5-2B 本次 release 以模型卡训练说明为主要一手材料</li><li>中文 / 第三方：截至今日未检索到质量明显高于官方中文材料的精读，建议先读官方模型卡与 Wiki</li></ul></div>
+
+<div class="paper" id="fugu"><div class="phase">Deep Dive 02 · Model Routing / Multi-agent Orchestration</div><h2>Fugu Max / Ultra v2：Model Routing 的终局可能不是“挑一个模型”，而是学习如何组织一组可替换专家</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span><span><b>工业成熟度</b> ★★★★★</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 底层研究论文公开；产品 orchestration/weights 未开源</span><span><b>是否有线上 A/B</b> 未披露传统 A/B</span><span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>单模型 routing 通常把任务映射到一个 endpoint，但复杂任务包含搜索、代码、视觉、长上下文、验证等异质子问题。若每个请求直接打最贵 frontier model，cost/latency 不可控；若只选便宜模型，hard case 又损失质量。Fugu 把目标改写为<b>能力—成本 Pareto frontier</b>。</p>
+<p><b>技术方案：</b>Sakana 官方说明 Fugu 建立在 TRINITY 与 Conductor 两项 learned orchestration 研究之上：系统学习如何 assemble、route、coordinate expert agents，而不是靠手写 workflow。Fugu Max 扩大 open/specialized model pool，动态把任务送到“足够解决问题的最轻模型”；Fugu Ultra v2 则允许更重的多步协调以追求 peak quality。</p>
+<p><b>Serving：</b>两者都通过 OpenAI-compatible API 直接提供；Fugu Max 价格为每百万 input/output tokens $2/$6，Ultra v2 为 $5/$30，cached input 分别 $0.25 与 $0.50。已有 Fugu 客户切换模型只需改 model id，说明 orchestrator 被包装成标准模型 endpoint，而不是要求调用方理解内部 Agent 图。</p>
+<p><b>实验：</b>官方报告 Ultra v2 在 8 个 hard benchmark 中有 5 个 best/joint-best、7 个 top-2；Chartography 48.3，对比 Opus 5 的 27.3、Fable 5 的 29.5；DeepSWE 74.3。官方还特别强调训练 cutoff 为 2026-08-28，且 Fable 5/5.1、GPT-6 Astra 不在 Ultra v2 agent pool 中。</p>
+<p><b>成本收益：</b>Fugu Max 的主要价值不是单项 SOTA，而是把 open/specialized experts 纳入成本曲线；官方称其在相近性能区间推进 Pareto frontier。这里的工程启发与推荐多路召回非常像：<b>不是让每一路都最强，而是学习哪个 request 值得调用哪组专家</b>。</p>
+<p><b>优势 / 局限：</b>优势是供应商可替换、能力与成本联合优化、API 对上层透明；局限是内部路由策略与完整成本分解不可见，难以独立复现实验，也没有披露业务 A/B 与 per-task latency distribution。</p>
+<p><b>推荐/搜索落地：</b>可以直接映射为“召回/重排专家池”：轻 query 走 sparse+dense，小部分 ambiguous query 才调用 LLM rewrite / graph retrieval / expensive reranker；真正值得学的是<b>router 的 reward 要同时包含 quality、cost、latency、cache hit 与 fallback risk</b>。</p>
+<p><b>未来方向：</b>Model routing 会继续与 context routing、tool routing、retrieval depth、cache-aware placement 合流，最终 controller 输出的不再是 model id，而是一条 budgeted execution plan。</p>
+<h3>资源区</h3><ul><li>官方发布：<a href="https://sakana.ai/fugu-max-release/">Introducing Fugu Max and Fugu Ultra v2</a></li><li>官方产品 / 架构：<a href="https://sakana.ai/fugu/">Sakana Fugu</a></li><li>官方代码 / 权重：产品 orchestrator 未开源；底层相关论文公开，官方页面提供 Technical Report 入口</li><li>第三方中文精读：截至今日未检索到可靠且细节超过官方报告的中文精读</li></ul></div>
+
+<div class="paper" id="agentzip"><div class="phase">Deep Dive 03 · Agent Serving / Sandbox Memory</div><h2>AgentZip：高并发 Agent 的内存问题，本质上是“同模板、多分叉执行”的跨 sandbox 冗余</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★☆</span><span><b>是否官方开源</b> 截至今日未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 业务动机：</b>coding/deep-research Agent 会为一个 task fork 多个 sandbox。传统容量规划常只算 LLM KV cache，却忽略 browser/code/tool sandbox 的 OS memory。多个 sandbox 来自同一 template，随后执行相关轨迹，内存页不是完全相同却高度相似。</p>
+<p><b>现有问题：</b>Linux 通用 memory compression 不理解 template-relative redundancy，也不利用 cross-sandbox similarity；为了避免 page fault 又会保守地少压缩；而压缩触发通常只看 memory pressure，不知道此刻 Agent 正在等 LLM 还是在执行工具。</p>
+<p><b>技术方案：</b>AgentZip 同时利用 template-relative 与 cross-sandbox redundancy；把“该不该压某页”的约束从 compression-time 移到 restore-time prefetch，使更多 page 可以进入 profitable representation；并把高开销 compression 尽量放到 Agent 等待 LLM 的阶段，减少对 foreground tool execution 的干扰。</p>
+<p><b>实验 / 效率：</b>在 LLM training 与 inference agent workloads 上，AgentZip 把 sandbox-owned memory 最多降低 <b>8.7×</b>，Linux 配置为 2.1×。restore prefetch + execution-aware scheduling 把 aggressive compression 的 slowdown 从最高 <b>3.1× 降到 1.40×</b>，同时几乎保留全部 memory saving。</p>
+<p><b>Serving 含义：</b>这类技术会改变 Agent capacity 的计算方法：同一节点能承载的并发 agent 数不再只是 GPU tokens/s / KV bytes，还受 sandbox RSS、restore bandwidth、tool burst phase 控制。未来 scheduler 很可能同时调 GPU batch 与 sandbox memory。</p>
+<p><b>优势 / 局限：</b>优势是直击 high-fanout agent 独有冗余，且利用“LLM 等待窗口”做 phase-aware scheduling；局限是不同 workload 的页面相似度、tool memory locality 差别很大，8.7× 不是通用保证，restore prefetch 也需要稳定预测后续访问。</p>
+<p><b>推荐/搜索启发：</b>如果未来推荐侧引入大量 per-request agent / simulator / sandbox（例如策略生成、商家 Copilot、离线自动实验），系统优化必须把<b>模型状态与执行环境状态</b>同时当成一等资源。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11294">arXiv 2609.11294</a></li><li>官方项目 / 代码：截至 2026-09-13 未确认作者官方代码仓库</li><li>中文 / 高质量第三方：未检索到可靠精读，建议直接读论文系统设计与 evaluation</li></ul></div>
+
+<div class="paper" id="tailsched"><div class="phase">Deep Dive 04 · Agent Runtime Scheduling</div><h2>Tail-aware Scheduling：Agent workflow 的关键不是“turn ready 了就发”，而是控制已释放但未完成的 work budget</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★☆</span><span><b>是否官方开源</b> 截至今日未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>核心问题：</b>Agent workflow 是 LLM turn 与 tool turn 交替的 DAG/sequence。多数 runtime 一旦某 turn ready 就立刻提交，但在高负载下会产生大量“released but unfinished”任务；一旦交给下游 inference queue，workflow scheduler 就失去重新排序权。</p>
+<p><b>技术方案：</b>论文把 readiness 与 release 解耦：用 mean-CVaR 目标显式关注 tail risk，用在线 turn-work estimate 决定 ready turn 的优先级，并根据 queue pressure 动态调整 released-work budget。直觉上就是：<b>不要让下游队列被尚不紧急的工作填满，保留调度自由度给最可能拖慢 P95 的 workflow</b>。</p>
+<p><b>实验：</b>使用真实 software-engineering Agent execution traces、多个 LLM 与多种 arrival rate。轻负载下与 eager release 相当；争用加剧时，P95 workflow flow time 最多获得 <b>3.50× speedup</b>。</p>
+<p><b>和普通 LLM continuous batching 的差异：</b>continuous batching 优化 token-level/device utilization，而这里优化 workflow-level critical path。两者应组合：上层决定何时 release 哪个 turn，下层决定已 release turns 如何 batch。</p>
+<p><b>推荐/搜索启发：</b>同样适用于“cheap stage → expensive stage”的 cascade：如果昂贵 rerank/LLM stage 已拥塞，不一定要让所有 ready query 立即进入队列；可以用业务价值、deadline、confidence、remaining work 做 release control。</p>
+<p><b>局限：</b>效果依赖 work estimate 与 arrival distribution；workflow 之间存在 tool-side resource contention 时，单看 LLM queue pressure 可能不够；论文没有线上生产 A/B。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.10964">arXiv 2609.10964</a></li><li>官方代码：截至今日未确认公开</li><li>中文 / 高质量第三方：未检索到可靠精读</li></ul></div>
+
+<div class="paper" id="recgp"><div class="phase">Deep Dive 05 · Recommendation Robustness</div><h2>RecGP：推荐投毒的迁移性来自“平坦攻击解”，防御也应该看 decision boundary 稳定性</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>背景：</b>推荐攻击者通常只能训练 surrogate model，再构造 fake users 去影响未知 target recommender。问题是 surrogate 上最强的攻击点常位于 sharp loss region，模型参数稍变就失效，transferability 差。</p>
+<p><b>技术方案：</b>RecGP 在生成 fake-user adversarial examples 时正则 gradient magnitude，把解推向更 flat 的 loss region，使扰动对 surrogate→target 参数变化更稳定。RecGP-RS 进一步针对离散交互空间做 semantic-aware neighborhood sampling，并通过 first-order interpolation 近似二阶信息，减少资源消耗。</p>
+<p><b>实验：</b>MovieLens-1M 与 Gowalla；论文报告在 Gowalla、8 个 target models 上攻击成功率相对 baseline 平均约 <b>+8%</b>。RecGP-RS 保留约 <b>98%</b> 攻击效果，同时 GPU memory 相对 RecGP <b>-42%</b>。</p>
+<p><b>工业意义：</b>对防守方最大的提醒不是复现攻击，而是：<b>离线 robustness 不能只在同架构 attacker/defender 上测</b>。应建立 cross-model、cross-seed、cross-checkpoint 的 attack transfer matrix，并监控热门 item score 在小参数/数据扰动下的 margin。</p>
+<p><b>与主流防御的关系：</b>异常用户检测、robust aggregation 往往在 input/user 侧；RecGP 揭示的是 optimization landscape 侧的 transferability。未来防御可以把 decision margin、gradient flatness、cross-model disagreement 加入风险信号。</p>
+<p><b>局限：</b>公开数据规模与工业 recommender 差距大；攻击成功不等同于商业目标真正被操纵；没有线上环境、实时反作弊与多阶段 cascade 评测。</p>
+<h3>资源区</h3><ul><li>Paper / DOI：<a href="https://doi.org/10.1007/s10618-026-01253-4">RecGP: gradient penalization for transferable adversarial attacks in recommendation systems</a></li><li>官方代码 / 数据：论文使用 MovieLens-1M、Gowalla；截至今日未确认作者官方实现</li><li>第三方解读：9/12 有公开媒体介绍，但工程细节建议以原论文为准；未检索到可靠中文深度精读</li></ul></div>
+
+<div class="paper" id="magenta"><div class="phase">Deep Dive 06 · Verified Reasoning</div><h2>Magenta：高可靠 Agent loop 的价值不在“再多想几次”，而在失败后知道该回到数学还是只修 Lean</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.7/10</span><span><b>工业成熟度</b> ★★☆☆☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★☆☆</span><span><b>是否官方开源</b> 截至今日未确认</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>方案：</b>训练-free pipeline：自然语言解题 → 生成 Lean 4 statement → machine-checked proof。statement judge 先判断 formalization 是否真的保持原题含义；若失败，error-attribution judge 判断是数学推导错了还是 Lean 局部证明错了，分别路由到 re-derivation 或 local repair。</p>
+<p><b>实验：</b>论文报告 AIME 2025、AIME 2026、HMMT Feb 2026 全部 100%；搭配 open-weight K2-Horizon-7B 时解出 IMO 2026 全 6 题。作者强调 statement adjudication 对避免 false certificate 必不可少，feedback-guided correction 在困难题上优于 independent resampling。</p>
+<p><b>对推荐/搜索的迁移：</b>模式可以直接迁移为 <b>retrieve → answer/rank → constraint checker → error attribution → selective repair</b>。例如 rerank 失败到底是召回缺证据、业务 constraint 冲突，还是生成器格式错？不同失败应回退到不同 stage，而不是统一“再跑一次大模型”。</p>
+<p><b>局限：</b>数学 formal verification 有 Lean 这样的硬 verifier，推荐/搜索很多业务目标没有完备 verifier；100% benchmark 结果需要关注题集规模与正式复现。</p>
+<h3>资源区</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.11319">arXiv 2609.11319</a></li><li>官方代码：截至今日未确认公开</li><li>中文 / 高质量第三方：未检索到可靠精读</li></ul></div>
+
+<div class="paper" id="tokenspeed"><div class="phase">Signal 07 · Inference Runtime</div><h2>vLLM TokenSpeed MLA：Blackwell + FP8 KV 的 decode backend 继续专用化</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.4/10</span><span><b>工业成熟度</b> ★★★★☆</span><span><b>创新性</b> ★★★☆☆</span><span><b>与你方向的相关度</b> ★★★★☆</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 不适用</span><span><b>阅读优先级</b> A</span></div>
+<p>vLLM 9/12 文档出现 <b>TokenSpeed CuTe DSL MLA decode backend</b>，目标硬件为 Blackwell，KV cache 走 FP8。当前公开 API 文档细节有限，因此今天不夸大具体加速倍数。真正值得关注的是趋势：MLA、speculative decoding、FP8 KV、Blackwell kernel 已经不再是彼此独立的开关，runtime 正逐步形成“按模型结构 × cache dtype × GPU generation”选择专用 backend 的矩阵。</p>
+<p><b>工程判断：</b>推荐/搜索团队如果开始自托管 reasoning/rerank LLM，benchmark 不应只记模型名和 GPU；必须同时固定 attention backend、KV dtype、spec decode、batch/concurrency、context distribution，否则吞吐数字不可比较。</p>
+<h3>资源区</h3><ul><li>官方文档：<a href="https://docs.vllm.ai/en/latest/api/vllm/v1/attention/backends/mla/tokenspeed_mla/">vLLM TokenSpeed MLA</a></li><li>官方代码：vLLM 主仓库内实现，开源</li><li>第三方解读：暂无必要；当前应以官方代码与 benchmark 为准</li></ul></div>
+
+<div class="callout"><strong>对推荐 / 搜索算法工程落地的直接启发：</strong>今天最值得带回工作的不是某一个 benchmark，而是四个设计动作：<b>① 把 1–3B 小模型当 control plane 单独评测；② router reward 同时纳入质量/成本/延迟/cache/fallback；③ Agent 容量规划加入 sandbox memory 与 workflow-level P95，而不只看 GPU tokens/s；④ 为多阶段推荐建立 verifier + error attribution，让失败精确回退到召回、rerank、constraint 或 generation stage。</b></div>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Daily updated 2026-09-13 · 周末无新 arXiv 批次时不强行凑“首发论文”</div></footer></body></html>
