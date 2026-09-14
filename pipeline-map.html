@@ -1,67 +1,72 @@
 <!doctype html><html lang="zh-CN"><head><title>推荐链路｜AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="按召回、粗排、精排、重排与混排、跨阶段统一分类推荐与搜索论文，并跟踪工业成熟度、开源、线上 A/B 与研究价值。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="index.html#latest">最新进展</a><a href="year.html">年度综述</a><a href="paper-map.html">Paper Map</a><a href="pipeline-map.html"><b>推荐链路</b></a><a href="index.html#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">Recommendation Pipeline Map · 更新至 2026.09.13</span><h1>把研究放回真实推荐链路：召回 → 粗排 → 精排 → 重排 / 混排 → 跨阶段统一</h1><p class="lead">这里不按“模型名字”分类，而是看一项工作落在推荐/搜索系统的哪个阶段、解决哪个瓶颈、离工业上线还有多远。9/13 没有新的核心推荐模型替换主链路，但<b>跨阶段控制面出现了更重要的系统信号</b>：MiniCPM5-2B 代表可本地部署的小型控制模型，Fugu 把 model routing 推向 cost/quality-aware 多专家编排，AgentZip 与 Tail-aware Scheduling 则把容量规划扩展到 sandbox memory 与 workflow P95；RecGP 提醒线上推荐还需要 cross-model robustness contract。</p></div>
-<section><div class="wrap"><div class="callout"><strong>链路总判断：</strong>下一代推荐/搜索系统不会简单消灭 cascade，而更像<b>统一训练 / 表征资产 + stage-local executors + cheap control plane + runtime resource governor</b>。Controller 决定“要不要继续算、调用哪个专家、是否扩大召回、何时进入昂贵 stage”；runtime 则同时管理 GPU/KV、sandbox memory、队列与 deadline。模型能力越来越只是整条链路的一部分。</div>
+<main><div class="wrap hero"><span class="kicker">Recommendation Pipeline Map · 更新至 2026.09.14</span><h1>把研究放回真实推荐链路：召回 → 粗排 → 精排 → 重排 / 混排 → 跨阶段统一</h1><p class="lead">这里不按“模型名字”分类，而是看一项工作落在推荐/搜索系统的哪个阶段、解决哪个瓶颈、离工业上线还有多远。9/14 最大变化不在某一个 ranker，而在<b>跨阶段控制面</b>：Gated-Memory Routing 让控制器维护 compact execution state；SAFARI 让系统学习是否值得继续探索；Ecdysis 让 bad-case 先跨请求归因再决定是否修改全局 harness；GPT-6 Astra 则更清楚地定义了昂贵 frontier executor 的适用边界。</p></div>
+<section><div class="wrap"><div class="callout"><strong>链路总判断：</strong>下一代推荐/搜索系统不会简单消灭 cascade，而更像<b>统一训练 / 表征资产 + stage-local executors + compact state + cheap control plane + frontier hard-case executor + runtime resource governor</b>。Controller 决定“要不要继续算、要不要继续找信息、调用哪个专家、是否扩大召回、何时停止”；runtime 则管理 cache、GPU/NPU、队列、启动与 deadline。</div>
 
-<div class="paper" id="recall"><div class="phase">Tab 01 · 召回 / Retrieval</div><h2>从“向量相似”走向“生成资产 + 时间有效性 + 置信度 + 存储重建 + 轻量控制模型”</h2>
+<div class="paper" id="recall"><div class="phase">Tab 01 · 召回 / Retrieval</div><h2>从“向量相似”走向“生成资产 + 时间有效性 + 置信度 + 主动探索”</h2>
 <div class="table-wrap"><table><thead><tr><th>工作</th><th>问题</th><th>落地位置</th><th>成熟度</th><th>关键判断</th></tr></thead><tbody>
 <tr><td><b>SAM-D2Q</b></td><td>keyword vocabulary mismatch</td><td>离线生成 query/doc expansion → inverted index</td><td>★★★★★</td><td>把 VLM/RL 智能写成低延迟检索资产</td></tr>
-<tr><td><a href="daily/2026-09-11.html#literag"><b>LiteRAG</b></a></td><td>GraphRAG query-time LLM 太贵</td><td>多跳 graph retrieval controller</td><td>★★★☆☆</td><td>图可保留，在线控制器不必是 LLM</td></tr>
-<tr><td><a href="daily/2026-09-12.html#qpp"><b>GeneralQPP</b></a></td><td>不知道 retrieval 是否失败</td><td>召回后 confidence / escalation gate</td><td>★★★★☆</td><td>2ms score-shape QPP 可驱动 top-K/rerank/Agent fallback</td></tr>
-<tr><td><a href="daily/2026-09-12.html#timely"><b>TimelyRAG</b></a></td><td>旧/新版高度相似但有效期不同</td><td>first-stage 之后 temporal rerank</td><td>★★★☆☆</td><td>相关性之外还要显式建模 clause validity</td></tr>
+<tr><td><a href="daily/2026-09-11.html#literag"><b>LiteRAG</b></a></td><td>GraphRAG query-time LLM 太贵</td><td>多跳 graph retrieval controller</td><td>★★★☆☆</td><td>图可以保留，在线遍历器不必每一步都调用 LLM</td></tr>
+<tr><td><a href="daily/2026-09-12.html#qpp"><b>GeneralQPP</b></a></td><td>不知道 retrieval 是否失败</td><td>召回后 confidence / escalation gate</td><td>★★★★☆</td><td>廉价 score-shape QPP 可驱动 top-K/rerank/Agent fallback</td></tr>
+<tr><td><a href="daily/2026-09-12.html#timely"><b>TimelyRAG</b></a></td><td>旧/新版高度相似但有效期不同</td><td>first-stage 后 temporal rerank</td><td>★★★☆☆</td><td>相关性之外还要显式建模时间有效性</td></tr>
 <tr><td><a href="daily/2026-09-12.html#glie"><b>GLIE</b></a></td><td>late-interaction vectors 存储爆炸</td><td>visual retrieval index + shortlist rerank</td><td>★★★☆☆</td><td>少量 vectors 可作为 generative code</td></tr>
-<tr><td><a href="daily/2026-09-11.html#vectorq"><b>Decision-aware Quantization</b></a></td><td>低比特平均误差小但 top-k 翻转</td><td>ANN quantization / graph index</td><td>★★★★☆</td><td>监控 boundary decision flip 而非只看 reconstruction</td></tr>
-<tr><td><a href="daily/2026-09-13.html#minicpm"><b>MiniCPM5-2B</b></a></td><td>大模型做 query rewrite / gate 成本高</td><td>query understanding、rewrite、retrieval sufficiency、tool/router</td><td>★★★★☆</td><td>1–3B 小模型更适合作为 retrieval control plane，而非默认替换主 ranker</td></tr>
+<tr><td><b>Decision-aware Quantization</b></td><td>低比特平均误差小但 top-k 翻转</td><td>ANN quantization / graph index</td><td>★★★★☆</td><td>监控 boundary decision flip 而非只看 reconstruction</td></tr>
+<tr><td><a href="daily/2026-09-13.html#minicpm"><b>MiniCPM5-2B</b></a></td><td>大模型做 query rewrite / gate 成本高</td><td>query understanding、rewrite、retrieval gate</td><td>★★★★☆</td><td>1–3B 小模型更适合作为 retrieval control plane</td></tr>
+<tr><td><a href="daily/2026-09-14.html#safari"><b>SAFARI</b></a></td><td>证据不足时，不知道继续探索是否值得</td><td>query rewrite / 扩 top-K / 换召回源前的 exploration policy</td><td>★★★☆☆</td><td>把 explore-vs-execute 训练成 policy，而不是固定多轮</td></tr>
 </tbody></table></div>
-<p><b>值得押注：</b>hybrid sparse+dense+graph、temporal/provenance score、confidence-controlled depth、query-adaptive precision、generated index asset、embedding codec + quantization，以及 small control model 驱动的 query rewrite / retrieval gate。</p></div>
+<p><b>值得押注：</b>hybrid sparse+dense+graph、temporal/provenance score、confidence-controlled depth、query-adaptive precision、generated index asset、embedding codec + quantization，以及 <b>uncertainty × information gain × latency budget</b> 联合决定是否继续检索。</p></div>
 
-<div class="paper" id="prerank"><div class="phase">Tab 02 · 粗排 / Pre-ranking</div><h2>从“轻模型筛候选”走向“下游偏好感知 + 与精排联合训练 + 动态计算预算”</h2>
-<p><b>核心任务：</b>在极紧 latency 下保住真正会被精排选中的 item。传统优化往往只追粗排本地 AUC/NDCG，容易出现 stage mismatch；下一步还要让 control plane 根据 query 难度决定粗排算力。</p>
+<div class="paper" id="prerank"><div class="phase">Tab 02 · 粗排 / Pre-ranking</div><h2>从“轻模型筛候选”走向“下游偏好感知 + 联合训练 + 动态计算预算”</h2>
+<p><b>核心任务：</b>在极紧 latency 下保住真正会被精排选中的 item。传统优化往往只追粗排本地 AUC/NDCG，容易出现 stage mismatch；下一步要让 control plane 根据 query 难度与 downstream margin 决定粗排算力。</p>
 <div class="table-wrap"><table><thead><tr><th>工作</th><th>核心机制</th><th>工业信号</th><th>当前启发</th></tr></thead><tbody>
-<tr><td>COPR / Rethink / HCCP</td><td>ranking supervision → pre-ranking alignment</td><td>成熟工业路线</td><td>下游 preference 应进入上游训练，但仍是单向 teacher-student</td></tr>
-<tr><td><a href="daily/2026-09-12.html#unirec"><b>UniRec</b></a></td><td>shared embedding + vertical consistency + joint fusion</td><td>快手已全量部署</td><td>粗排最终 fusion 本身要与精排共同优化，而不只改 backbone score</td></tr>
-<tr><td>ReST / shared user state</td><td>长序列 user representation 复用</td><td>线上 A/B 路线</td><td>粗排要把更多预算留给 candidate interaction，而不是重复编码 user history</td></tr>
-<tr><td><a href="daily/2026-09-13.html#fugu"><b>Fugu 式 orchestration</b></a></td><td>quality/cost-aware expert selection</td><td>产品化 API</td><td>可迁移到“轻粗排 / 重粗排 / LLM-enhanced 粗排”按 query 难度动态路由</td></tr>
+<tr><td>COPR / Rethink / HCCP</td><td>ranking supervision → pre-ranking alignment</td><td>成熟工业路线</td><td>下游 preference 应进入上游训练，但仍多为单向 teacher-student</td></tr>
+<tr><td><a href="daily/2026-09-12.html#unirec"><b>UniRec</b></a></td><td>shared embedding + vertical consistency + joint fusion</td><td>快手已全量部署</td><td>粗排 fusion 本身要与精排共同优化，而不只改 backbone score</td></tr>
+<tr><td>ReST / shared user state</td><td>长序列 user representation 复用</td><td>线上 A/B 路线</td><td>把更多预算留给 candidate interaction，而不是重复编码 history</td></tr>
+<tr><td><a href="daily/2026-09-13.html#fugu"><b>Fugu 式 orchestration</b></a></td><td>quality/cost-aware expert selection</td><td>产品化 API</td><td>迁移为轻粗排 / 重粗排 / LLM-enhanced 路径按 request 动态路由</td></tr>
+<tr><td><a href="daily/2026-09-14.html#gated-memory"><b>Gated execution state</b></a></td><td>只保留对后续决策有用的 stage state</td><td>学术原型</td><td>不要把全链路日志重新拼给 controller；维护 compact stage summary / margin / failure state</td></tr>
 </tbody></table></div>
-<p><b>重点指标：</b>除本地 NDCG/AUC 外，必须看 ASH / ranking top-K survival / candidate recall、latency、feature freshness、downstream consistency，以及 query-level compute budget 与 stage queue pressure。</p></div>
+<p><b>重点指标：</b>除本地 NDCG/AUC 外，必须看 ASH / ranking top-K survival / candidate recall、latency、feature freshness、downstream consistency，以及 query-level compute budget、stage queue pressure 与 controller 的误升级率。</p></div>
 
-<div class="paper" id="rank"><div class="phase">Tab 03 · 精排 / Ranking</div><h2>从共享 Backbone 走向 Task-aware Information Flow、跨阶段 Fusion 与专家化执行</h2>
+<div class="paper" id="rank"><div class="phase">Tab 03 · 精排 / Ranking</div><h2>从共享 Backbone 走向 Task-aware Information Flow、跨阶段 Fusion 与请求级专家化执行</h2>
 <div class="table-wrap"><table><thead><tr><th>工作</th><th>研究问题</th><th>价值</th></tr></thead><tbody>
 <tr><td>PTDG</td><td>任务依赖不应对所有 item 固定</td><td>item-conditioned dynamic task graph</td></tr>
-<tr><td>MORE</td><td>task signal 如果只在 tower 末端出现已经太晚</td><td>task anchor 进入 backbone 各层；陌陌线上多目标提升且 latency 约 -30%</td></tr>
-<tr><td><a href="daily/2026-09-12.html#unirec"><b>UniRec</b></a></td><td>精排 fusion 与粗排 fusion 独立会互相抵消</td><td>ranking agent 与 pre-ranking agent 同图优化；AppUsageTime +0.616%</td></tr>
+<tr><td>MORE</td><td>task signal 如果只在 tower 末端出现已经太晚</td><td>task anchor 进入 backbone 各层；线上多目标提升并降低 latency</td></tr>
+<tr><td><a href="daily/2026-09-12.html#unirec"><b>UniRec</b></a></td><td>精排 fusion 与粗排 fusion 独立会互相抵消</td><td>ranking agent 与 pre-ranking agent 同图优化；线上 AppUsageTime +0.616%</td></tr>
 <tr><td>UniCon</td><td>上下文级 candidate interaction</td><td>推动 candidate/context 统一建模</td></tr>
-<tr><td><a href="daily/2026-09-13.html#minicpm"><b>Small Control Model</b></a></td><td>所有 request 都跑最贵精排 / reasoning 不经济</td><td>先预测难度、confidence、业务价值，再决定是否启用额外 cross-item/LLM compute</td></tr>
+<tr><td><a href="daily/2026-09-13.html#minicpm"><b>Small Control Model</b></a></td><td>所有 request 都跑最贵精排不经济</td><td>先预测难度、confidence、业务价值，再决定是否启用额外 cross-item/LLM compute</td></tr>
+<tr><td><a href="daily/2026-09-14.html#astra"><b>Frontier Executor</b></a></td><td>复杂 hard query 需要更强 reasoning/tool use</td><td>把 GPT-6 Astra 级模型放在极少量高价值 / 高不确定请求，而不是替代主精排</td></tr>
 </tbody></table></div>
-<p><b>下一步：</b>task-aware foundation ranker + request-level user state + candidate-adaptive compute + cross-stage consistency + multi-objective group-relative regularization；同时建立一个独立 control model，专门决定“本 request 值不值得进入更贵的 ranking path”。</p></div>
+<p><b>下一步：</b>task-aware foundation ranker + request-level user state + candidate-adaptive compute + cross-stage consistency + multi-objective group-relative regularization；controller 决定“本 request 值不值得进入更贵的 ranking path”，并用 <b>cost per successful decision</b> 而不是单纯 token price 评估升级。</p></div>
 
-<div class="paper" id="rerank"><div class="phase">Tab 04 · 重排与混排 / Re-ranking & Slate</div><h2>从逐 item 打分走向结构化 assignment、可验证 evidence、业务约束与精确失败回退</h2>
+<div class="paper" id="rerank"><div class="phase">Tab 04 · 重排与混排 / Re-ranking & Slate</div><h2>从逐 item 打分走向结构化 assignment、可验证约束与精确失败回退</h2>
 <div class="table-wrap"><table><thead><tr><th>工作</th><th>关键问题</th><th>落地启发</th></tr></thead><tbody>
 <tr><td>hLLM / Hungarian assignment</td><td>排序是 permutation，没必要自回归生成 N 个序号</td><td>single-pass score matrix + assignment 更符合结构</td></tr>
 <tr><td>CHyD</td><td>生成解释/引用可能不来自 evidence</td><td>hard lexical constraint 保证引用来自检索上下文</td></tr>
 <tr><td><a href="daily/2026-09-12.html#timely"><b>TimelyRAG</b></a></td><td>相关但过期的文档/内容应该降权</td><td>temporal validity 可看作 rerank constraint</td></tr>
-<tr><td>MORE / multi-objective ranker</td><td>不同业务目标需要不同 evidence flow</td><td>最终 slate 之前保持 task-specific representation</td></tr>
-<tr><td><a href="daily/2026-09-13.html#magenta"><b>Magenta 式 verifier loop</b></a></td><td>失败后不知道该重召回、重排还是只修格式</td><td>constraint/evidence checker + error attribution + selective repair，比统一“再跑一次模型”更可控</td></tr>
+<tr><td>MORE / multi-objective ranker</td><td>不同业务目标需要不同 evidence flow</td><td>最终 slate 前保持 task-specific representation</td></tr>
+<tr><td><a href="daily/2026-09-13.html#magenta"><b>Magenta 式 verifier loop</b></a></td><td>失败后不知道该重召回、重排还是只修格式</td><td>constraint/evidence checker + error attribution + selective repair</td></tr>
+<tr><td><a href="daily/2026-09-14.html#safari"><b>Exploration Policy</b></a></td><td>重排置信度低时，是接受当前 slate 还是补证据？</td><td>把“追加召回 / 用户澄清 / tool call”看成有成本的探索动作</td></tr>
 </tbody></table></div>
-<p><b>值得押注：</b>assignment + diversity + freshness + creator/business constraints；生成式 rerank 的目标不是“会生成列表”，而是把复杂 constraint 与 explanation 做成可验证 structured decision，并能定位失败 stage。</p></div>
+<p><b>值得押注：</b>assignment + diversity + freshness + creator/business constraints；生成式 rerank 的目标不是“会生成列表”，而是把复杂 constraint 与 explanation 做成可验证 structured decision，并能定位失败 stage 和控制额外探索预算。</p></div>
 
-<div class="paper" id="cross"><div class="phase">Tab 05 · 跨阶段统一 / Cross-stage Control Plane</div><h2>训练边界、状态边界、预算边界、运行时资源边界正在同时重构</h2>
+<div class="paper" id="cross"><div class="phase">Tab 05 · 跨阶段统一 / Cross-stage Control Plane</div><h2>训练边界、状态边界、预算边界、Harness 边界与运行时资源边界正在同时重构</h2>
 <div class="table-wrap"><table><thead><tr><th>资产 / 控制器</th><th>代表工作</th><th>跨阶段价值</th></tr></thead><tbody>
-<tr><td><b>Cross-stage Preference</b></td><td><a href="daily/2026-09-12.html#unirec">UniRec</a></td><td>让粗排与精排 fusion 在训练时共享表示与偏好约束，Serving 仍可分阶段</td></tr>
+<tr><td><b>Cross-stage Preference</b></td><td><a href="daily/2026-09-12.html#unirec">UniRec</a></td><td>粗排与精排 fusion 在训练时共享表示与偏好约束，Serving 仍可分阶段</td></tr>
 <tr><td><b>User / Document State</b></td><td>ReST / DoPR</td><td>把不随 candidate/query 快速变化的计算移出内层循环</td></tr>
-<tr><td><b>KV Runtime State</b></td><td>KVShareArena / KV concat-aware</td><td>跨 context/checkpoint 复用前先验证 compatibility，必要时 selective recompute</td></tr>
-<tr><td><b>Evidence State</b></td><td><a href="daily/2026-09-12.html#reva">REVA</a></td><td>历史 generator attention 变成 document evidence score，可供不同 budget 复用</td></tr>
-<tr><td><b>Retrieval Experience</b></td><td><a href="daily/2026-09-12.html#viking">VikingRAG</a></td><td>Agent trace 写回 retrieval graph，相似请求先走便宜路径</td></tr>
-<tr><td><b>Confidence / Escalation</b></td><td><a href="daily/2026-09-12.html#qpp">GeneralQPP</a></td><td>决定是否扩大召回、进入 rerank、Agent 或拒答</td></tr>
-<tr><td><b>Small Control Model</b></td><td><a href="daily/2026-09-13.html#minicpm">MiniCPM5-2B</a></td><td>用 1–3B 本地模型承担 query understanding、gate、router、memory curator，避免所有控制决策都打大模型</td></tr>
-<tr><td><b>Context / Model Router</b></td><td>SWRouter → <a href="daily/2026-09-13.html#fugu">Fugu</a></td><td>从“保留哪些历史 / 选哪个模型”升级到输出 quality/cost/latency-aware 多专家执行计划</td></tr>
-<tr><td><b>Temporal / Version State</b></td><td><a href="daily/2026-09-12.html#timely">TimelyRAG</a></td><td>把有效期、版本与 provenance 变成 ranking contract</td></tr>
-<tr><td><b>Workflow Release Budget</b></td><td><a href="daily/2026-09-13.html#tailsched">Tail-aware Scheduling</a></td><td>昂贵 stage 拥塞时不让所有 ready request 立即入队，用 remaining work / tail risk 保留调度自由度</td></tr>
-<tr><td><b>Sandbox / Agent Memory</b></td><td><a href="daily/2026-09-13.html#agentzip">AgentZip</a></td><td>把执行环境 RSS、restore bandwidth 纳入容量规划；高 fan-out Agent 不再只按 GPU token budget 规划</td></tr>
-<tr><td><b>Verifier / Error Attribution</b></td><td><a href="daily/2026-09-13.html#magenta">Magenta pattern</a></td><td>失败后判断应回退召回、rerank、constraint 还是 generation stage，减少无差别重算</td></tr>
-<tr><td><b>Robustness Contract</b></td><td><a href="daily/2026-09-13.html#recgp">RecGP</a></td><td>线上安全评测从单模型 attack success 扩展到 cross-model / seed / checkpoint transfer 与 decision-margin stability</td></tr>
+<tr><td><b>KV Runtime State</b></td><td>KVShareArena / KV concat-aware</td><td>跨 context/checkpoint 复用前验证 compatibility，必要时 selective recompute</td></tr>
+<tr><td><b>Evidence State</b></td><td><a href="daily/2026-09-12.html#reva">REVA</a></td><td>历史 generator attention 变成 document evidence score，供不同 budget 复用</td></tr>
+<tr><td><b>Retrieval Experience</b></td><td><a href="daily/2026-09-12.html#viking">VikingRAG</a></td><td>Agent trace 写回 retrieval graph，相似请求优先走便宜路径</td></tr>
+<tr><td><b>Confidence / Escalation</b></td><td><a href="daily/2026-09-12.html#qpp">GeneralQPP</a></td><td>决定是否扩大召回、进入 rerank、Agent 或直接结束</td></tr>
+<tr><td><b>Small Control Model</b></td><td><a href="daily/2026-09-13.html#minicpm">MiniCPM5-2B</a></td><td>1–3B 本地模型承担 query understanding、gate、router、memory curator</td></tr>
+<tr><td><b>Execution-plan Router</b></td><td>SWRouter → <a href="daily/2026-09-13.html#fugu">Fugu</a></td><td>从“选哪个模型”升级到 quality/cost/latency-aware 多专家执行计划</td></tr>
+<tr><td><b>Compact Execution State</b></td><td><a href="daily/2026-09-14.html#gated-memory">Gated-Memory Routing</a></td><td>write/retrieve gate 只保留对后续路由有价值的状态，避免 full-history overload</td></tr>
+<tr><td><b>Exploration Budget</b></td><td><a href="daily/2026-09-14.html#safari">SAFARI</a></td><td>学习是否继续收集信息，把 query rewrite / 扩召回 / tool call 变成预算化动作</td></tr>
+<tr><td><b>Frontier Executor</b></td><td><a href="daily/2026-09-14.html#astra">GPT-6 Astra</a></td><td>高成本强模型只处理 hard/high-value request，以完成任务成本而非单 token 价格评估</td></tr>
+<tr><td><b>Harness Evolution</b></td><td><a href="daily/2026-09-14.html#ecdysis">Ecdysis</a></td><td>bad case 先跨请求聚类归因，再决定是否修改全局 harness，降低过拟合局部失败</td></tr>
+<tr><td><b>Runtime Readiness</b></td><td><a href="daily/2026-09-14.html#vllm">vLLM</a> / <a href="daily/2026-09-14.html#sglang">SGLang</a></td><td>把 cold start、parallelism contract、NPU/GPU fast path 纳入整体 SLA</td></tr>
 </tbody></table></div>
-<p><b>终局形态：</b>不是“一个超大模型吞掉所有阶段”，而更像 <b>统一训练/表征资产 + stage-local executors + small control models + execution-plan router + runtime resource governor</b>。Controller 根据 confidence、SLO、cache/state compatibility、freshness、业务价值与 queue pressure 决定下一跳；runtime 负责让这些决策真的满足 P95/P99。</p></div>
+<p><b>当前最重要的架构变化：</b>统一的不应只是 embedding 或 backbone，而应是<b>一个可版本化的 state/control protocol</b>：每个 stage 输出 score 之外还输出 confidence、margin、evidence、cost、状态版本与失败原因；cheap controller 根据这些状态选择下一执行路径。</p>
+<p><b>推荐工程下一步可直接实验：</b>① 设计一个 10–20 维 compact request state，替代把全量日志喂给 LLM router；② 用历史 replay 数据训练“继续检索是否有增益”的 exploration label；③ 给 LLM hard-case path 建立 $/successful-task、P95、升级率与回退率 dashboard；④ 将 Agent bad case 按 query cohort / stage failure 聚类，再决定全局 prompt/harness 是否需要改；⑤ 线上模型评测加入 cold-start、rollout、recovery 和 hardware fallback。</p></div>
 
-<div class="callout"><strong>推荐算法工程师当前最值得补的技能：</strong>① multi-stage learning / distillation / joint optimization；② retrieval + ANN + quantization；③ LLM/RAG serving 与 KV/state lifecycle；④ small-model routing / confidence calibration / cost-aware orchestration；⑤ workflow scheduling、queueing、sandbox/container resource 基础；⑥ structured reranking + verifier/error attribution；⑦ recommendation robustness 与 cross-model attack/decision stability；⑧ 用线上 A/B、stage survival、latency/cost/P95 一起判断研究价值，而不只看离线 AUC。</div>
-</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Pipeline Map updated 2026-09-13</div></footer></body></html>
+<div class="callout"><strong>链路演进一句话：</strong>召回越来越像“可探索的信息获取”，粗排/精排越来越像“联合训练但分阶段执行”，重排越来越像“可验证结构决策”，而跨阶段层正在长成一个真正的<b>状态化控制平面</b>——它管理 state、budget、model、tool、exploration、harness 与 runtime。</div>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Recommendation Pipeline Map updated 2026-09-14</div></footer></body></html>
