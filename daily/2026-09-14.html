@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.14｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-14 AI × 推荐算法研究日报：GPT-6 Astra、Gated-Memory Routing、SAFARI、Ecdysis、vLLM 与 SGLang 运行时更新。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.14</span><h1>今天的主线：Agent 的竞争开始从“模型更强”转向“状态压缩、主动探索、运行时自进化与高效 Serving”</h1><p class="lead">观察窗口：<b>2026-09-13 10:00 → 2026-09-14 10:00（Asia/Shanghai）</b>。今天恰逢周末后的 arXiv 空窗，因此严格区分三类信号：<b>过去 24 小时官方新增/更新</b>、<b>arXiv replace 修订</b>、以及<b>最新一批尚未覆盖但值得补位的论文</b>。不把旧论文重新包装成“今日首发”。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>GPT-6 Astra 的真正工程信号不是榜单继续上涨，而是 computer-use + harness + cost-per-task 被放在同一个产品目标里</b>：OSWorld 2.0 72.6%，单任务耗时约比 GPT-5.6 Sol 少 47%，Codex harness 组合在 Mind2Web 上任务完成速度 1.9×；② <b>Model Routing 正在变成“学习执行状态”</b>：Gated-Memory Routing 不再给 router 塞完整历史，而是学习什么该写入、什么该检索、何时停止；③ <b>Agent 的探索需要被训练，而不是靠 prompt 祈祷</b>：SAFARI 用探索型轨迹 + 对比式 RL 校准“继续探索还是执行”的边界；④ <b>Agent harness 也进入可学习/可演化时代</b>：Ecdysis 说明逐条失败就改 harness 会过拟合，应该先跨任务聚类失败再修系统性缺陷；⑤ Serving 仍然是硬约束：vLLM 的 warmup/DeepSeek-V4 兼容修复与 SGLang 的 NPU 平台层、DeepSeek-V4.1 FlashMLA kernel 同日推进，说明 frontier 模型真正落地依赖模型×硬件×kernel×启动路径的持续协同。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 GPT-6 Astra · Model × Harness × Cost-per-task</h3><p>OpenAI 今日新增面向 Work 的官方说明页，模型本体并非今日首发，但新披露更清晰地把“模型能力、computer use、Codex harness、token/重试效率、安全边界”合成一个系统指标。对搜索/推荐最重要的启发：未来昂贵模型更像 hard-case executor，而不是所有 request 的默认路径。</p></div>
+<div class="paper"><h3>🥈 Gated-Memory Routing · Router 先学会“记什么”</h3><p>Query-only router 看不到中间进展，full-history router 又被历史淹没。Gated-Memory Routing 引入 Memory Write Gate、Retrieval Gate、Role/Backbone Allocator 和 Adaptive Halting，在 5 个 reasoning/code benchmark 上平均最好，并相对最强 baseline 提升 2.44 points。</p></div>
+<div class="paper"><h3>🥉 SAFARI · 主动探索不是多走几步</h3><p>核心不是鼓励 Agent “更爱探索”，而是学习何时探索值得、何时是浪费。SAFARI 先蒸馏包含回溯/试错的树状轨迹，再用 Monte-Carlo 评估形成 contrastive preference，优化 explore-vs-execute 决策边界。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Routing → State Management</h3><p>过去 router 的输入通常是 query；下一阶段更像在线控制器：维护压缩后的执行状态，按需读写，并决定 model、role、retrieval depth、tool、halt。Gated-Memory Routing 与昨天的 Fugu 共同把“routing”推向 execution-plan controller。</p></div>
+<div class="paper"><h3>Agent Training → Exploration Policy</h3><p>干净的成功轨迹存在 hindsight bias：它删除了真实决策中的试错与信息收集。SAFARI 表明，Agent 训练数据要保留“为什么探索、为什么回退、何时停止”的结构，而不仅是最终正确路径。</p></div>
+<div class="paper"><h3>Harness → 可优化的软件层</h3><p>模型冻结后，规划、工具协议、错误反馈、上下文管理仍然决定大量最终成功率。Ecdysis 把 harness 优化从逐 case patch 提升到跨任务 failure attribution；这和推荐系统里“不要被单个 bad case 驱动全局规则”高度同构。</p></div>
+<div class="paper"><h3>Serving → Model × Kernel × Hardware Contract</h3><p>vLLM 与 SGLang 的 24h 更新看似“工程细节”，实际决定新模型能否低风险上线：JIT warmup、expert-parallel 启动条件、NPU runtime abstraction、MLA kernel 都是生产 readiness 的组成部分。</p></div>
+</div>
+
+<h2>论文 / 更新优先级表</h2><p class="muted">Research Impact Score：范式变化 25%、工业证据 20%、技术创新 20%、推荐/搜索相关度 15%、后续研究空间 10%、开放/可复现性 10%。时间口径单列，避免把周末补位论文误写为今日首投。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>时间口径</th><th>关键证据</th></tr></thead><tbody>
+<tr><td>S+</td><td><a href="#astra">GPT-6 Astra · Work/Agent Update</a></td><td>Foundation Model / Agent / Computer Use</td><td>9.5/10</td><td>24h 内官方新增 Work 说明；模型本体上周发布</td><td>OSWorld 72.6%；约 47% 更短任务时间；Terminal-Bench 4.0 57.9%；API $10/$50 per 1M input/output</td></tr>
+<tr><td>S+</td><td><a href="#gated-memory">Gated-Memory Routing</a></td><td>Model Routing / Agent Memory</td><td>9.4/10</td><td>近期 EMNLP 2026 v2 补位；arXiv v2 为 9/9</td><td>平均准确率较最强 baseline +2.44pt；HumanEval inference cost -31.9%</td></tr>
+<tr><td>S</td><td><a href="#safari">SAFARI</a></td><td>Agent RL / Proactive Exploration</td><td>9.2/10</td><td>9/13 arXiv v2 replace</td><td>WebShop / InterCode-SQL / ScienceWorld；TP 报告约 +10%–15%；探索随任务难度自适应</td></tr>
+<tr><td>S</td><td><a href="#ecdysis">Ecdysis</a></td><td>Agent Harness Evolution</td><td>9.1/10</td><td>最新 arXiv 批次补位（9/10 首投）</td><td>Harness training 最多 1.84×；reasoning accuracy 相对 +18.56%</td></tr>
+<tr><td>A+</td><td><a href="#vllm">vLLM 24h Runtime Updates</a></td><td>Inference / Serving</td><td>8.6/10</td><td>24h 内官方 commits</td><td>并行 mHC pre-norm JIT warmup；修复 DeepSeek-V4 MegaMoE 启动条件</td></tr>
+<tr><td>A+</td><td><a href="#sglang">SGLang NPU + DeepSeek-V4.1 Kernels</a></td><td>Inference / Hardware Runtime</td><td>8.6/10</td><td>24h 内官方 commits</td><td>新增 NpuSRTPlatform 基础实现；FlashMLA 更新到 DeepSeek-V4.1 kernel 分支</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="astra"><div class="phase">Deep Dive 01 · Frontier Model / Computer-use Agent</div><h2>GPT-6 Astra：值得关注的不是“又一个更高 benchmark”，而是能力、Harness 与任务成本被统一优化</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.5/10</span><span><b>工业成熟度</b> ★★★★★</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 否；API/产品可用</span><span><b>是否有线上 A/B</b> 未披露；有内部 rollout 与客户评测</span><span><b>阅读优先级</b> S+</span></div>
+<p><b>时间口径：</b>GPT-6 Astra 模型本体已在上周发布；过去 24 小时 OpenAI 新增了面向工作场景的官方说明页，补充了客户侧、内部 rollout、任务成本与安全边界的信息。因此今天把它作为<b>官方工程信号更新</b>，而不是写成“9/14 新模型首发”。</p>
+<p><b>背景 / 业务动机：</b>Agent 进入生产后，单纯“回答更聪明”并不够。真正影响 ROI 的是：能否操控真实软件、是否少走弯路、是否需要频繁重试、能否遵守授权边界、每个完整任务而不是每个 token 要花多少钱。Astra 的官方叙事明显把目标从 model-level benchmark 转成 <b>task-level usefulness</b>。</p>
+<p><b>技术方案与关键模块：</b>OpenAI 只披露 Astra 由 pre-training、reinforcement learning 与 alignment 的长期投入共同训练，并未公开网络结构、参数量或完整 recipe。工程上更关键的是它与 Responses API / computer-use tools / Codex harness 的组合：模型负责视觉理解、规划、代码/工具操作与长程目标保持；harness 负责软件交互、确认策略、Auto-review、上下文和工具协议。</p>
+<p><b>训练方法：</b>官方没有给出可复现的 SFT/RL 配方，只明确指出 targeted training 面向 professional environments，并把 task boundary、computer-use safety、capability honesty 纳入对齐训练。由于 recipe 未公开，这一部分不应从 benchmark 反推具体 RL 算法。</p>
+<p><b>推理 / Serving：</b>API 型号为 <code>gpt-6-astra</code>。Standard 定价为每百万 input tokens 10 美元、output tokens 50 美元；Fast mode 最多约 2× 速度，价格为 Standard 的 2×。这意味着 router 的价值进一步放大：<b>不是所有 query 都值得走 Astra，更合理的是先用便宜模型/规则判断难度、价值与风险，再升级到 frontier executor。</b></p>
+<p><b>实验设置与离线指标：</b>OSWorld 2.0（offline subset）72.6%，GPT-5.6 Sol 为 65.7%；官方 latency simulation 中 Astra 约 40 分钟/任务，对比 Sol 约 75 分钟，时间缩短约 47%。Terminal-Bench 4.0 为 57.9% vs 37.3%；AutomationBench 41.4% vs 18.1%；DeepSWE v1.1 74.1% vs 72.7%。OpenAI MRCR v2 的 512K–1M 长上下文区间为 96.3%。这些评测覆盖能力与系统交互，但仍不等同于你的线上 query distribution。</p>
+<p><b>Harness 收益：</b>OpenAI 还披露：Astra 与更新后的 Codex harness 组合在 Mind2Web 上相对 GPT-5.6 Sol 体验实现约 <b>1.9×</b> 的任务完成速度。内部工程团队曾用 Astra 找到 Codex test environment 的内存分配瓶颈，切换 allocator 后 turn latency 降低 25×、峰值内存约 +30%。这里的重点不是这两个数字可外推，而是<b>模型本身开始成为 runtime optimizer 的一部分</b>。</p>
+<p><b>线上 A/B / 工业证据：</b>没有传统意义的随机线上 A/B。官方提供内部 rollout、客户 early eval 与产品部署证据；Hebbia、Box、Databricks、Cognition 等给出各自的内部评测，但评测集与采样方法并不完全公开。因此把它视为强工业信号，而不是可复现学术证据。</p>
+<p><b>效率 / 成本收益：</b>官方强调“更少 token、更少 retry、成本按任务下降”。Terminal-Bench 4.0 上，官方估算 Astra 相比 GPT-5.6 Sol API cost per task 约低 9%。这再次说明未来选模不应只看 $/token，而应看 <b>quality × attempts × tool calls × wall-clock × $/completed-task</b>。</p>
+<p><b>与主流方法的优劣势：</b>优势是 computer-use、代码、长上下文、工具与安全边界协同强，且生产 API/harness 一体化；劣势是闭源、训练 recipe 不透明、公开 benchmark 与实际推荐/搜索 SLA 差异很大，且 $50/M output tokens 对高 QPS 在线链路依然昂贵。</p>
+<p><b>推荐/搜索适用场景：</b>不要把 Astra 直接替代在线 ranker。更合理的落点是：① hard query deep search；② 高价值用户/商家复杂任务；③ offline label/judge/analysis teacher；④ query plan / tool orchestration；⑤ 对失败 case 做自动 root-cause analysis；⑥ 生成复杂规则或评测脚本。主站推荐链路应由轻量 controller 决定是否升级。</p>
+<p><b>局限与尚未解决问题：</b>任务级 cost benchmark 尚未标准化；computer-use 成功率对 harness 非常敏感；长任务中的 context drift、权限边界与 monitorability 仍是问题。OpenAI 自己也披露 Astra 的 written reasoning 在部分 monitorability eval 上更难监控，这说明“能力更强”不会自动等于“更容易治理”。</p>
+<p><b>未来研究方向：</b>最值得跟的是 frontier executor 与 cheap controller 的分工、cost-aware routing、computer-use state compression、tool/harness co-design、task-level benchmark 以及安全 verifier 与执行策略的联合优化。</p>
+<p><b>对推荐/搜索算法工程与职业技能的启发：</b>仅会训练排序模型的边际价值会继续下降。更值得补齐的是 <b>LLM evaluation、router、Agent runtime、tool protocol、成本建模、failure attribution</b>。推荐工程师最有优势的地方恰好是长期擅长“多阶段系统 + SLA + 多目标权衡”，这套能力正在 Agent 系统里重新变成核心。</p>
+<div class="resources"><b>资源：</b><br>① 原始 Paper：无独立论文；以官方技术发布为准。<br>② 官方：<a href="https://openai.com/index/gpt-6-astra/">GPT-6 Astra 官方发布</a> · <a href="https://openai.com/index/gpt-6-astra-next-generation-work/">Astra for Work 官方说明</a><br>③ 官方代码 / 模型 / 数据：未开源权重与训练数据；通过 ChatGPT Work、Codex 与 API 提供。<br>④ 中文 / 高质量第三方解读：截至本次检索，暂未找到信息增量足够且可核验的中文技术精读，优先阅读官方原文。</div></div>
+
+<div class="paper" id="gated-memory"><div class="phase">Deep Dive 02 · Model Routing / Multi-agent Memory</div><h2>Gated-Memory Routing：真正的 Router 不该读完整历史，而该学习一个“足够用的执行状态”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.4/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S+</span></div>
+<p><b>时间口径：</b>论文已被 EMNLP 2026 Main 接收，arXiv v1 为 8/31、v2 为 9/9；今天作为近期重要 routing 论文补位，而不是伪装成 24h 首投。</p>
+<p><b>背景 / 业务动机：</b>多 Agent 系统中的 router 面临一个典型两难：只看 query，无法知道前面已经尝试了什么、哪个步骤出错；把完整 trajectory 全塞给 router，又会让上下文不断膨胀，后续每次决策都反复读取低价值历史。作者把这个问题称为 <b>execution-history overload</b>。</p>
+<p><b>现有问题：</b>Query-only routing 是无状态控制器；full-history routing 是“什么都记”的控制器。前者信息不足，后者成本随轨迹增长，并把噪声、重复推理和错误过程一并带入后续决策。关键问题因此不是“选哪个模型”，而是<b>当前系统状态应该压缩成什么</b>。</p>
+<p><b>技术方案与关键模块：</b>Gated-Memory Routing 用一个联合训练的 policy 维护执行记忆。核心包括：① <b>History-Aware Role Allocator</b>，基于 query + compact memory 选择下一角色；② <b>LLM Router</b>，在可用 backbone 中选择模型；③ <b>Retrieval Gate</b>，对记忆记录做自适应读取，而不是固定 top-k；④ <b>Memory Write Gate</b>，只写入非冗余、高 utility reasoning；⑤ <b>Adaptive Halting Controller</b>，证据足够时停止继续调用 Agent。</p>
+<p><b>一个很值得借鉴的设计：</b>role/backbone 不是靠固定 ID embedding，而是编码它们的自然语言描述。这样 controller 更有机会迁移到新模型/新角色，而不是把路由器完全绑死在训练期 model pool。</p>
+<p><b>训练方法：</b>论文使用冻结的 sentence encoder（all-MiniLM-L6-v2，384d）构造语义表示，LLM backbones 冻结，训练的是 router/gates/controller。策略优化采用 group-relative、cost-aware 的目标：不仅奖励最终 correctness，也对模型调用成本与无效步骤施加压力。记忆读写是离散 gate，halting 通过 GRU/MLP 对当前状态做停止判断。</p>
+<p><b>推理 / Serving：</b>每一步并非把完整历史拼回 prompt，而是先从 memory 中选择相关记录，再决定 role + backbone。最终 aggregation 使用被选择最频繁的模型完成答案整合。Serving 上它多了 controller/gate 的轻量开销，却减少了昂贵 LLM 的历史 token 与无用调用；在高价多模型 pool 中这种交换通常是划算的。</p>
+<p><b>实验设置：</b>覆盖 MATH、GSM-Hard、MBPP、HumanEval、MMLU-Pro；模型池包含 Llama-3.2-3B、Llama-3.1-8B、Mistral-Nemo-12B、Qwen-2.5-14B、Qwen-2.5-32B 等，重点比较 query-only、full-history 与不同 multi-agent routing baselines。</p>
+<p><b>离线指标：</b>论文报告五个 reasoning/code benchmark 上取得最佳平均 accuracy，超过最强 baseline <b>2.44 points</b>；HumanEval inference cost 相对最强 baseline 下降 <b>31.9%</b>。在 routing paradigm 对照中，GSM-Hard 的 gated-memory accuracy/cost 为 70.55 / $0.587，对比 full-history 70.27 / $0.985；HumanEval 为 89.84 / $0.032，对比 full-history 89.06 / $0.068。最重要的不是绝对美元，而是证明<b>选择性状态能同时保精度、降上下文和调用成本</b>。</p>
+<p><b>线上 A/B：</b>无。实验是公开 benchmark + API/开源模型定价环境，没有真实在线流量、P95、burst traffic 与动态模型可用性测试。</p>
+<p><b>与主流方法的优劣势：</b>相对 query-only router，优势是能感知 trajectory progress；相对 full-history，优势是 context compactness；相对纯 semantic retrieval memory，它把 write/retrieve/halt 和 model/role selection 联合优化。缺点是训练与状态管理复杂度更高，memory gate 自己也可能写错/漏写，而且多模型价格与质量随时间变化时需重新校准。</p>
+<p><b>推荐/搜索落地：</b>这篇几乎可以直接映射到多阶段推荐：把 query、召回置信度、已尝试的召回源、rerank margin、业务 constraint violation、上一阶段失败原因写进 compact decision state；controller 再决定扩大 top-K、切 embedding、启用重 reranker、调用 LLM、还是直接停止。关键是<b>不要把完整日志当 state</b>。</p>
+<p><b>局限：</b>没有超长 session、在线 drift、memory poisoning、模型上下线、价格波动、cache hit 等生产变量；benchmark task 数量也远小于真实推荐请求空间。Memory Write Gate 的错误是否会累积为不可恢复的状态偏差，是非常值得研究的问题。</p>
+<p><b>未来研究方向：</b>① cost/latency/cache-aware joint routing；② memory TTL 与版本化；③ uncertainty-aware write/retrieve；④ cross-stage recommender state；⑤ model pool 动态扩缩；⑥ safety/provenance 作为 memory schema 的一部分。</p>
+<p><b>职业启发：</b>Model Routing 不应只理解成“训一个 classifier 选模型”。真正高价值能力是把 <b>state representation、decision policy、serving cost、queueing、fallback、evaluation</b> 串起来。推荐算法工程师已有的 cascade / feature state / multi-objective 经验与这个方向非常匹配。</p>
+<div class="resources"><b>资源：</b><br>① 原始 Paper：<a href="https://arxiv.org/abs/2609.00237">arXiv:2609.00237</a><br>② 官方项目 / 技术博客：论文未提供独立项目页。<br>③ 官方代码：<a href="https://github.com/rajibrhasan/gated-memory-routing">rajibrhasan/gated-memory-routing</a>（已确认公开）。<br>④ 中文 / 高质量第三方解读：截至本次检索暂未找到可靠中文精读；可通过 arXiv 的 alphaXiv 入口查看第三方结构化解读，关键结论仍以论文原文为准。</div></div>
+
+<div class="paper" id="safari"><div class="phase">Deep Dive 03 · Agent RL / Exploration</div><h2>SAFARI：Agent 训练最容易丢掉的，恰恰是“试错与探索”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★★</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>时间口径：</b>arXiv 在 9/13 发布 v2 replace 信号，是今天窗口内最明确的论文更新之一。</p>
+<p><b>背景 / 业务动机：</b>多数 Agent SFT 数据是“成功后的干净路径”：正确工具、正确顺序、没有走错路。问题是线上真实任务往往不知道答案在哪里，Agent 需要先获取信息、验证假设、回退再尝试。把所有探索从 demo 中删掉会产生 <b>hindsight bias</b>；而 RL 初期如果几乎不采样有价值的探索动作，又会发生 <b>exploration collapse</b>。</p>
+<p><b>技术方案：</b>SAFARI 分两阶段。第一阶段 <b>Exploratory Data Construction</b> 用强 teacher 生成包含回溯、试错与信息收集的轨迹；第二阶段 <b>RL Optimization with Contrastive Signal Guidance</b> 不只优化最终 reward，而是专门校准“当前状态下 explore 还是 execute”。</p>
+<p><b>关键模块 1 — Tree-Structured Context：</b>探索轨迹不是一个不断增长的线性 prompt，而是树。失败分支可标为 <code>[DEAD END]</code>，次优路径可标 <code>[SUB-OPTIMAL]</code>，Agent 能回到父节点尝试另一分支。这个结构非常重要：它把“走错路”从噪声变成可学习的反事实证据。</p>
+<p><b>关键模块 2 — Cognitive Notes：</b>每个探索节点保留摘要/解释，帮助 student 学到“为什么这条分支不值得继续”，而不是只模仿工具序列。</p>
+<p><b>数据筛选：</b>teacher 生成多条 trajectory 后，用带长度惩罚的目标筛数据：<code>r_final = r(h) - n·γ</code>。因此“探索越多越好”并不是目标；成功但极度冗长的路线会被压分。</p>
+<p><b>RL / Preference 方法：</b>在状态 s_t 上，对 teacher/reference action 与 student candidate action 分别做 Monte-Carlo rollout，估计 <code>r_step(a|s_t)=E[R(τ)|s_t,a]</code>。只有两动作的价值差超过 margin threshold 时才构造 preference pair，再用 DPO 类目标优化。这相当于直接学习 <b>exploration decision boundary</b>。</p>
+<p><b>推理 / Serving：</b>Serving 不需要 teacher 或 Monte-Carlo rollout；训练后的 student 直接依据当前树状上下文决定继续探索还是执行。因此昂贵 rollout 是 offline training cost，线上开销主要来自它选择的额外环境交互。</p>
+<p><b>实验设置：</b>WebShop、InterCode-SQL、ScienceWorld 三类环境，覆盖购物搜索、数据库交互与开放式科学任务。公开解读显示 student 主要采用 Llama-3-8B 量级，teacher 使用 GPT-4o 级强模型。</p>
+<p><b>离线结果：</b>作者报告 Task Performance 相对强 baseline 有约 <b>10%–15%</b> 的提升，同时 Exploration Score 显著提高；8B student 在部分设置可达到或超过 teacher。更值得注意的是 exploration intensity 随任务难度增加：hard task 会主动多探索，而不是所有请求统一加步骤。</p>
+<p><b>线上 A/B：</b>无，当前仅在模拟/交互 benchmark 验证。</p>
+<p><b>效率 / 成本收益：</b>SAFARI 的核心 trade-off 是“多一步 exploration 能否减少后续错误”。Easy request 上过度探索可能反而损失 reward，因此真正落地时必须把探索预算与 query uncertainty、用户价值和 SLA 联动，而不能把 exploration 当成永远正收益。</p>
+<p><b>与主流方法比较：</b>相比普通 SFT，它保留失败分支；相比只用最终 reward 的 RL，它提供 step-level contrastive signal；相比 prompt 里一句“请多探索”，它用训练塑造 policy。缺点是 teacher data 与 Monte-Carlo rollout 昂贵，探索质量也受 evaluator 偏差影响。</p>
+<p><b>推荐/搜索落地：</b>非常适合三个场景：① 检索不足时是否扩 query / 换召回源；② 高客单价/复杂意图 query 是否进入 deep-search；③ rerank 置信度低时是否主动找更多 evidence。可以把“探索”具体化为扩大 top-K、query rewrite、图遍历、tool call、补充用户偏好，而不是泛化成无意义的多轮思考。</p>
+<p><b>局限与未解决问题：</b>探索得分本身是代理指标；teacher 是否真的提供最优探索模式未被证明；现实世界 exploration 可能有不可逆动作和真实成本；如果 reward 模型低估信息价值，policy 仍会过早停止。</p>
+<p><b>未来研究方向：</b>budgeted exploration、uncertainty-calibrated exploration、offline counterfactual evaluation、recommender slate exploration、safe irreversible actions，以及和 Gated-Memory Routing 结合——一个决定“是否探索”，一个决定“探索后哪些状态值得留下”。</p>
+<div class="resources"><b>资源：</b><br>① 原始 Paper：<a href="https://arxiv.org/abs/2608.14339">arXiv:2608.14339</a><br>② 官方项目 / 技术博客：未发现独立官方项目页。<br>③ 官方代码：<a href="https://github.com/GuanZhizhao/SAFARI">GuanZhizhao/SAFARI</a>（已确认公开）。<br>④ 中文高质量解读：<a href="https://www.alphaxiv.org/zh/abs/2608.14339">alphaXiv 中文精读</a>。</div></div>
+
+<div class="paper" id="ecdysis"><div class="phase">Deep Dive 04 · Agent Runtime Harness Evolution</div><h2>Ecdysis：不要因为一个 Agent 失败就改全局 Harness——先判断它是不是系统性缺陷</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.1/10</span><span><b>工业成熟度</b> ★★★☆☆</span><span><b>创新性</b> ★★★★☆</span><span><b>与你方向的相关度</b> ★★★★☆</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 否</span><span><b>阅读优先级</b> S</span></div>
+<p><b>时间口径：</b>9/10 首投，属于周末 arXiv 空窗下的最新批次补位，不计作过去 24h 首发。</p>
+<p><b>背景：</b>Agent 的成功率不仅由模型决定，还由 runtime harness 决定：如何规划、暴露工具、解析 observation、处理 error、截断上下文、决定 retry。已有 self-evolving harness 方法常见做法是“某个 task 失败 → 让 coding agent 改 harness → 再跑”，看起来自动化，实际容易把当前模型的偶发缺陷写进全局基础设施。</p>
+<p><b>作者诊断：</b>一次失败可能来自两类原因：<b>model-specific deficiency</b> 或 <b>systematic harness deficiency</b>。如果不做 attribution，就会发生 model accommodation——Harness 越修越适配训练模型/训练样本，却伤害跨任务和跨模型泛化。</p>
+<p><b>技术方案：</b>Ecdysis 把 sequential per-case patch 改成 <b>batch-level cross-instance failure aggregation</b>。先收集一批 task 的失败，找 recurring pattern，再决定是否值得改全局 harness。随后使用 Failure-Driven Collaborative Refinement（FDCR），由 Analyst / Critic / Engineer 多角色协作：分析失败模式、质疑诊断、形成明确修改 specification；最后让 coding agent 只负责实现 specification。</p>
+<p><b>训练 / 演化方式：</b>它没有更新底层 LLM 权重，优化对象是 runtime harness code/config。关键训练信号来自跨任务重复失败，而非单条 trajectory 的 reward。这是一种“软件层 policy optimization”。</p>
+<p><b>推理 / Serving：</b>训练完成后 harness 固定，held-out evaluation 不再在线自改。这个选择非常重要：生产环境通常更需要可版本化、可回滚的 runtime，而不是请求执行中不断重写自己的基础设施。</p>
+<p><b>实验设置与指标：</b>论文使用 τ² / AgentBench 等 deterministic agent environments，指标包括 accuracy、Pass@3、Pass^3、wall-clock training time、eval tokens、cache/API cost，并额外人工分析修改是否属于 model accommodation。</p>
+<p><b>核心结果：</b>相对 self-evolution baseline，Ecdysis 报告 harness training 最多 <b>1.84×</b> 加速，所得 harness 的 reasoning accuracy 相对提升 <b>18.56%</b>。在 Qwen3-8B 的 τ²-Airline 子集上，Self-Evolution accuracy / Pass@3 / Pass^3 为 35 / 50 / 20，Ecdysis+FDCR 为 60 / 80 / 40；同一 harness 切到未参与演化的 Qwen3-32B，accuracy 也从 51.67 提到 68.33，说明部分规则确实具备跨模型性。</p>
+<p><b>工业信号：</b>论文还展示拆掉 harness layer 后平均准确率只有约 29.72%，人工固定 harness 约 50.28%，而“每失败一次就修”的 naive coding-agent evolution 约 43.33%。这非常有工程意义：<b>自动化修改不等于自动化进步</b>。</p>
+<p><b>线上 A/B：</b>无。环境仍是 benchmark / sandbox，且训练 task 数有限。</p>
+<p><b>与主流方法比较：</b>相比 self-evolving prompt/harness，Ecdysis 多了一层 failure aggregation + attribution；相比直接 fine-tune model，它更便宜、可审计、跨模型复用。弱点是“跨任务重复”仍只是系统性原因的 proxy，不是真正因果识别；复杂线上事故也可能低频但高风险，不能因为不重复就忽略。</p>
+<p><b>推荐/搜索落地：</b>这套方法可以直接迁移到线上 bad case 治理。不要看到一个 bad query 就改全局 prompt、rule、rerank constraint；先聚类：是特定模型错、特定 query type 错、retrieval stage 错，还是全局 harness/controller 缺陷？只有稳定的跨 case pattern 才升级成全局策略。推荐系统长期积累的 case mining / cohort analysis 正好可以嫁接到 Agent harness evolution。</p>
+<p><b>局限：</b>样本量小、benchmark 较确定性；自动诊断本身依赖 LLM；某些模型/任务上 FDCR 也会负收益；latency 可能因更复杂 harness 增加。生产环境还需要权限、回滚、灰度、A/B 与 change-point detection。</p>
+<p><b>未来研究方向：</b>failure cluster 与线上 cohort 统一、因果归因、harness diff 自动验证、multi-model shared harness、shadow traffic、rollback policy，以及“global rule vs per-query adaptive policy”的自动分流。</p>
+<div class="resources"><b>资源：</b><br>① 原始 Paper：<a href="https://arxiv.org/abs/2609.11677">arXiv:2609.11677</a><br>② 官方项目 / 技术博客：未发现独立官方博客。<br>③ 官方代码：<a href="https://github.com/cuiyu-ai/Ecdysis">cuiyu-ai/Ecdysis</a>（已确认公开）。<br>④ 中文高质量解读：<a href="https://agihunt.info/papers/2609.11677">AGI Hunt：逐条修失败把人工 harness 修差，Ecdysis 跨任务归因提速 1.84 倍</a>。</div></div>
+
+<div class="paper" id="vllm"><div class="phase">Engineering Watch · vLLM / Serving</div><h2>vLLM：JIT Warmup 与 DeepSeek-V4 MegaMoE 启动路径同时被补强</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.6/10</span><span><b>工业成熟度</b> ★★★★★</span><span><b>创新性</b> ★★★☆☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 不适用 / 未披露</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>24h 官方更新：</b>vLLM 合入 <b>Parallelize mHC pre-norm JIT warmup</b>，目标是减少模型启动阶段串行 JIT warmup；同时修复 DeepSeek V4 MegaMoE 在 expert-parallel 条件下的启动错误。两项都不是新算法论文，但它们代表 production serving 里非常真实的 bottleneck：<b>冷启动与新架构兼容性</b>。</p>
+<p><b>为什么值得看：</b>在线推荐/搜索若引入 LLM reranker / Agent executor，不能只看 steady-state tokens/s。扩容、故障恢复、弹性实例、新 checkpoint rollout 都会撞上 initialization path。JIT warmup 并行化改善的是 time-to-ready；DeepSeek V4 修复改善的是 model×parallelism contract 的正确性。</p>
+<p><b>训练方法 / 离线指标 / A/B：</b>这是 runtime commit，不适用训练与论文实验；官方 commit 没有给统一 benchmark，因此不编造 QPS 或 P95 收益。建议在自有集群测 cold start、first-token latency、warmup CPU/GPU overlap、失败率和 rollout duration。</p>
+<p><b>落地启发：</b>把模型上线评测拆成三段：<b>startup → warm steady-state → degraded/recovery</b>。推荐系统里常见的“只压 steady-state latency”方法不足以评价 LLM runtime。</p>
+<div class="resources"><b>资源：</b><br>① Paper：非论文更新。<br>② 官方代码：<a href="https://github.com/vllm-project/vllm">vllm-project/vllm</a><br>③ 关键 commit：<a href="https://github.com/vllm-project/vllm/commit/3b533197a9419302987c12bcea5e4e06c9d40858">Parallelize mHC pre-norm JIT warmup</a> · <a href="https://github.com/vllm-project/vllm/commit/9f03b510c33575fe40c320b2d266a289e8a4b83a">DeepSeek V4 MegaMoE startup fix</a><br>④ 中文高质量解读：暂未找到针对这两个 commit 的可靠中文深度解读。</div></div>
+
+<div class="paper" id="sglang"><div class="phase">Engineering Watch · SGLang / Hardware Runtime</div><h2>SGLang：NPU 平台抽象与 DeepSeek-V4.1 MLA Kernel 同步推进</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.6/10</span><span><b>工业成熟度</b> ★★★★★</span><span><b>创新性</b> ★★★☆☆</span><span><b>与你方向的相关度</b> ★★★★★</span><span><b>是否官方开源</b> 是</span><span><b>是否有线上 A/B</b> 不适用 / 未披露</span><span><b>阅读优先级</b> A+</span></div>
+<p><b>24h 官方更新：</b>SGLang 新增基础 <b>NpuSRTPlatform</b> 实现，为 NPU runtime/platform abstraction 搭底座；另一项更新把 FlashMLA 指向支持 <b>DeepSeek-V4.1 kernels</b> 的 rebase head。一个偏“平台接口”，一个偏“模型专用 kernel”，共同说明 inference stack 正在两端同时扩张。</p>
+<p><b>技术判断：</b>未来 Serving 的可移植性不会来自“所有硬件跑同一份 generic kernel”，而更可能是<b>统一 scheduler/runtime contract + 硬件/模型专用 fast path</b>。这与推荐系统成熟架构很像：上层 feature/serving contract 统一，底层算子按 GPU/NPU/模型结构特化。</p>
+<p><b>训练 / 实验：</b>非论文更新，没有统一学术 benchmark；不对吞吐增益做无来源推断。值得在工程侧持续跟踪 DeepSeek-V4.x MLA/MoE、NPU fallback coverage、kernel correctness、数值精度和 multi-node scaling。</p>
+<p><b>职业启发：</b>如果希望从推荐算法扩展到 LLM systems，建议至少能读懂 scheduler、KV cache、parallelism、kernel dispatch 与 hardware abstraction PR。未来“算法上线能力”越来越包括这些边界层。</p>
+<div class="resources"><b>资源：</b><br>① Paper：非论文更新。<br>② 官方代码：<a href="https://github.com/sgl-project/sglang">sgl-project/sglang</a><br>③ 关键 commit：<a href="https://github.com/sgl-project/sglang/commit/6388b6cfb1d93c253714a408f1d66a093302acd7">Add base NpuSRTPlatform implementation</a> · <a href="https://github.com/sgl-project/sglang/commit/5ebb16005d2804bc3f87c689e3333a3734d80bf7">DeepSeek-V4.1 FlashMLA kernel update</a><br>④ 中文高质量解读：暂未找到针对这两个 commit 的可靠中文深度解读。</div></div>
+
+<div class="callout"><strong>今天对推荐 / 搜索工程最值得带走的三个动作：</strong>① 把 router 输入从“query + 全历史”改成显式的 compact execution state，尝试设计 write/retrieve/TTL schema；② 给 deep-search / LLM rerank 增加“是否值得继续探索”的 budgeted controller，不要固定多轮；③ 建立 Agent/LLM bad-case 的跨请求 failure clustering，只有反复出现的系统性模式才升级成全局 harness 规则。</div>
+</div></section></main>
+<footer><div class="wrap">AI × 推荐算法研究站 · Daily 2026-09-14 · 一手来源优先，时间口径显式标注</div></footer></body></html>
