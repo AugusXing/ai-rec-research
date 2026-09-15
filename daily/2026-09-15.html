@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.15｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-15 AI × 推荐算法研究日报：MIMA、ChronicleRec、OneLA、Generative Verifier、DRIFT、ForgeMegakernel 与 vLLM/SGLang 运行时更新。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.15</span><h1>今天的主线：推荐系统开始同时重写“兴趣监督、超长序列表示、召回后验证、生成式 Serving”四个边界</h1><p class="lead">观察窗口：<b>2026-09-14 10:00 → 2026-09-15 10:00（Asia/Shanghai）</b>。今天的主要新增信号来自 9/15 早间可见的 arXiv Monday announcement batch，以及 vLLM / SGLang 过去 24 小时合入的运行时更新。多数论文 v1 实际提交于 9/10–9/11 UTC，因此这里按“今日新进入公开研究流 / 今日值得补位”口径记录，不把 submission date 误写成 9/15。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>多兴趣召回的 collapse 可能首先是 supervision geometry 问题，而不只是 encoder 不够解耦</b>：MIMA 把同一 request 内多个正样本做 Hungarian exclusive assignment，线上交易笔数 +5.60%、交易金额 +5.44%；② <b>超长行为序列正在从“每个 candidate 重新检索”转向“先压成可缓存、带时间锚的用户资产”</b>：ChronicleRec 的 Chronicle Tokens 可按用户离线/准实时缓存，7 天线上 GMV +1.61%；③ <b>第一阶段召回不一定要重训才能提升短名单 recall</b>：Universal Generative Verifier 在 retriever 输出后做轻量 token-likelihood verification，且 catalog 越大收益越明显；④ <b>生成式推荐的系统瓶颈已经从 Transformer attention 扩展到 beam-state memory traffic</b>：OneLA 利用共享 prompt state + append-only transition records，在 large-beam 线性注意力解码上端到端 1.54–2.46×；⑤ <b>Serving 优化正进入“Agent 自动生成 kernel + 在线自适应 verification”的阶段</b>：ForgeMegakernel 用 coding agent + mid-state oracle 生成模型专用 megakernel，vLLM 则开始在线估计 speculative acceptance。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 MIMA · Multi-positive Exclusive Assignment</h3><p>最值得推荐工程师精读。它没有继续堆兴趣正交/多样性正则，而是直接改变监督方式：把同一 request 内多正样本一一分配给不同兴趣向量，让“不同兴趣被不同正样本负责”成为训练目标本身。离线和线上都强。</p></div>
+<div class="paper"><h3>🥈 ChronicleRec · Cacheable Lifelong User Tokens</h3><p>把超长历史从 per-candidate retrieval 变成 target-independent、按时间顺序组织的 Chronicle Tokens。对工业推荐最重要的是 serving contract：用户长历史先压缩一次，后续多个 candidate 共用。</p></div>
+<div class="paper"><h3>🥉 OneLA · Large-beam Linear-attention Serving</h3><p>生成式推荐常需要 beam=128/256/512，而 recurrent linear attention 如果给每个 beam 复制完整 state，内存和 DRAM 流量会成为新瓶颈。OneLA 把 beam divergence 表示成小型 transition log。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Supervision > Regularization</h3><p>MIMA 提醒：interest collapse、expert collapse、routing collapse 不一定靠更多正交 loss 解决。先检查训练样本如何把梯度分配给多个 latent slot / expert，监督结构本身可能决定是否分工。</p></div>
+<div class="paper"><h3>User History → Reusable Asset</h3><p>ChronicleRec 与 DRIFT 都反对“长序列越长越好”。下一阶段更像：先识别时间阶段与 preference drift，再把历史变成少量、可缓存、可解释的状态，而不是每次完整重算。</p></div>
+<div class="paper"><h3>Retriever → Retriever + Verifier</h3><p>第一阶段的真正目标是让 relevant item 进入 downstream 可消费的短 prefix，而不是单纯把它放进更深的 top-K。轻量 verifier 作为 post-hoc output adaptation，有机会成为 recall→pre-rank 的标准边界层。</p></div>
+<div class="paper"><h3>Generative Rec → State-aware Runtime</h3><p>OneLA、ForgeMegakernel 与 vLLM 的 adaptive verification 指向同一件事：模型结构改变后，Serving 不能只看 FLOPs；beam ancestry、recurrent state、acceptance probability、kernel fusion 都需要成为一等 runtime state。</p></div>
+</div>
+
+<h2>论文 / 更新优先级表</h2><p class="muted">Research Impact Score：范式变化 25%、工业证据 20%、技术创新 20%、推荐/搜索相关度 15%、后续研究空间 10%、开放/可复现性 10%。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>今日判断</th></tr></thead><tbody>
+<tr><td>S+</td><td><a href="#mima">MIMA</a></td><td>Multi-interest Retrieval</td><td>9.6/10</td><td>用 multi-positive exclusive assignment 从 supervision 侧解决兴趣塌缩；7-day A/B：交易笔数 +5.60%</td></tr>
+<tr><td>S+</td><td><a href="#chronicle">ChronicleRec</a></td><td>Lifelong User Modeling / Ranking</td><td>9.5/10</td><td>target-independent Chronicle Tokens 可缓存；训练约 4.8× 更快；线上 GMV +1.61%</td></tr>
+<tr><td>S+</td><td><a href="#onela">OneLA</a></td><td>Generative Rec / Serving</td><td>9.4/10</td><td>共享 prompt recurrent state + GTR + ancestry index；端到端 decode 1.54–2.46×</td></tr>
+<tr><td>S</td><td><a href="#verifier">Recommendation Retrievers Need Verifiers</a></td><td>Retrieval / Reranking</td><td>9.2/10</td><td>不重训 retriever，post-hoc verifier 提升 consumed-prefix Recall@10；收益随 catalog 规模增大</td></tr>
+<tr><td>S</td><td><a href="#drift">DRIFT</a></td><td>Long-sequence Generative Rec</td><td>9.0/10</td><td>显式建模 preference drift，最高 Recall@20 +21.6%，训练时间最高 -97.4%</td></tr>
+<tr><td>A+</td><td><a href="#forge">ForgeMegakernel</a></td><td>Inference / Kernel Generation</td><td>8.9/10</td><td>Coding Agent + correctness oracle 自动生成 per-model decode megakernel；对 SGLang 几何平均 1.21×</td></tr>
+<tr><td>A+</td><td><a href="#runtime">vLLM / SGLang 24h Runtime</a></td><td>Inference / Serving</td><td>8.7/10</td><td>vLLM adaptive verification + DS-v4.1 MXFP8；SGLang deep-gemm / VMM / loader / cache 生命周期继续收敛</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="mima"><div class="phase">Deep Dive 01 · Recall / Multi-interest Recommendation</div><h2>MIMA：兴趣塌缩的根因可能不是“向量不够正交”，而是每个样本只给一个正例</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.6/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现官方仓库</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>多兴趣召回（MIND、ComiRec 一类）希望用 K 个 user-interest vector 覆盖用户不同意图。但现实中经常发生 interest collapse：多个兴趣越来越相似，最终还是退化成“一个主兴趣 + 若干闲置槽位”。传统方法通常加 diversity / orthogonality regularizer，MIMA 的判断更根本：<b>单正样本训练本身就在制造不均衡梯度</b>。每次只有一个 positive 时，最接近它的那个 interest 被反复更新，其他 interest 缺监督。</p>
+<p><b>技术方案与关键模块：</b>第一步，把同一 request / impression 里共同发生的多个正反馈 item 组成 positive set；第二步，用 causal Transformer decoder 生成互补的 K 个兴趣向量；第三步，在 interest × positive 的匹配矩阵上做 <b>Hungarian optimal assignment</b>，强制每个 positive 独占一个 interest 的监督通道；第四步，引入轻量 routing head 估计不同 interest 的 activation probability，让不同 channel 的 score 在 serving 时可以校准后比较，而不是简单 max-pooling。</p>
+<p><b>为什么这一点重要：</b>正交 regularization 只是告诉多个 interest “不要一样”，但没有告诉它们“各自负责什么”。Exclusive assignment 把 specialization 写进 credit assignment：正样本 A 的梯度不会和正样本 B 继续挤到同一个兴趣槽。这个思想可以迁移到 MoE expert collapse、multi-head user representation、multi-intent query understanding。</p>
+<p><b>训练方法：</b>训练阶段先在 request 级形成 multi-positive set，再计算兴趣—正样本匹配成本，由 Hungarian 算法求 one-to-one assignment；被分配的 pair 承担主推荐损失。routing 模块同时学习 user 对各兴趣的激活强度。相比依赖附加 diversity loss，MIMA 更强调从主任务目标里自然形成分工。</p>
+<p><b>推理 / Serving：</b>线上仍保持多向量 ANN / matching 范式，不需要在每个候选上跑重型 cross-encoder。routing probability 可用于兴趣 score calibration；工程上新增成本主要来自 K 个兴趣检索与融合，Hungarian 只在训练侧执行。</p>
+<p><b>实验设置：</b>论文覆盖 Books、Beauty、Gowalla 三个公开数据集和 Lazada Thailand 工业数据。工业集约 591 万用户、760 万 item、6330 万交互，最大序列长度 1024；模型 hidden size 64、2-layer interest decoder，并对不同 K 做实验。</p>
+<p><b>离线指标：</b>公开数据相对强基线提升约 3.04%–15.72%；工业集 HR@100/500/1000 分别达到 0.2288 / 0.4091 / 0.4962，相对基线约 +7.98% / +12.24% / +13.03%。Interest Discrimination Margin 同时提升约 18.42%–23.66%，说明收益并非只来自更强 backbone，而确实伴随兴趣分工增强。</p>
+<p><b>线上 A/B：</b>7 天首页召回实验中，以 MIMA 替换 ComiRec-like 路径：<b>transaction count +5.60%，transaction amount +5.44%，exclusive impression ratio +5.12 个百分点</b>。对召回论文而言，这是非常强的工业证据。</p>
+<p><b>与主流方法比较：</b>相对 MIND/ComiRec 的优势是从 supervision 端解决 collapse；相对强制正交/对比 diversity loss，目标更贴近业务正样本分工。代价是需要 request 内存在可利用的多正反馈结构；如果绝大多数 request 只有一个正样本，必须设计跨窗口 positive grouping，可能引入时间偏差和弱标签噪声。</p>
+<p><b>适用场景：</b>电商首页、多品类 feed、内容平台、用户兴趣高度多峰且一个 session/request 可产生多个行为反馈的召回层。尤其适合当前已经有多兴趣向量但“看起来都差不多”的系统。</p>
+<p><b>局限 / 未解决问题：</b>Hungarian assignment 默认“正样本应该被不同兴趣解释”，但真实行为中多个正样本也可能属于同一意图；K 如何自适应、冷门兴趣如何稳定、routing probability 是否长期校准、跨天兴趣生命周期仍未解决。</p>
+<p><b>未来研究方向：</b>soft/partial matching、可变 K、长期 interest slot identity、跨 request 的兴趣连续性、业务 value-aware assignment，以及把 assignment 推到召回→粗排的跨阶段 candidate ownership。</p>
+<p><b>对推荐工程落地 / 职业技能的启发：</b>遇到 representation collapse 时，先画出“一个 training example 的梯度到底落到哪个 slot/expert”，再考虑加正则。对推荐算法工程师而言，optimal transport / Hungarian / set prediction 这类结构化匹配工具会越来越值得掌握。</p>
+<div class="resources"><h3>资源</h3><ul>
+<li>Paper：<a href="https://arxiv.org/abs/2609.12842">arXiv:2609.12842</a></li>
+<li>官方项目页 / 技术博客：论文未提供独立官方项目页。</li>
+<li>官方代码 / 模型 / 数据：截至 2026-09-15 10:00 CST，未确认官方开源仓库；公开数据集按论文引用可获取。</li>
+<li class="missing">中文 / 高质量第三方解读：暂未发现可靠中文精读；可先以论文 HTML / arXiv 原文为准。</li>
+</ul></div></div>
+
+<div class="paper" id="chronicle"><div class="phase">Deep Dive 02 · Lifelong User Modeling / Ranking</div><h2>ChronicleRec：把“超长行为序列”从每个候选的在线成本，变成每个用户可复用的 Chronicle Tokens</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.5/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现官方仓库</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>工业推荐希望利用数千到上万条用户历史。Full attention 成本太高；SIM/TWIN 一类 target-aware retrieval 虽然只取相关历史，但每个 candidate 都要做 target-dependent retrieval，内层循环成本大；target-independent compressor 可以缓存，却常把 query token 堆在序列末尾、做 bidirectional encoding，得到的 summary 无时间顺序且冗余。</p>
+<p><b>技术方案：</b>ChronicleRec 先做 <b>recency-aware multi-granularity merge</b>：近期行为保留高分辨率，越远历史越强压缩；然后把 learnable query tokens <b>穿插在时间轴中</b>，用 causal attention 保证每个 token 只能总结它时间锚之前的历史；再用 multi-horizon branches 屏蔽不同长度的近期窗口，逼不同 branch 学到不同时间尺度的长期兴趣。</p>
+<p><b>预训练：</b>Chronicle Alignment 采用 mask-and-predict：从较老的压缩历史中预测被 hold-out 的近期行为，用“过去能否解释临近现在”作为预训练信号。这样 Chronicle Token 不只是 reconstruction token，而是对下游未来行为有预测性的 user state。</p>
+<p><b>迁移 / Serving：</b>压缩器得到的 Chronicle Tokens 与 target 无关，因此可以按用户周期性计算并缓存。在线 ranker 直接把这些 token 作为 prefix，再拼近期行为 / candidate。论文给出 compress-only、hybrid 和 multi-branch 版本。这里最有价值的不是多一个 long-seq encoder，而是<b>把长历史计算移出 candidate loop</b>。</p>
+<p><b>实验设置：</b>KuaiRand-27K 约 2.7 万用户、3.22 亿交互，平均历史约 1.18 万；Tencent AdLive 约 20 万用户、1018 万 item、2.14 亿交互，平均历史约 1070。训练分别截到 2048 / 4000 的长历史范围。</p>
+<p><b>离线指标：</b>KuaiRand GAUC：Full-Attn 0.5601，VISTA 0.5518，ChronicleRec 0.5536，Hybrid 0.5541，Multi-ChronicleRec 0.5580；AdLive：Full-Attn 0.8071，VISTA 0.7995，ChronicleRec 0.8010，Hybrid 0.8030，Multi 0.8034。它的价值不是每个数据集都击败 Full-Attn，而是在明显更低成本下逼近 Full-Attn。</p>
+<p><b>关键 ablation：</b>interleaved-causal placement 在 AdLive GAUC 达 0.8034；end-causal 0.7890、interleaved-bi 0.7930、end-bi 0.7951。说明“时间锚 + causal visibility”不是装饰，而是 token 去冗余与时序组织的核心。</p>
+<p><b>效率：</b>Full-Attn 训练约 49.1GB / 2997 min；ChronicleRec 约 28.0GB / 620.3 min，训练时间约 <b>4.8× 更快</b>；Hybrid 24.8GB / 614.3 min。在线还可通过 per-user cache 把压缩计算从候选循环移除。</p>
+<p><b>线上 A/B：</b>在微信朋友圈广告 pCVR ranking 做 7-day A/B，<b>GMV +1.61%</b>，95% CI 约 [0.678%, 2.547%]。这让它比纯长序列论文更值得工程跟进。</p>
+<p><b>优劣势：</b>比 target-aware retrieval 更适合高 candidate 数的 ranking，因为 summary 可复用；比简单 pooling 更保留时间结构；比 full-attention 便宜。弱点是 user token 具有缓存 stale 问题，对突发兴趣可能反应慢，因此仍需 recent window/hybrid path。</p>
+<p><b>适用场景：</b>广告 pCTR/pCVR、短视频/电商精排、用户日活高且历史非常长、一个 request 内 candidate 很多的场景。对于高频更新用户，可做分层刷新：长期 Chronicle 低频刷新 + recent state 实时。</p>
+<p><b>局限 / 未解决：</b>token cache TTL、用户兴趣突然切换、跨设备 identity merge、长期 token 的版本兼容、压缩器与 ranker 联合升级如何灰度，论文仍未系统回答。</p>
+<p><b>未来方向：</b>增量 Chronicle Token、cache-aware training、multi-resolution token budget、自适应刷新、与召回 user embedding 共享底层 state，以及让 Chronicle state 被粗排/精排/重排跨阶段复用。</p>
+<p><b>工程 / 职业启发：</b>长序列研究不要只看 attention complexity，要学会把模型放进 serving graph：<b>什么按用户算一次，什么按 request 算一次，什么按 candidate 算 N 次</b>。这是推荐系统工程能力与纯建模能力的分水岭。</p>
+<div class="resources"><h3>资源</h3><ul>
+<li>Paper：<a href="https://arxiv.org/abs/2609.12375">arXiv:2609.12375</a></li>
+<li>官方项目页 / 技术博客：未见独立官方项目页。</li>
+<li>官方代码 / 模型 / 数据：截至今日未确认官方代码；KuaiRand 为公开数据，Tencent AdLive 为工业数据。</li>
+<li>第三方快速浏览：<a href="https://papers.cool/arxiv/2609.12375">Cool Papers 摘要页</a>；暂未发现可靠中文深度解读。</li>
+</ul></div></div>
+
+<div class="paper" id="onela"><div class="phase">Deep Dive 03 · Full-stack Generative Recommendation / Serving</div><h2>OneLA：线性注意力解决了长上下文，却在大 Beam 推荐里制造了新的“每 Beam 状态复制”问题</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.4/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景：</b>Generative Recommendation 用 semantic ID / item token 自回归生成候选，为了覆盖数百 item，beam width 常到 128–512。线性注意力（如 GDN/SSM 类 recurrent state）让 prompt 长度不再需要 O(L²) attention，但 beam search 会让每条 beam 都需要一份 recurrent state；如果 state 是 d_v×d_k 矩阵，复制与读写很快吞掉显存和带宽。</p>
+<p><b>关键洞察：</b>同一 request 的所有 beam 在 prefill 后共享完全相同的 prompt state，真正不同的只有很短的生成 suffix。因此不应该“每个 beam 存一份全状态”，而应该存 <b>1 份 shared context state + 每条 beam 的少量增量 transition</b>。</p>
+<p><b>三大模块：</b>① Shared post-prefill recurrent state <code>Sctx</code> 每个 request 只保存一次；② GDN Transition Record (GTR) 仅保存每个 decode step 的紧凑 <code>(α_t, δ_t, k_t)</code>，复杂度从 O(dv·dk) 降到 O(dv+dk)；③ Dynamic Beam Ancestry Index 只维护 beam 对 transition record 的引用关系，beam pruning / reorder / fan-out 时不复制既有 state。</p>
+<p><b>Projection Replay：</b>推理时不把完整 recurrent matrix 重建出来，只 replay 当前 query 真正需要的 state projection。再通过 fused shared-context GPU kernel，让同一 request 的多个 beam 在片上复用 <code>Sctx</code>，把 DRAM traffic 降下来。</p>
+<p><b>实验设置：</b>完整模型使用 Qwen3.5-0.8B，6 层 full attention + 18 层 GDN；典型推荐 workload R=4 requests、beam W=256，prompt 1K/5K，生成 3–7 tokens；operator suite 还覆盖 R=4/8/16、W=128/256/512。</p>
+<p><b>核心结果：</b>端到端 cumulative decode-forward 相对现有 GDN execution <b>1.54–2.46× speedup</b>。operator 层中位 speedup 报告约 40.5× vs vLLM FullState、42.5× vs SGLang FullState、17.5× vs ReplaySSM，说明 state traffic 才是该 workload 的主要瓶颈之一。</p>
+<p><b>内存 / 带宽：</b>在 R=4、W=512 时，OneLA recurrent path O=3/O=7 约 0.0755/0.308 ms，对比 vLLM FullState 约 3.00/10.9 ms；persistent state 约 36.3/101 MiB，对应约 56.5×/20.3× reduction；state writes 最高约 127× reduction。数值最大输出误差约 4.88e-4（相对 FP32 FullState）。</p>
+<p><b>与主流 Serving 比较：</b>Paged KV 解决 Transformer KV 生命周期，但 recurrent linear attention 的状态形态不同；一般 SSM replay 可以节省状态却反复重算 shared history。OneLA 的新意是利用推荐 beam 的“共享长前缀 + 极短分叉”结构，专门设计 ancestry-aware representation。</p>
+<p><b>线上 A/B：</b>无线上业务 A/B；论文目前是系统 benchmark。其工业成熟度因此低于 MIMA / ChronicleRec，但与推荐生成 Serving 的耦合非常直接。</p>
+<p><b>适用场景：</b>Semantic ID 生成式召回、beam width 大、输出 item token 很短、prompt/user history 很长，并且 backbone 使用 recurrent linear attention 的系统。普通 chat 小 beam 场景收益未必同等显著。</p>
+<p><b>局限：</b>强依赖 workload 结构与特定 linear-attention state algebra；beam 很小或 suffix 很长时收益会收窄；尚缺真实线上 QPS、multi-tenant、batch scheduler、故障恢复、mixed-model deployment 证据。</p>
+<p><b>未来方向：</b>与 prefix cache / speculative decoding / continuous batching 融合；beam ancestry 作为 scheduler 一等状态；semantic-ID constrained decoding 与 state compression 联合设计；让 serving cost 反向影响 beam budget。</p>
+<p><b>工程启发：</b>生成式推荐不能只学 tokenizer、SID、GR loss。要补齐 <b>beam search、GPU memory traffic、kernel fusion、state representation、scheduler</b>，否则模型论文到生产之间会有巨大断层。</p>
+<div class="resources"><h3>资源</h3><ul>
+<li>Paper：<a href="https://arxiv.org/abs/2609.12399">arXiv:2609.12399</a></li>
+<li>官方项目页 / 技术博客：未见独立项目页。</li>
+<li>官方代码 / 模型 / 数据：截至今日未确认官方代码仓库。</li>
+<li>第三方快速浏览：<a href="https://papers.cool/arxiv/2609.12399">Cool Papers</a>；暂未发现可靠中文深度精读。</li>
+</ul></div></div>
+
+<div class="paper" id="verifier"><div class="phase">Deep Dive 04 · Retrieval → Pre-ranking Boundary</div><h2>Recommendation Retrievers Need Verifiers：召回器不用重训，也可以把“埋在 top-K 深处”的正样本推回下游真正消费的短名单</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现官方仓库</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>业务问题：</b>多阶段推荐里，first-stage retriever 也许已经把 relevant item 放进 top-1000，但粗排只能消费 top-100。此时“深 top-K recall 很高”并没有业务意义。重新训练整套 retriever 代价高、风险大，因此论文研究 <b>post-hoc verification</b>。</p>
+<p><b>技术方案：</b>原 retriever/drafter 保持冻结，只输出 query state + top-K candidates。轻量 generative verifier 对每个 candidate 的 deterministic item identifier token（semantic ID、hash ID 等）计算条件生成 likelihood，作为独立验证信号；随后用 reciprocal-rank fusion 与原 retriever rank 合并，避免不同模型分数尺度校准。</p>
+<p><b>训练：</b>只用 next-token cross entropy 做 post-hoc training，不需要 sampled negative，也不要求训练时构造 inference candidate pool。这一点对工业迁移很友好：可以先训练 verifier，再 shadow rerank，不扰动召回主模型。</p>
+<p><b>推理 / Serving：</b>只验证 retriever top-K，而不是全库生成，因此计算量与 K 成正比。合理位置是召回后、粗排前：先用 ANN/sequence retriever 保覆盖，再由 verifier 把真正高概率 relevant item 推进 consumed prefix。</p>
+<p><b>离线结果：</b>Amazon Industrial / Office 的 Recall@10 相对提升：SASRec +6.2% / +9.9%，GRU4Rec +8.1% / +10.8%，NextItNet +8.4% / +14.5%，MiniOneRec +2.6% / +4.6%。在 YaMBDa 规模扩大时，提升更明显：SASRec 在 50M/500M/5B 约 +2.3% / +17.3% / +25.3%，GRU4Rec +20.6% / +22.3% / +27.3%，NextItNet +14.4% / +24.2% / +29.8%。</p>
+<p><b>为什么 catalog 越大收益越大：</b>第一阶段 score density 和近邻混淆增加，relevant item 更容易“在池里但排得不够前”。Verifier 作为不同归纳偏置的第二视角，正好修这种 consumed-prefix error。</p>
+<p><b>与粗排 / cross-encoder 的区别：</b>它不是通用高成本 feature cross，而是依赖 item identifier token likelihood 的轻量 output-side adaptation；优势是可挂在不同 retriever 后，缺点是 verifier 仍需要为 top-K 候选计算，延迟预算必须实测。</p>
+<p><b>线上 A/B：</b>未披露。因此当前最关键的未决问题是 Recall@10 增益是否能转成 downstream CTR/GMV，以及额外 verifier latency 是否比“直接扩大第一阶段 K”更划算。</p>
+<p><b>适用场景：</b>已有成熟 retriever、替换风险高，但 offline analysis 发现很多正样本存在于 top-500/top-1000 却掉出 top-50/top-100 的系统；也适合 generative/SID retriever 的第二阶段校验。</p>
+<p><b>未来研究：</b>蒸馏成 batch verifier、request-adaptive verify K、与粗排 teacher 联合训练、用 downstream survival 作为 reward、verification confidence 决定是否扩大 recall pool。</p>
+<p><b>工程启发：</b>评估召回时应同时看 <b>pool recall 与 consumed-prefix recall</b>。如果差距大，不一定先换召回器；增加一个可回滚、可 shadow 的 verifier，可能是更低风险的改造路径。</p>
+<div class="resources"><h3>资源</h3><ul>
+<li>Paper：<a href="https://arxiv.org/abs/2609.12270">arXiv:2609.12270</a></li>
+<li>官方项目页 / 技术博客：未见。</li>
+<li>官方代码 / 模型 / 数据：截至今日未确认官方开源。</li>
+<li>第三方快速浏览：<a href="https://papers.cool/arxiv/2609.12270">Cool Papers</a>；暂无可靠中文精读。</li>
+</ul></div></div>
+
+<div class="paper" id="drift"><div class="phase">Deep Dive 05 · Long-sequence Generative Recommendation</div><h2>DRIFT：长历史不是“越多越好”，先沿 preference drift 切成阶段，再让近期行为选择性读取长期阶段</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现官方仓库</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景：</b>论文先验证了两个常见误区：full-sequence 方法把长度从 50 拉到 1000，训练时间可增长 6.9×–33.9×，准确率却饱和甚至下降；target-aware retrieval 也不是 top-K 越大越好，过多“语义相似但偏好阶段不一致”的历史会反而伤害推荐。</p>
+<p><b>方法：</b>DRIFT 从 semantic shift、embedding change、时间间隔、类别分布 JSD 等多维信号学习 differentiable boundary score，再根据用户自身 drift density 自适应估计 subsequence 数量；通过 soft membership + Gumbel-Softmax 把历史分进少量 preference-consistent subsequences，并用 linear attention 聚合。</p>
+<p><b>Hierarchical Context Fusion：</b>近期 r 条行为先用 autoregressive encoder 建模，再 cross-attend 到长期 subsequence representations；decoder 侧同时读取 recent context 与 global subsequence context，通过 gate 动态决定当前 token 更依赖近期还是长期兴趣。</p>
+<p><b>训练：</b>总损失 = recommendation task loss + subsequence structure loss。后者同时约束语义内聚、时间连续和类别一致；以 GLASS 为例，task loss 包含 SID generation CE、recent InfoNCE、subsequence recommendation InfoNCE。</p>
+<p><b>复杂度：</b>整体约 O(LKd)，K、recent length r 远小于 L，因此对历史长度近似线性。这个设计本质是把长历史从 token-level all-to-all interaction 转成 “L→K 的阶段压缩 + r↔K 交互”。</p>
+<p><b>实验：</b>KuaiRec、ML-20M、Taobao MM，最大历史 1000（ML-20M 为 200），A100 40GB；与 GRU4Rec、SASRec、HSTU、FuXi-Linear、TIGER、DIGER、GLASS 等比较。论文报告在三种 backbone 上均可插入。</p>
+<p><b>离线 / 效率：</b>论文总结最高 <b>Recall@20 +21.6%</b>、训练时间最高 <b>-97.4%</b>；在 DRIFT-HSTU 的对比中，每 epoch 训练时间约降低 37.6%–42.1%，GPU memory 约降低 39.6%–61.1%。</p>
+<p><b>线上 A/B：</b>无。当前证据主要是公共数据离线实验，因此对真实用户 drift、实时 feature、缓存与吞吐的收益仍需验证。</p>
+<p><b>优劣势：</b>相对单纯最近窗口，它保留长期兴趣；相对 target-aware retrieval，它用多维 preference drift 而非单一 semantic similarity；相对 ChronicleRec，DRIFT 更强调动态分段与生成式推荐兼容，ChronicleRec 更强调 target-independent cache 与工业 serving。</p>
+<p><b>局限：</b>类别分布/语义 drift 信号依赖 metadata 与 embedding 稳定性；soft boundary 是否和真实兴趣阶段一致难校验；在线增量更新与 subsequence merge/split 未充分讨论。</p>
+<p><b>值得押注：</b>把 DRIFT 的阶段边界用于 Chronicle-style cache refresh；让 retrieval top-K 由 preference-stage compatibility 控制；在线根据 drift 强度动态调整 long-history compute budget。</p>
+<div class="resources"><h3>资源</h3><ul>
+<li>Paper：<a href="https://arxiv.org/abs/2609.12556">arXiv:2609.12556</a></li>
+<li>官方项目 / 代码：截至今日未确认官方仓库。</li>
+<li>第三方浏览：<a href="https://arcxiv.org/abs/2609.12556">ArcXiv 摘要页</a>；暂无可靠中文深度解读。</li>
+</ul></div></div>
+
+<div class="paper" id="forge"><div class="phase">Tracking 06 · Inference / Agentic Kernel Engineering</div><h2>ForgeMegakernel：Coding Agent 开始直接参与“每个模型一套 Decode Megakernel”的系统优化</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未发现官方仓库</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>问题：</b>autoregressive decode 常受 HBM bandwidth 限制。Megakernel 可以把多个 op 合成一个常驻 GPU kernel，减少中间读写与 launch，但自动生成同时兼顾模型泛化和 correctness 很难。</p>
+<p><b>方案：</b>ForgeMegakernel 给 coding agent 一套 10-stage progressive milestone knowledge base，引导其构建 fine-grained per-SM instruction stream、用 dependency counters 替代 global sync、用 shared-memory buffer pool 做负载均衡；独立 <b>mid-state test oracle</b> 在生成过程中检查中间状态的性能、误差和精度，避免“跑得快但悄悄算错”。</p>
+<p><b>结果：</b>覆盖 8 个 model family、0.6B–13B、14 类 decoding operation；生成 kernel 达到 50.5%–85.9% MBU，几何平均比 SGLang 0.5.18 快约 <b>1.21×</b>、比 megakernel compiler 快约 <b>1.54×</b>。嵌入 SGLang 后，在 GSM8K ragged prompt 上 14 个 kernel 均比基线 decode 更快且答案精度相近。</p>
+<p><b>为什么值得跟：</b>Agent 不只是写 Python glue code，而开始参与 hardware-aware codegen + verification。未来 inference engineer 的工作可能从“手写每个 kernel”变成设计知识库、oracle、搜索空间与回归测试。</p>
+<p><b>局限：</b>尚非线上服务 A/B；模型 family 和 GPU 架构外推性、compile time、kernel maintenance、动态 shape 覆盖仍需长期验证。</p>
+<div class="resources"><h3>资源</h3><ul><li>Paper：<a href="https://arxiv.org/abs/2609.12379">arXiv:2609.12379</a></li><li>官方代码：截至今日未发现匹配的官方公开仓库。</li><li>第三方：<a href="https://arcxiv.org/abs/2609.12379">ArcXiv</a> / <a href="https://papers.cool/arxiv/2609.12379">Cool Papers</a>；暂无可靠中文精读。</li></ul></div></div>
+
+<div class="paper" id="runtime"><div class="phase">Tracking 07 · 24h Runtime Commits</div><h2>vLLM / SGLang：Speculative Verification、MXFP8、VMM、DeepGEMM 与 Cache 生命周期继续进入生产细节</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.7/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 不适用</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>vLLM：</b>Model Runner V2 合入 adaptive verification 的 online acceptance estimator：根据 draft logits 的置信特征估计各 draft position 被接受的概率，并在线 refit；实现中特别区分 batch order 与 persistent request slot，避免 speculative batch 重排后概率串到错误请求。另有 DeepSeek-v4.1 ROCm 路径把 MXFP8 weight 在 <code>dot_scaled</code> 不可用时改为一次性 dequantize，避免 decode 中重复解量化。</p>
+<p><b>为什么 adaptive verification 重要：</b>speculative decoding 的 optimal draft depth 随 request、temperature、模型状态变化。固定验证长度浪费 GPU；online acceptance estimate 有机会让系统按“预计接受多少 token”动态裁剪 draft/verification budget。</p>
+<p><b>SGLang：</b>过去 24h 继续推进 <code>sgl-deep-gemm 0.2.0</code>、Rust frontend 的 CUDA VMM feature transport、weight loading 与 postprocessing 解耦、prefetch cache state 限定在 request attempt 生命周期，以及 AMD HiCache host pointer alias 修复。这些更新共同指向：runtime contract 越来越需要明确 memory ownership、attempt scope 与 model-loader phase boundary。</p>
+<p><b>工程建议：</b>对生成式推荐/搜索，不要只测 steady-state tokens/s。至少同时监控 acceptance rate / draft waste、beam-state bytes、cache hit、prefetch stale、time-to-ready、P95 和 recovery correctness。</p>
+<div class="resources"><h3>资源</h3><ul>
+<li>vLLM adaptive verification commit：<a href="https://github.com/vllm-project/vllm/commit/3bb0a03f35269185b6358753e64932bb946cc531">#52228</a></li>
+<li>vLLM DeepSeek-v4.1 MXFP8 commit：<a href="https://github.com/vllm-project/vllm/commit/ef5f7cd119c60cdc75643beca232c159c9ad0930">#56560</a></li>
+<li>SGLang DeepGEMM bump：<a href="https://github.com/sgl-project/sglang/commit/2fca6d69aa9347a8230aff3443dfc69cb7639cf2">#39371</a></li>
+<li>SGLang CUDA VMM / Rust：<a href="https://github.com/sgl-project/sglang/commit/a2b4e8888fe0ed989be174c0f2aac7007e959b3a">#39347</a></li>
+</ul></div></div>
+
+<div class="callout"><strong>今天对推荐算法工程师最值得带走的三件事：</strong>① 多兴趣模型先检查 supervision/credit assignment，不要默认继续堆 diversity loss；② 长序列建模要把“per-user / per-request / per-candidate 的计算边界”作为模型设计的一部分；③ 生成式推荐的能力上限越来越受 Serving 限制，beam state、cache、speculative acceptance 与 kernel engineering 应进入算法工程师的技能栈。</div>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Daily 2026-09-15 · Research first, production evidence matters</div></footer></body></html>
