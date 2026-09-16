@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.16｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-16 AI × 推荐算法研究日报：VARG、LazFormer、Self-Evolving Memory/LION、Question’s Gambit、DiBud、MoE Retriever、P3Rec。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.16</span><h1>今天的主线：生成式检索开始直接对齐“业务价值与下游排序”，推荐 Scaling 则从更大模型转向可迁移预训练、稀疏记忆与预算化检索</h1><p class="lead">观察窗口：<b>2026-09-15 10:00 → 2026-09-16 10:00（Asia/Shanghai）</b>。今日优先跟踪 arXiv 9 月 15 日公开 announce batch、9/15 修订版本与官方 GitHub。个别论文的 v1 submission 早于 24 小时，但在今天进入 cs.IR 公开流时会明确标注，避免把 submission date 与 announcement date 混为一谈。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>Generative Retrieval 正从“生成相关 Item”进入“直接承担价值建模与 Ranker 对齐”阶段</b>：VARG 把业务价值写进 Semantic ID 的排序 token，并用 Prefix-GRPO 同时对齐合法性、行为、搜索相关性与现有 ranker advantage；在 Tmall 搜索 14 天、20% 流量实验中 GMV +1.45%。② <b>工业 Ranker Scaling 的关键不再只是把 Transformer 做大，而是如何把生成式预训练的 dense knowledge 安全迁移到排序任务</b>：LazFormer 用 transferable residual adapter 与 asymmetric multi-epoch，线上 GMV +9.85%，单机 A10 QPS 仅下降 12.1%。③ <b>持续学习型生成式推荐需要“可隔离写入”的参数区域</b>：LION 用 sparse key-value memory 避免所有行为变化都污染共享 decoder。④ <b>Agentic Search 的第一步不是普通 query rewrite，而是决定后续搜索空间上限的结构化动作</b>：Question’s Gambit 在 GPT-5.5 上把 BrowseComp-Plus accuracy 从 83.1% 提到 90.5%。⑤ <b>Hybrid Retrieval 的 Top-K 不是成本预算</b>：DiBud 用 access budget 管 RRF exact-prefix certification，在校准到 95% quality 后显著减少访问量。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 VARG · Value-Aware Generative Retrieval</h3><p>今天最值得推荐 / 搜索工程师精读。它不是单纯“把 item ID token 化”，而是把<b>检索、业务价值、个性化、现有 Ranker preference、在线刷新</b>一起写进生成式召回系统，并给出真实 Tmall 大流量 A/B。</p></div>
+<div class="paper"><h3>🥈 LazFormer · Industrial Ranker Scaling</h3><p>最强工业 ranking 信号。核心不是“Transformer 更深”，而是如何把 generative pretraining 的 sparse+dense 参数迁到排序、如何隔离 ranking-specific features、如何让多 epoch 训练不把 sparse embedding 过拟合。</p></div>
+<div class="paper"><h3>🥉 LION · Self-Evolving Memory</h3><p>生成式推荐 continual learning 的一个很干净的系统假设：<b>行为变化不应该全部写回共享主干</b>。把频繁变化的 preference delta 写进稀疏激活 memory，兼顾隔离、强化与可扩展性。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Semantic ID → Business-aware Address</h3><p>VARG 表明 SID 不再只是压缩 item namespace。层级 token 可以承担语义聚类、细粒度 value ordering、个性化 preference 和 constraint decode。下一步 SID 设计会越来越像“可学习的业务地址空间”。</p></div>
+<div class="paper"><h3>Pretrain → Transfer Contract</h3><p>LazFormer 的价值在于指出：推荐预训练真正难的是 transfer contract。哪些参数直接迁、哪些特征只允许 residual 注入、哪些 sparse 参数需要重置，比“再堆几层 Transformer”更决定线上收益。</p></div>
+<div class="paper"><h3>Continual Rec → Isolated Mutable State</h3><p>LION 与昨日 ChronicleRec 指向同一方向：用户 / 系统状态应该有“稳定主干 + 可变状态层”。前者解决训练期 evolution conflict，后者解决 serving 期历史重算；两者可进一步统一成可版本化 user-state protocol。</p></div>
+<div class="paper"><h3>Search Controller → Budgeted First Move</h3><p>Question’s Gambit 与 DiBud 都在弱化固定 Top-K：前者优化 Agent 第一轮搜索动作，后者把 retrieval depth 换成真实 access budget。未来 controller 管的不只是模型选择，还包括 query decomposition、list access、verify-K 与停止条件。</p></div>
+</div>
+
+<h2>论文 / 更新优先级表</h2><p class="muted">Research Impact Score：范式变化 25%、工业证据 20%、技术创新 20%、推荐/搜索相关度 15%、后续研究空间 10%、开放/可复现性 10%。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>今日判断</th></tr></thead><tbody>
+<tr><td>S+</td><td><a href="#varg">VARG</a></td><td>Generative Retrieval / E-commerce Search</td><td>9.8/10</td><td>Value-aware SID + Prefix-GRPO + 现有 Ranker 对齐；Tmall 14-day A/B GMV +1.45%</td></tr>
+<tr><td>S+</td><td><a href="#lazformer">LazFormer</a></td><td>Industrial Ranking / Pretraining</td><td>9.7/10</td><td>生成式预训练 dense knowledge 可迁移到工业 Ranker；线上 GMV +9.85%</td></tr>
+<tr><td>S</td><td><a href="#lion">Self-Evolving Memory / LION</a></td><td>Continual Generative Rec</td><td>9.3/10</td><td>Sparse KV memory 隔离持续偏好变化；官方代码已开源</td></tr>
+<tr><td>S</td><td><a href="#gambit">Question’s Gambit</a></td><td>Agentic Deep Search</td><td>9.2/10</td><td>第一轮 clue decomposition + complementary search；GPT-5.5 accuracy +7.4pt</td></tr>
+<tr><td>S</td><td><a href="#dibud">Top-K Is Not a Budget / DiBud</a></td><td>Hybrid Retrieval / RAG</td><td>9.0/10</td><td>把固定 Top-K 换成 access budget；95% 质量目标下显著减少访问</td></tr>
+<tr><td>S</td><td><a href="#moe">MoE LMs as Retrievers</a></td><td>Dense Retrieval / Efficient Serving</td><td>8.9/10</td><td>同 active params 下 MoE retrieval 更强，并可 inference-time 减 expert</td></tr>
+<tr><td>A+</td><td><a href="#p3rec">P3Rec v2</a></td><td>LLM-enhanced Recommendation</td><td>8.6/10</td><td>prior/posterior preference distillation + entropy calibration；9/15 更新</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="varg"><div class="phase">Deep Dive 01 · Generative Retrieval / Industrial Search</div><h2>VARG：Semantic ID 不只是“商品编码”，而是把语义、价值、个性化与 Ranker Preference 合并成可生成的检索地址</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.8/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>传统 e-commerce retrieval 往往把“召回覆盖”和“最终商业价值”拆开：第一阶段追求相关性 / recall，粗排与精排再修正 GMV、CTR、CVR 与 personalization。但 Generative Retrieval 一旦直接生成商品标识，decoder 的 prefix probability 会强烈决定候选能否被生成；如果 Semantic ID 只表达语义相似性，就可能出现“语义对、价值错”“召回到了但和现有 ranker 的 preference 冲突”。VARG 在 Tmall 搜索里直接把这个矛盾当主问题。</p>
+<p><b>现有问题：</b>第一，RQ-VAE 类 SID 的同一语义桶内 item 排序通常没有显式业务含义；第二，标准 next-token SFT 优化 token-level likelihood，不等于 item-level purchase / GMV / ranker advantage；第三，catalog 每天变化，SID namespace 如果频繁重建会造成地址漂移、索引与模型版本不一致；第四，autoregressive beam search 延迟仍是工业上线瓶颈。</p>
+<p><b>技术方案与关键模块：</b><b>VARG-ID</b> 先用 RQ-VAE 得到语义前缀，并用 query-item 双向对比目标强化搜索语义；随后在同一 prefix 内对 item 做 value-aware ordering，把第三层 token 变成具有业务先验的细粒度地址。这样 SID 前缀负责“是什么”，末级 token 同时负责“同类商品里谁更值得优先生成”。</p>
+<p><b>训练方法：</b>采用三阶段 SFT：① Item → SID，学习 catalog memorization；② Query → SID，学习搜索语义检索；③ User + Query + History → SID，学习个性化检索。个性化部分还引入 query value weighting、SID hierarchy token weighting 和 local ordinal supervision，让同一语义桶内的相对次序可学习。</p>
+<p><b>Prefix-GRPO：</b>最重要的升级是把 RL reward 从“最终 token 是否对”扩成多源约束：合法 SID、用户行为、现有 ranker advantage、搜索相关性等，并让 reward 对 prefix 层级敏感。其工程意义是：生成式召回不必脱离原有 ranker 独立演化，而可以把成熟 ranker 作为 preference teacher / reward source，使新路径更容易 shadow、灰度和回退。</p>
+<p><b>推理 / Serving：</b>在线使用 trie-constrained beam search，论文主设置为 3-token SID，层级 beam 宽度逐级扩大。生成出的 item 会去重后通过 reserved quota <b>绕过 item-level pre-ranking，直接进入现有 final ranker</b>。这一步非常值得注意：VARG 不是“替换所有 stage”，而是建立一条 generative fast lane，再由成熟 final ranker 保底。</p>
+<p><b>Catalog / 模型刷新：</b>论文设计 dual-loop refresh：日级更新商品与模型，同时维护旧地址稳定；新商品尽量复用既有 slot；更长周期再做主 SID 重构。对工业系统来说，这比一次性离线指标更重要，因为 generative namespace 的真正风险是 address drift 与 model-index mismatch。</p>
+<p><b>实验设置：</b>基于 Tmall 搜索、千万级商品规模。模型以 Qwen2.5-0.5B-Instruct 为基础并扩展 SID token；全参数 SFT 使用 128 GPU，Prefix-GRPO 使用 64 GPU、每 prompt 采样 8 个 response。个性化 / SID 重排审计覆盖约 385 万样本。</p>
+<p><b>离线指标：</b>论文表格显示 Prefix-GRPO 相对 SFT baseline 持续改善 HR、Q2I-GMV Recall 与 NDCG。已披露的代表性结果中，SFT Base 的 HR@1/10/20 为 6.39/26.33/34.68，Q2I-GMV Recall@1/10 为 36.12/95.18，NDCG@10 为 15.15；多源 GRPO 分别提升到 6.43/26.45/34.81、38.52/97.12、15.29。论文进一步报告完整 Prefix-GRPO 对 VARG-ID SFT 的 Q2I-GMV Recall@1 有明显绝对增益。</p>
+<p><b>线上 A/B：</b>14 天、20% Tmall 搜索流量：<b>GMV +1.45%，IPV/user +0.22%，Exp PV/user -0.09%，UCTR +0.13%，UCTCVR +0.13%，PCTR +0.31%</b>。GMV 和用户侧转化同时上涨，而曝光量略降，说明它更像是在改善候选价值密度，而不是简单扩大流量。</p>
+<p><b>效率 / 成本：</b>论文还探索了 lightweight decoder：用 prompt-end hidden state 直接预测 SID 各层，可把平均延迟从 10.41ms 降到 0.94ms、单卡 QPS 约 11.1×，但 HR@1/20/100 分别下降约 1.13/8.38/10.77 个点，因此没有替代在线主路径。这个负结果很有价值：<b>生成式检索的 token dependency 不能简单用并行 head 免费拿掉</b>。</p>
+<p><b>与主流方法的优劣势：</b>相比 ANN / two-tower，VARG 能把 catalog semantics、业务价值和 personalization 统一到可生成地址；相比普通 TIGER / Semantic ID 路线，它更强调 ranker-aligned RL 与动态 catalog contract。代价是训练和 serving 复杂度显著提升，reward composition、SID 稳定性、beam latency 都成为新的系统风险。</p>
+<p><b>适用场景：</b>大规模电商搜索、商品价值分布高度长尾、已有成熟 final ranker、且愿意给 generative path 预留候选 quota 的系统。对于内容推荐，也可把最后一级 SID 从“GMV 排序”换成 watch-time / quality / creator value 等业务先验。</p>
+<p><b>局限 / 尚未解决：</b>① 线上只展示一段时间窗口，长期 catalog churn 下 SID 稳定性仍需验证；② reward 多源组合需要手工权重与约束设计；③ beam search 成本仍高；④ 生成路径绕过 pre-rank 后，业务规则、风控与多样性约束需要重新定义边界；⑤ SID value ordering 可能强化既有头部商品，需要额外检查 exploration / fairness。</p>
+<p><b>未来研究方向：</b>动态 beam / verify-K、ranker survival distillation、增量 SID tokenization、value-aware codebook 与 long-tail exploration 联合训练、generative recall 与 conventional ANN 的 budget router，以及把 final ranker advantage 改成可校准的 counterfactual reward。</p>
+<p><b>对推荐 / 搜索算法工程落地的启发：</b>如果做生成式召回，不要只看 HR@K。至少同时建立 <b>SID stability、consumed-prefix recall、final-ranker advantage、generated quota survival、GMV/CTR、latency、catalog refresh correctness</b> 七类指标。更值得掌握的技能是：Semantic ID、RL preference alignment、constrained decoding、ranker distillation、在线双轨 serving 与 catalog lifecycle。</p>
+<h3>资源</h3><ul><li>原始 Paper：<a href="https://arxiv.org/abs/2609.14493">arXiv:2609.14493 · VARG</a>；<a href="https://arxiv.org/html/2609.14493v1">HTML 全文</a></li><li>官方项目页 / 技术博客：截至 2026-09-16 10:00 CST 未发现独立官方项目页或研究博客，论文为当前一手来源。</li><li>官方代码 / 模型 / 数据集：截至上述时间未发现作者官方 GitHub、模型权重或可公开工业数据集；<b>未开源 / 未确认</b>。</li><li>中文 / 高质量第三方解读：新论文发布不足 24 小时，暂未发现可靠知乎 / 微信公众号 / alphaXiv 中文 / Moonlight 中文精读；建议优先读原文。</li></ul>
+</div>
+
+<div class="paper" id="lazformer"><div class="phase">Deep Dive 02 · Ranking / Generative Pre-training</div><h2>LazFormer：工业 Ranker Scaling 的难点不是“层数”，而是让生成式预训练知识可迁、可隔离、可多轮训练</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.7/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>工业 ranking 模型长期受两个限制：一是 sparse ID / feature embedding 规模巨大，二是短监督窗口内很难把更深 Transformer 训练稳定。LLM 的经验表明 generative pretraining 能通过长序列自监督吸收行为模式，但推荐 ranking 的输入 feature、目标和 serving 约束与预训练并不完全一致。LazFormer 的核心问题就是：<b>怎样把生成式行为预训练真正变成 Ranker 的初始化资产，而不是一个“预训练完却不能迁”的独立模型？</b></p>
+<p><b>技术方案：</b>预训练阶段对用户行为序列做 autoregressive feature generation，同时训练 sparse 与 dense 参数。进入 ranking 时，既迁 sparse embedding，也迁 Transformer dense weights；但 ranking-specific feature 不直接覆盖预训练表示，而通过 <b>transferable residual adapter</b> 注入，从而隔离“预训练见过的稳定行为结构”和“排序独有的上下文 / 业务特征”。</p>
+<p><b>Request-aware Ranking：</b>对超长序列采用 long-sequence compression + hybrid sparse attention；近期行为保留高分辨率，远期历史压缩。排序模型不只是 user-sequence encoder，而是在 request 条件下重新组织历史信息，避免为所有候选 / 请求无差别处理完整序列。</p>
+<p><b>Asymmetric Multi-epoch：</b>传统推荐 ranker 多 epoch 很容易让高维 sparse 参数快速过拟合，而 dense Transformer 反而还没充分吸收监督。LazFormer 的处理是<b>epoch 间重置 sparse 参数，但让 dense 参数持续累积更新</b>，把“稀疏记忆”和“稠密能力”的训练时间尺度拆开。这是很值得在工业系统中独立验证的技巧。</p>
+<p><b>训练数据：</b>生成式预训练覆盖约 <b>1600 万用户、110 亿 token、1 年行为历史</b>；ranking 数据覆盖约 <b>1100 万用户、3.7 亿曝光</b>，训练 25 个连续日、测试后续 1 日。基线包含 Transformer、HSTU、OneTrans、SORT、STCA，并控制 sparse initialization，使比较更聚焦于 dense transfer 和结构设计。</p>
+<p><b>离线指标：</b>论文报告 LazFormer 在 CTR/CVR 的 AUC/GAUC 上整体优于对照模型。效率消融更有工程信息量：hybrid sparse attention 在一个配置下达到约 88.04% sparsity、attention 约 3.7× 加速；更激进配置约 92.63% sparsity、5.1× 加速，AUC 仅付出约 0.10pt 级别代价。序列压缩中，保留 1024 个近期 token、远期按 group size 8 压缩取得较好质量 / 训练时间平衡。</p>
+<p><b>线上 A/B：</b>在大型电商首页 ranking 阶段，以 3-layer SORT-like baseline 对比 5-layer LazFormer，2 周实验：<b>IPV +5.21%，Orders +3.38%，Buyers +3.70%，GMV +9.85%</b>。这是今天最强的工业结果之一。</p>
+<p><b>推理 / Serving：</b>尽管模型更深、序列更长，在 NVIDIA A10 单机上 QPS 仅下降 <b>12.1%</b>。原因不是单一 kernel trick，而是压缩 + sparse attention + request-aware 计算共同把理论规模增长转换成可控 serving cost。</p>
+<p><b>与主流方法比较：</b>相比 HSTU / SORT 直接从排序监督训练，LazFormer多了长期生成式预训练资产；相比“只迁 embedding”，它强调 dense backbone 的 transferable knowledge；相比一味扩大 sequence length，它显式压缩远期信息。最大代价是训练 pipeline 明显变复杂，需要维护 pretrain checkpoint、feature compatibility、adapter、epoch reset 和 online serving profile。</p>
+<p><b>适用场景：</b>用户行为丰富、已有大规模 sparse feature、能获得跨月 / 跨年历史数据、ranking QPS 较高但仍允许 10%–20% serving overhead 的电商 / 内容推荐。对于数据量较小业务，预训练成本可能无法摊薄。</p>
+<p><b>局限：</b>① 线上收益来自多个模块组合，单个模块的边际贡献还需业务内复现；② 生成式预训练 task 与线上目标仍存在 domain gap；③ sparse reset 对不同 feature frequency / optimizer 的稳定性可能敏感；④ 跨场景迁移、冷启动 item 与长期 drift 仍缺充分验证。</p>
+<p><b>未来方向：</b>多场景 foundation ranker、预训练 state 与 Chronicle-style user cache 融合、adapter routing、按 request 难度动态 sequence budget、dense/sparse 不同 learning clock，以及把生成式预训练目标直接对齐 downstream ranker value。</p>
+<p><b>对工程与职业技能的启发：</b>推荐算法的“Scaling”能力正在从会调 DNN 结构变成<b>预训练数据治理 + 长序列建模 + transfer learning + sparse/dense 优化 + serving profiling</b>。如果你做精排，这是比单纯追 LLM 应用更值得补的能力组合。</p>
+<h3>资源</h3><ul><li>原始 Paper：<a href="https://arxiv.org/abs/2609.14978">arXiv:2609.14978 · LazFormer</a>；<a href="https://arxiv.org/html/2609.14978v1">HTML 全文</a></li><li>官方项目页 / 技术博客：截至 2026-09-16 10:00 CST 未发现独立官方项目页。</li><li>官方代码 / 模型 / 数据集：未发现作者官方开源仓库、权重或工业数据集；<b>未开源 / 未确认</b>。</li><li>中文 / 高质量第三方解读：暂未发现可靠中文精读；目前应以论文表格与消融为准，避免二手摘要放大线上数字。</li></ul>
+</div>
+
+<div class="paper" id="lion"><div class="phase">Deep Dive 03 · Continual Generative Recommendation</div><h2>Self-Evolving Memory / LION：持续推荐的关键不是“反复重训”，而是给新偏好一个稀疏、隔离、可强化的写入空间</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.3/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 业务动机：</b>Generative Recommendation 通常让一个自回归模型同时承担用户表示、行为序列建模与 item generation。流式新数据不断到来时，最直接做法是 continual fine-tuning / distillation；但所有新行为都更新共享参数，会形成作者所说的 <b>evolution conflict</b>：高频、主流兴趣的梯度占据共享空间，稀有但重要的偏好容易被覆盖。</p>
+<p><b>核心方案：</b>LION 在生成式推荐 backbone 中插入 sparse key-value memory。输入 query 只激活少量 key/value，因此一次更新只改局部 memory cell，而不是把全部 preference delta 写回共享 decoder。它把“模型会什么”和“最近新学到什么”拆成稳定主干与可变记忆。</p>
+<p><b>Consolidation Loss：</b>仅靠 sparse activation 只能隔离，还不能保证 rare preference 被强化。论文加入 consolidation objective，直接提升 memory 对偏好的可辨识性，并通过实验显示对 inactive / underrepresented 用户的收益更明显。这与经典 continual learning 的 replay / regularization 路线不同：它优先改变参数拓扑和写入路径。</p>
+<p><b>参数与扩展性：</b>memory 参数量约为 2Nd，不随用户数线性增长；相比为每用户维护独立 embedding / adapter 的 |U|d，当用户规模大于 memory key 数时更省。top-K 稀疏组合还提供巨大组合空间，例如 N=256、K=8 时组合数已约 10^15 量级；新用户无需新增专属参数。</p>
+<p><b>训练设置：</b>以 TIGER / T5 风格 backbone 为基础，continual chain 按 P0→P4 顺序训练。AdamW + cosine LR，warmup 0.01，weight decay 0.001，seed 42；除特殊对照外，模型参数整体更新，memory 通过 query-driven sparse route 接收更局部的梯度。</p>
+<p><b>数据：</b>Amazon Games（34,089 users / 11,037 items / 252,015 interactions）、CDs（21,347 / 14,239 / 185,855）、Toys（22,158 / 11,250 / 140,943），按时间切成多个持续学习 period，专门观察 active 与 inactive 用户在时间推进后的遗忘情况。</p>
+<p><b>离线结果：</b>LION 在多个 period 与 active/inactive group 上持续优于 TIGER 等 baseline，尤其对 inactive 用户更明显。memory size 对结果相当稳健：不同 key 数与 activation budget 下 Recall@10 只在很窄范围波动，例如 N/K=64/32 时 Games/CDs/Toys 约 0.0649/0.0439/0.0763，128/8 时约 0.0647/0.0440/0.0775。consolidation weight 在 Games 上从 λ=0 的 0.0586 提升到 λ=1.0 的 0.0724，说明收益不是只靠额外参数。</p>
+<p><b>推理 / Serving：</b>在线额外成本主要是 memory key 检索与少量 value read；由于只读 top-K memory，而不是为每个用户挂一套 adapter，理论上更适合大用户规模。论文仍主要是离线研究，真实高 QPS 下 key lookup、cache locality、memory update consistency 尚需工业验证。</p>
+<p><b>与主流方法比较：</b>相对 continual fine-tuning，它减少共享参数的冲突；相对 per-user embedding / adapter，它参数更共享、更可扩展；相对 replay buffer，不依赖保存大量历史样本。缺点是 memory key 的语义可解释性、长期碎片化、热点 cell 写冲突，以及 memory 与 backbone 的版本耦合都可能成为新问题。</p>
+<p><b>适用场景：</b>用户兴趣变化快、长尾用户重要、流式更新频繁、又不希望每天全量重训大生成模型的推荐系统。它也适合作为 ChronicleRec 一类 cacheable user state 的“训练期可变状态”补充。</p>
+<p><b>未来研究：</b>memory TTL / compaction、冷热分层、分布式一致性、drift-triggered write、把 memory key 与 Semantic ID / interest slot 对齐，以及在在线 A/B 中比较“主干更新频率 × memory 更新频率 × freshness”的三维成本。</p>
+<p><b>工程启发：</b>持续学习系统先问“哪些参数应该被频繁写”，再问“怎么防遗忘”。把 mutable state 设计成一等公民，会比每轮都用 EWC / distillation 去修共享参数冲突更工程化。</p>
+<h3>资源</h3><ul><li>原始 Paper：<a href="https://arxiv.org/abs/2609.15598">arXiv:2609.15598 · Self-Evolving Memory for Generative Recommendation</a>；论文注明 accepted by CIKM 2026。</li><li>官方项目页 / 技术博客：作者未提供独立项目页；论文与官方仓库为一手来源。</li><li>官方代码：<a href="https://github.com/JazyJiang/Self-Evolving-Memory-for-Generative-Recommendation">Self-Evolving-Memory-for-Generative-Recommendation</a>；未见官方模型权重 / 工业数据。</li><li>中文 / 高质量第三方解读：截至今日暂无可靠中文精读；CatalyzeX / ArXivSignals 已有聚合页，但建议不替代原文。</li></ul>
+</div>
+
+<div class="paper" id="gambit"><div class="phase">Deep Dive 04 · Agentic Deep Search</div><h2>Question’s Gambit：Deep Search 的“第一手”决定后续证据上限，不能把它当成普通 Query Rewrite</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>问题：</b>Agentic Search 往往强调多轮 reason-search-reason，但如果第一轮 retrieval 锁定了错误子空间，后面再聪明的 Agent 也只能在低质量 evidence pool 里循环。尤其对 compositional / multi-hop 问题，单条原始 query 常把多个 clue 混在一起。</p>
+<p><b>方案：</b>Question’s Gambit 把 first move 变成一个独立 stage：先拆 clue，再生成互补搜索式，聚合第一轮多个结果，之后统一 rerank，再交给后续 iterative agent。作者把它接入 Pi-Serini，保持 BM25 retriever 与后续 agent loop 基本不变，因此收益可以更明确归因于第一步。</p>
+<p><b>实验：</b>BrowseComp-Plus 上，DeepSeek-v4-pro accuracy 71.4→76.9（+5.5pt），GPT-5.4-mini 68.1→79.0（+10.9pt），GPT-5.5 83.1→90.5（+7.4pt）。在 GPT-5.5 上，gold evidence recall 也从约 72.9 提升到 85.9；这说明不是“模型更会猜”，而是第一轮确实改善了可用证据覆盖。</p>
+<p><b>Serving：</b>代价是首轮 query 数与 rerank 计算上升，但它可能减少后续 agent 的无效搜索轮数。因此正确指标不是“第一轮更贵”，而是 end-to-end successful-task latency / search calls / tokens / accuracy。工业落地应给 clue 数、首轮并发度和 rerank budget 设置 controller。</p>
+<p><b>与 RAG / 推荐搜索的关系：</b>电商复杂 query、旅行规划、长尾商品搜寻、FAQ / enterprise search 都可以把“第一轮拆问题”视为 retrieval stage；推荐场景则可把 user request 拆成 intent constraints，再分配到不同召回源，而不是让一个 embedding 同时承载全部意图。</p>
+<p><b>局限：</b>当前主要是 benchmark 证据，没有线上成本 / A/B；clue decomposition 可能把简单 query 过度复杂化；首轮多 query 对热门索引和 API 成本敏感；需要配合 sufficiency gate，简单问题应直接走 cheap path。</p>
+<p><b>未来：</b>与 GeneralQPP / SAFARI 结合，先估计 query decomposition value，再决定是否执行 Gambit；把 first-move reward 改成后续总搜索成本与最终成功率的联合目标。</p>
+<h3>资源</h3><ul><li>原始 Paper：<a href="https://arxiv.org/abs/2609.14412">arXiv:2609.14412 · Question’s Gambit</a>；<a href="https://arxiv.org/html/2609.14412v1">HTML 全文</a></li><li>官方代码：<a href="https://github.com/radinhamidi/Question-s-Gambit">Question-s-Gambit</a></li><li>官方模型 / 数据：沿用论文所述 benchmark / retrieval stack，未发现作者另行发布模型权重。</li><li>中文 / 第三方：暂未发现可靠中文精读；新工作建议直接结合仓库复现实验。</li></ul>
+</div>
+
+<div class="paper" id="dibud"><div class="phase">Deep Dive 05 · Hybrid Retrieval / RAG Budget</div><h2>Top-K Is Not a Budget：检索深度不是资源预算，DiBud 把 Hybrid RRF 改写成“给定访问成本，尽量认证更多 Exact Prefix”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景：</b>Hybrid Retrieval 常从 sparse / dense 两条 list 各取固定 Top-L，再做 Reciprocal Rank Fusion。问题是“Top-20”不是固定成本：不同 query、不同 list 的候选重叠和 score 分布不同，要证明融合后的 exact top-K 可能需要完全不同数量的 list access。</p>
+<p><b>DiBud：</b>把输入从固定 L 改成 access budget。在预算内增量读取不同 list，并维护当前 RRF candidate 的上界 / 下界；只有当某个 prefix 的相对次序可以被数学上认证时才输出 exact prefix。算法目标变成<b>在固定访问预算下最大化已认证输出长度</b>。</p>
+<p><b>结果：</b>五个 query set 上，exact Top-20 的访问成本呈明显长尾。预算 2048 accesses 时，DiBud 在前 100 个候选中的平均 certified output 相比 balanced access 高 7.86%；当把预算校准到“保持 95% 质量”后，held-out nDCG@20 达 95.05%–97.68%，同时相比完整 exact Top-20 减少约 65.92%–99.53% list accesses。</p>
+<p><b>为什么重要：</b>这把 RAG / 搜索里的 fixed top-K 从“参数”降级为一种不可靠代理，真正应优化的是 <b>access、latency、memory bandwidth、reranker budget、最终 quality</b>。它也和 vLLM speculative adaptive verification、Agent halting 是同一类思想：按请求动态决定工作量。</p>
+<p><b>局限：</b>当前只讨论 RRF 与 list access，实际 ANN / inverted index 的 wall-clock cost 并不完全等价；不同 index 的一次 access 成本也不均匀。下一步应扩展为 heterogeneous cost budget。</p>
+<p><b>工程启发：</b>如果有 BM25 + dense + graph / entity 多路召回，值得把“每路固定取 100”改造成 request-level budget allocator，并监控 certified prefix length、downstream recall 与真实 P95。</p>
+<h3>资源</h3><ul><li>原始 Paper：<a href="https://arxiv.org/abs/2609.15143">arXiv:2609.15143 · Top-K Is Not a Budget for Hybrid Retrieval</a></li><li>官方代码：<a href="https://github.com/ln-one/top-k-is-not-a-budget">top-k-is-not-a-budget</a></li><li>官方模型 / 数据：以检索实验与公开 benchmark 为主，未提供独立模型权重。</li><li>第三方：<a href="https://arxivsignals.io/papers/2609.15143">ArXivSignals</a> 有快速聚合；截至今日未发现可靠中文精读。</li></ul>
+</div>
+
+<div class="paper" id="moe"><div class="phase">Important Update 06 · Retrieval Model Architecture</div><h2>Mixture-of-Experts Language Models Can Be Strong and Efficient Retrievers：MoE 的优势不仅在生成，也能落到第一阶段向量检索</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>时间说明：</b>论文 v1 submission 为 2026-09-11，但在今天跟踪的 cs.IR announce 流中出现，因此作为“补位工作”而非严格 9/15 新提交记录。</p>
+<p><b>核心结论：</b>在统一 fine-tuning / serving 条件下，MoE decoder LM 作为 retriever 可比相近 active-parameter 的 dense 模型最高提升约 <b>+3.0 nDCG@10（BEIR）</b>；最强 MoE 能以约 <b>59% 更少 active params</b>匹配 8B dense，同时 query encoding time 低约 18%。更特别的是，query-time 可以减少激活 expert 数而无需重新训练 / 重建文档索引，在保持 >99% effectiveness 时进一步降低最高约 26% query encoding time。</p>
+<p><b>意义：</b>这给“离线统一 document index + 在线按请求调 compute”提供新路径：文档 embedding 固定，而 query encoder 可按 latency tier 改 expert budget。对实时搜索 / RAG router 很有吸引力。</p>
+<p><b>局限：</b>MoE serving 的 token routing、batch fragmentation、expert placement 会让理论 active params 不等于真实成本；论文暂无工业 A/B。</p>
+<h3>资源</h3><ul><li>原始 Paper：<a href="https://arxiv.org/abs/2609.13486">arXiv:2609.13486</a></li><li>官方项目 / 代码 / 模型：截至 2026-09-16 10:00 CST 未发现论文作者对应官方开源资源，标记为<b>未确认</b>。</li><li>中文解读：暂无可靠中文精读。</li></ul>
+</div>
+
+<div class="paper" id="p3rec"><div class="phase">Important Update 07 · LLM-enhanced Recommendation</div><h2>P3Rec v2：把 Prior Preference 与 Target-conditioned Posterior Preference 分开蒸馏，再用 Interest Entropy 校准用户表示</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.6/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>更新时间：</b>v1 为 9/12，v2 于 9/15 修订，因此今天记录为版本更新而非全新投稿。</p>
+<p><b>核心问题：</b>LLM-as-enhancer 常把“长期稳定兴趣”和“看到目标 item 后才容易解释出来的 posterior reasoning”混成一种 supervision。P3Rec 显式拆成 target-agnostic prior 与 target-conditioned posterior，再引入 item-centric preference；训练时先吸收 prior，再用 posterior 做细粒度 distillation，并用 interest entropy 衡量兴趣分散程度、动态校准 user representation。</p>
+<p><b>价值：</b>这个拆分非常适合工业蒸馏：线上 student 不必访问 target-revealing reasoning，但训练时可以利用 posterior teacher 形成更细粒度 preference signal。它与 MIMA 的共同点都是在解决“监督怎么分配”，而非单纯升级 backbone。</p>
+<p><b>局限：</b>暂无线上 A/B，LLM 生成 preference 的成本、稳定性和数据泄漏边界仍需谨慎验证。</p>
+<h3>资源</h3><ul><li>原始 Paper：<a href="https://arxiv.org/abs/2609.13993">arXiv:2609.13993 · P3Rec</a></li><li>官方项目 / 代码 / 模型：截至今日未发现作者官方仓库，标记为<b>未确认</b>。</li><li>中文解读：暂无可靠中文精读。</li></ul>
+</div>
+
+<div class="paper"><div class="phase">今日工程落地建议</div><h2>如果只做 3 个实验</h2><p><b>1）生成式召回：</b>不要直接替换现有 ANN。先建一条 VARG-style reserved quota：生成候选 → 去重 → 直接让成熟 final ranker 评估，记录 ranker advantage、candidate survival、GMV density 与额外 P95。这样能先验证 generative path 的真实增量，而不必一次重构全链路。</p><p><b>2）精排 Scaling：</b>把“dense pretrain weights 是否值得迁”做成 2×2 消融：只迁 sparse / sparse+dense；无 adapter / residual adapter。再加一组 sparse-reset asymmetric multi-epoch，看 GAUC、训练稳定性与线上 serving cost，而不是先扩大层数。</p><p><b>3）Hybrid Retrieval / Agent：</b>把固定 Top-K 改成明确的 request budget telemetry：每路访问数、first-move query 数、rerank 条数、总 search calls、P95、最终成功率。先把成本变成可观察变量，之后才能做 learned controller。</p></div>
+
+<div class="paper"><div class="phase">今天对职业技能的启发</div><h2>推荐算法工程师值得补的能力正在从“模型结构”转向“训练-检索-排序-Serving 联合设计”</h2><p>今天最值得积累的四组能力：<b>① Generative Retrieval：Semantic ID、constraint decoding、ranker-aligned RL；② Foundation Ranking：长序列预训练、sparse/dense transfer、adapter 与多 epoch 优化；③ Stateful / Continual Rec：可缓存 user state、sparse memory、增量更新与 version compatibility；④ Budgeted Search：Hybrid Retrieval、Agent first move、dynamic top-K / verify-K、端到端 cost-aware evaluation。</b>它们都直接连接推荐 / 搜索工业链路，不是单纯 Prompt 工程。</p></div>
+
+<div class="paper"><div class="phase">时间与来源说明</div><p>本页按“过去 24 小时公开可见的新论文 / 新版本 / 当日 arXiv announcement”筛选，并显式区分 submission、revision 与 announcement。线上 A/B、离线指标、效率数字优先来自论文原文；未确认的官方代码不会用第三方仓库冒充。中文精读若尚未形成可靠来源，会明确写“暂无”，不为凑资源而链接低质量搬运。</p></div>
+</div></section></main>
+<footer><div class="wrap">AI × 推荐算法研究站 · Daily 2026-09-16 · Primary sources first</div></footer></body></html>
