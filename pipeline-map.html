@@ -1,87 +1,84 @@
 <!doctype html><html lang="zh-CN"><head><title>推荐链路｜AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="按召回、粗排、精排、重排与混排、跨阶段统一分类推荐与搜索论文，并跟踪工业成熟度、开源、线上 A/B 与研究价值。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="index.html#latest">最新进展</a><a href="year.html">年度综述</a><a href="paper-map.html">Paper Map</a><a href="pipeline-map.html"><b>推荐链路</b></a><a href="index.html#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">Recommendation Pipeline Map · 更新至 2026.09.15</span><h1>把研究放回真实推荐链路：召回 → 粗排 → 精排 → 重排 / 混排 → 跨阶段统一</h1><p class="lead">这里不按“模型名字”分类，而是看工作应该落在真实系统哪一层。9/15 的变化非常具体：<b>MIMA</b> 重写多兴趣召回的监督方式；<b>Generative Verifier</b> 在召回与粗排之间新增一个可插拔 verification 层；<b>ChronicleRec / DRIFT</b> 重写精排如何消费超长用户历史；<b>OneLA</b> 把生成式推荐 Serving 的 beam-state 管理纳入跨阶段成本模型。</p></div>
-<section><div class="wrap"><div class="callout"><strong>链路总判断：</strong>下一代推荐/搜索系统更像<b>统一 state / supervision / verification contract + stage-local executors + cheap controller + state-aware runtime</b>。召回负责覆盖与多意图 ownership；verifier 负责把 relevant candidate 推进真正消费的 prefix；精排消费可缓存的长期 user state；重排做结构约束；runtime 管 beam/KV/cache/speculative budget。</div>
+<main><div class="wrap hero"><span class="kicker">Recommendation Pipeline Map · 更新至 2026.09.16</span><h1>把研究放回真实推荐链路：召回 → 粗排 → 精排 → 重排 / 混排 → 跨阶段统一</h1><p class="lead">今天最关键的变化是：<b>VARG</b> 在召回侧建立一条 value-aware generative fast lane，生成候选可绕过 item-level pre-rank 后交给 final ranker；<b>LazFormer</b> 把一年行为生成式预训练真正迁进工业精排；<b>LION</b> 给持续偏好单独的 mutable memory；<b>Question’s Gambit / DiBud</b> 则把搜索第一步与 retrieval depth 变成 controller 可管理的预算。</p></div>
+<section><div class="wrap"><div class="callout"><strong>链路总判断：</strong>下一代推荐 / 搜索更像<b>多路召回 + 生成式 fast lane + verifier / budget controller + foundation ranker + versioned user state + stage-local executors</b>。不是让一个大模型吞掉全部 stage，而是让 stage 之间共享 state、preference、confidence、cost 与 downstream survival 信号。</div>
 
-<div class="paper" id="recall"><div class="phase">Tab 01 · 召回 / Retrieval</div><h2>从“一个 User Vector 找相似 Item”走向“多兴趣 Ownership + 置信度 + Verifier”</h2>
-<div class="table-wrap"><table><thead><tr><th>工作</th><th>问题</th><th>落地位置</th><th>成熟度</th><th>关键判断</th></tr></thead><tbody>
-<tr><td><a href="daily/2026-09-15.html#mima"><b>MIMA</b></a></td><td>多兴趣 collapse</td><td>多向量 user retrieval</td><td>★★★★★</td><td>先重写 positive→interest 的 credit assignment，再考虑 diversity regularizer；7-day A/B 交易 +5.60%</td></tr>
-<tr><td><b>SAM-D2Q</b></td><td>keyword vocabulary mismatch</td><td>离线 generated query/doc asset → inverted index</td><td>★★★★★</td><td>把生成模型能力写回低延迟检索资产</td></tr>
-<tr><td><a href="daily/2026-09-11.html#literag"><b>LiteRAG</b></a></td><td>GraphRAG 在线多轮 LLM 太贵</td><td>多跳 graph retrieval controller</td><td>★★★☆☆</td><td>图可以保留，遍历器不必每一步用 LLM</td></tr>
-<tr><td><a href="daily/2026-09-12.html#qpp"><b>GeneralQPP</b></a></td><td>不知道 retrieval 是否失败</td><td>召回后 confidence / escalation gate</td><td>★★★★☆</td><td>score-shape 可廉价决定是否扩 top-K / rerank / Agent fallback</td></tr>
-<tr><td><a href="daily/2026-09-12.html#timely"><b>TimelyRAG</b></a></td><td>旧/新版高度相似但有效期不同</td><td>first-stage 后 temporal rerank</td><td>★★★☆☆</td><td>相关性之外显式建模时间有效性</td></tr>
-<tr><td><a href="daily/2026-09-12.html#glie"><b>GLIE</b></a></td><td>late-interaction vectors 存储爆炸</td><td>index + shortlist reconstruction</td><td>★★★☆☆</td><td>少量 vectors 兼作轻量索引与 generative code</td></tr>
-<tr><td><a href="daily/2026-09-14.html#safari"><b>SAFARI</b></a></td><td>证据不足时是否继续探索</td><td>query rewrite / 扩 top-K / 换召回源的 policy</td><td>★★★☆☆</td><td>把 explore-vs-execute 训练成有预算的决策</td></tr>
+<div class="paper" id="recall"><div class="phase">Tab 01 · 召回 / Retrieval</div><h2>从“相似度召回”走向“多兴趣 Ownership + Value-aware Generative Address + Dynamic Compute”</h2>
+<div class="table-wrap"><table><thead><tr><th>工作</th><th>落点</th><th>解决什么</th><th>工业成熟度</th><th>关键证据</th></tr></thead><tbody>
+<tr><td><a href="daily/2026-09-16.html#varg"><b>VARG</b></a></td><td>生成式商品召回</td><td>SID 同时编码语义 / 价值，并与 final ranker preference 对齐</td><td>★★★★★</td><td>Tmall GMV +1.45%</td></tr>
+<tr><td><a href="daily/2026-09-15.html#mima"><b>MIMA</b></a></td><td>多兴趣向量召回</td><td>multi-positive exclusive assignment 解决 interest collapse</td><td>★★★★★</td><td>交易笔数 +5.60%</td></tr>
+<tr><td><a href="daily/2026-09-16.html#moe"><b>MoE Retriever</b></a></td><td>Query encoder</td><td>以较少 active params 提升检索，并支持 query-time expert budget</td><td>★★★☆☆</td><td>最高 +3.0 nDCG@10；匹配 8B dense 时 active params -59%</td></tr>
+<tr><td>SAM-D2Q</td><td>离线 generated retrieval asset</td><td>把生成模型能力写回低延迟索引</td><td>★★★★★</td><td>减少在线生成依赖</td></tr>
+<tr><td>GLIE</td><td>late-interaction retrieval</td><td>少量向量兼作索引与 reconstruction code</td><td>★★★☆☆</td><td>存储 / 交互折中</td></tr>
 </tbody></table></div>
-<p><b>9/15 最值得落地的实验：</b>如果已有 ComiRec/MIND 类多兴趣召回，统计 interest cosine、各 slot 被选中频率、不同 positive 的 gradient ownership；如果一个 interest 吃掉绝大多数正样本，优先验证 multi-positive exclusive assignment，而不是继续堆正交 loss。</p></div>
+<div class="stats"><span><b>VARG · Research Impact Score / 研究价值</b> 9.8/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<div class="stats"><span><b>MoE Retriever · Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>9/16 工程判断：</b>召回层应从固定“若干 retrieval source 各出 Top-K”升级为 source + budget 的联合调度。ANN、multi-interest、generative retrieval、MoE query encoder 都可以共存，由 request difficulty / value / latency tier 决定预算。</p></div>
 
-<div class="paper" id="recall-verifier"><div class="phase">Tab 01.5 · 召回后验证 / Retrieval Verification</div><h2>新增一个边界层：Pool Recall 不等于 Consumed-prefix Recall</h2>
-<p><b>为什么单独成层：</b>实际 cascade 中粗排只能消费前几十/几百候选。很多召回错误并不是“正样本没召回”，而是“已经在 top-1000，却没进 top-100”。这类问题直接重训 retriever 可能代价过高。</p>
-<div class="table-wrap"><table><thead><tr><th>工作</th><th>输入</th><th>动作</th><th>工业意义</th></tr></thead><tbody>
-<tr><td><a href="daily/2026-09-15.html#verifier"><b>Universal Generative Verifier</b></a></td><td>retriever query state + top-K candidate</td><td>计算 item identifier token likelihood，RRF 融合后重排</td><td>冻结召回器做 post-hoc output adaptation；大 catalog 收益更明显</td></tr>
-<tr><td>GeneralQPP</td><td>score distribution</td><td>判断检索是否充分</td><td>决定是否触发 verifier / 扩召回</td></tr>
-<tr><td>Downstream teacher</td><td>粗排/精排 survival label</td><td>蒸馏 candidate survival</td><td>未来可把 verifier 训练目标从 next-token likelihood 推向 stage survival</td></tr>
+<div class="paper" id="retrieval-controller"><div class="phase">Tab 01.5 · 搜索控制 / Retrieval Controller</div><h2>Top-K 退场：第一轮怎么搜、搜几路、每路访问多少，开始成为显式决策</h2>
+<div class="table-wrap"><table><thead><tr><th>工作</th><th>输入</th><th>Controller 动作</th><th>关键价值</th></tr></thead><tbody>
+<tr><td><a href="daily/2026-09-16.html#gambit"><b>Question’s Gambit</b></a></td><td>复杂用户问题</td><td>clue decomposition → complementary queries → pooled rerank</td><td>优化 Deep Search 第一手</td></tr>
+<tr><td><a href="daily/2026-09-16.html#dibud"><b>DiBud</b></a></td><td>sparse / dense ranked lists</td><td>按 access budget 增量读取并认证 exact prefix</td><td>把 Top-K 换成真实访问成本</td></tr>
+<tr><td>GeneralQPP</td><td>retrieval score shape</td><td>决定 evidence 是否充分</td><td>控制是否扩召回 / rerank / Agent fallback</td></tr>
+<tr><td>SAFARI</td><td>当前 evidence / uncertainty</td><td>explore vs execute</td><td>学习什么时候继续搜</td></tr>
 </tbody></table></div>
-<p><b>重点指标：</b>Recall@poolK、Recall@consumeK、Verifier Lift、额外 P50/P95、verify-K、粗排 survival、最终 CTR/GMV。只有 Recall@10 涨而 downstream 不涨，不能算成功。</p>
-<p><b>值得押注：</b>request-adaptive verify-K：高 confidence 请求直接过，边界请求才验证；如果 verifier 仍不确定，再扩 pool 或触发重召回。</p></div>
+<div class="stats"><span><b>Question’s Gambit · Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<div class="stats"><span><b>DiBud · Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>推荐 / 搜索落地：</b>复杂 query 先预测“是否值得 decomposition”，然后决定 first-move query 数；Hybrid Retrieval 再按 access budget 动态读取；若 score-shape 仍不充分，则扩召回或进入 Agent。这样 controller 的 action space 是可解释且可量化成本的。</p></div>
 
-<div class="paper" id="prerank"><div class="phase">Tab 02 · 粗排 / Pre-ranking</div><h2>从“轻模型筛候选”走向“下游偏好感知 + Verifier 输入 + 动态预算”</h2>
-<div class="table-wrap"><table><thead><tr><th>工作</th><th>核心机制</th><th>当前启发</th></tr></thead><tbody>
-<tr><td>COPR / Rethink / HCCP</td><td>ranking supervision → pre-ranking alignment</td><td>下游 preference 应进入上游，但多为单向 teacher-student</td></tr>
-<tr><td><a href="daily/2026-09-12.html#unirec"><b>UniRec</b></a></td><td>shared embedding + vertical consistency + joint fusion</td><td>粗排 fusion 本身与精排共同优化，而不是只改 backbone score</td></tr>
-<tr><td><a href="daily/2026-09-15.html#verifier"><b>Verifier 前置</b></a></td><td>召回 top-K output-side verification</td><td>粗排接收的 candidate pool 更“干净”；可减少为救 recall 而盲目扩大粗排 K</td></tr>
-<tr><td>ReST / shared user state</td><td>user history representation 复用</td><td>把预算留给 candidate interaction，而不是重复编码 history</td></tr>
-<tr><td>Fugu / Gated Router</td><td>quality/cost-aware execution plan</td><td>轻粗排 / 重粗排 / LLM-enhanced path 按 request 难度路由</td></tr>
+<div class="paper" id="recall-verifier"><div class="phase">Tab 01.7 · 召回后验证 / Retrieval Verification</div><h2>Pool Recall 不等于 Consumed-prefix Recall：Verifier 成为新的 stage boundary</h2><p><b>问题：</b>粗排只能消费短 prefix，很多 relevant item 已在 top-1000 却没进 top-100。直接重训 retriever 成本高，也不一定解决“候选顺序”问题。</p><p><b>代表工作：</b><a href="daily/2026-09-15.html#verifier"><b>Recommendation Retrievers Need Verifiers</b></a> 冻结 retriever，只对 top-K candidate identifier 做 generative likelihood 验证，再用 RRF 融合。VARG 进一步把 downstream ranker advantage 前置进生成式训练。</p><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div><p><b>重点指标：</b>Recall@poolK、Recall@consumeK、verifier lift、generated quota survival、额外 P95、final ranker advantage、最终 CTR/GMV。</p></div>
+
+<div class="paper" id="prerank"><div class="phase">Tab 02 · 粗排 / Pre-ranking</div><h2>粗排的角色正在分化：传统候选走轻模型，生成式高价值候选可走受控 Fast Lane</h2>
+<div class="table-wrap"><table><thead><tr><th>工作 / 路线</th><th>机制</th><th>当前启发</th></tr></thead><tbody>
+<tr><td>COPR / Rethink / HCCP</td><td>ranking supervision → pre-ranking alignment</td><td>downstream preference 进入上游</td></tr>
+<tr><td>UniRec</td><td>shared embedding + joint pre-rank/rank fusion</td><td>train-joint / serve-stage-locally</td></tr>
+<tr><td><a href="daily/2026-09-16.html#varg"><b>VARG Fast Lane</b></a></td><td>生成候选 reserved quota，绕过 item-level pre-rank</td><td>不要强迫 generative path 复制传统 cascade；由 final ranker 做价值判决</td></tr>
+<tr><td>Generative Verifier</td><td>召回后先纠正 consumed prefix</td><td>可降低“为了保 recall 盲目扩大粗排 K”的需求</td></tr>
 </tbody></table></div>
-<p><b>下一步：</b>粗排不只看 local AUC，还要联合监控 candidate survival、verifier rescue rate、stage margin、latency、feature freshness 与 controller 误升级率。</p></div>
+<p><b>关键问题：</b>fast lane 不能等于“免审通道”。仍需要 business rule / safety / diversity / freshness 的硬约束，并且必须监控 generated candidate 的 final-rank survival、业务价值密度和 P95。</p></div>
 
-<div class="paper" id="rank"><div class="phase">Tab 03 · 精排 / Ranking</div><h2>长序列从“全部在线重算”转向“Cacheable Long-term State + Real-time Recent State”</h2>
+<div class="paper" id="rank"><div class="phase">Tab 03 · 精排 / Ranking</div><h2>从短窗口监督走向“生成式预训练 Foundation Ranker + Cacheable User State”</h2>
 <div class="table-wrap"><table><thead><tr><th>工作</th><th>研究问题</th><th>价值 / 落地方式</th></tr></thead><tbody>
-<tr><td>PTDG</td><td>任务依赖不应固定</td><td>item-conditioned dynamic task graph</td></tr>
-<tr><td>MORE</td><td>task signal 只在 tower 末端出现太晚</td><td>task anchor 进入 backbone 各层</td></tr>
-<tr><td><a href="daily/2026-09-12.html#unirec"><b>UniRec</b></a></td><td>精排 fusion 与粗排 fusion 独立会抵消</td><td>ranking agent 与 pre-ranking agent 同图优化</td></tr>
-<tr><td><a href="daily/2026-09-15.html#chronicle"><b>ChronicleRec</b></a></td><td>数千/万级历史每 candidate 重算太贵</td><td>时间锚 Chronicle Tokens 每 user 压缩一次并缓存；线上 GMV +1.61%</td></tr>
-<tr><td><a href="daily/2026-09-15.html#drift"><b>DRIFT</b></a></td><td>长历史包含错误兴趣阶段噪声</td><td>按 preference drift 切 subsequence，recent context 选择性读取长期阶段</td></tr>
+<tr><td><a href="daily/2026-09-16.html#lazformer"><b>LazFormer</b></a></td><td>生成式预训练 dense knowledge 如何迁进工业 ranker</td><td>residual adapter + asymmetric multi-epoch + sparse attention</td></tr>
+<tr><td><a href="daily/2026-09-15.html#chronicle"><b>ChronicleRec</b></a></td><td>超长历史每 candidate 重算太贵</td><td>target-independent Chronicle Tokens 每 user 压缩一次并缓存</td></tr>
+<tr><td><a href="daily/2026-09-15.html#drift"><b>DRIFT</b></a></td><td>历史越长噪声越多</td><td>按 preference drift 切阶段，再选择性读取</td></tr>
+<tr><td>PTDG / MORE</td><td>task signal 进入 backbone 太晚 / 固定</td><td>动态 task graph / task anchor</td></tr>
+<tr><td>UniRec</td><td>粗排 / 精排 fusion 独立优化抵消</td><td>共同训练、分阶段部署</td></tr>
 </tbody></table></div>
-<p><b>最值得押注的 Serving 形态：</b><b>Long-term cached state + Recent real-time state + Candidate interaction</b> 三层。长期 token 按小时/天刷新，近期行为分钟/秒级刷新，candidate-specific cross 只在精排内层执行。这样比单纯把 max sequence length 从 1K 拉到 8K 更可控。</p>
-<p><b>重点监控：</b>token cache age、state refresh QPS、cache hit、recent override rate、GAUC、long-tail user gain、增量更新 correctness、模型版本与 state version compatibility。</p></div>
+<div class="stats"><span><b>LazFormer · Research Impact Score / 研究价值</b> 9.7/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>9/16 最强信号：</b>LazFormer 2 周线上 Orders +3.38%、GMV +9.85%，A10 单机 QPS 只 -12.1%。这说明“更长历史 + 更深 backbone”并非不能上线，前提是<b>预训练 transfer、序列压缩、sparse attention、feature isolation</b>一起设计。</p><p><b>Serving 形态：</b>Long-term cached state + Recent real-time state + Candidate interaction。未来可把 LazFormer 的 pretrained backbone 与 Chronicle 的长期 state 进一步结合，减少每 request 重复编码。</p></div>
 
-<div class="paper" id="rerank"><div class="phase">Tab 04 · 重排与混排 / Re-ranking & Slate</div><h2>从逐 Item 打分走向结构化 Assignment、可验证约束与 Whole-page Decision</h2>
+<div class="paper" id="continual"><div class="phase">Tab 03.5 · 持续用户状态 / Continual User Modeling</div><h2>把“模型参数”拆成稳定知识与可频繁更新状态</h2><p><b>代表工作：</b><a href="daily/2026-09-16.html#lion"><b>Self-Evolving Memory / LION</b></a> 用 sparse KV memory 隔离 preference delta；ChronicleRec 把历史压成可缓存状态；DRIFT 用偏好漂移判断哪些长期阶段仍相关。</p><div class="stats"><span><b>LION · Research Impact Score / 研究价值</b> 9.3/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div><p><b>推荐状态协议：</b>① backbone knowledge 低频更新；② Chronicle / preference-stage state 中频更新；③ sparse memory / recent behavior 高频更新。每层显式记录 TTL、version、refresh trigger、cache hit 与 fallback。</p></div>
+
+<div class="paper" id="rerank"><div class="phase">Tab 04 · 重排与混排 / Re-ranking & Slate</div><h2>从“再打一次分”走向结构化 Assignment、约束验证与 Business-aware Decision</h2>
 <div class="table-wrap"><table><thead><tr><th>工作</th><th>关键问题</th><th>落地启发</th></tr></thead><tbody>
-<tr><td>hLLM / Hungarian assignment</td><td>排序是 permutation，不必自回归生成 N 个序号</td><td>single-pass score matrix + assignment</td></tr>
-<tr><td>MIMA 的 Hungarian supervision</td><td>结构化 assignment 也可用于 latent interest ownership</td><td>assignment 不只属于 slate，也适合训练时 credit allocation</td></tr>
-<tr><td>CHyD</td><td>解释/引用必须来自 evidence</td><td>hard constraint 保证生成结果可验证</td></tr>
-<tr><td>TimelyRAG</td><td>相关但过期内容应降权</td><td>temporal validity 作为 rerank constraint</td></tr>
-<tr><td>Magenta / Ecdysis</td><td>失败后不知道重召回、重排还是改系统</td><td>verifier + error attribution + selective repair / harness evolution</td></tr>
-<tr><td>SAFARI</td><td>重排不确定时接受还是补证据</td><td>把追加召回 / 用户澄清视为有成本 exploration action</td></tr>
-</tbody></table></div>
-<p><b>趋势：</b>重排越来越像“结构决策 + 约束验证”，而不是再加一个更大 pointwise 模型。将 assignment、diversity、freshness、creator/business constraints 与 explanation 一起放入可验证 decision layer。</p></div>
+<tr><td>hLLM / Hungarian assignment</td><td>排序本质是 permutation</td><td>single-pass score matrix + assignment，避免逐位置生成</td></tr>
+<tr><td>MIMA</td><td>多个 latent interest 的 ownership</td><td>assignment 同样可用于训练期 credit allocation</td></tr>
+<tr><td>CHyD</td><td>解释 / 引用必须来自 evidence</td><td>hard constraint 保证结果可验证</td></tr>
+<tr><td>TimelyRAG</td><td>相关但过期内容</td><td>temporal validity 作为 rerank constraint</td></tr>
+<tr><td>VARG Prefix-GRPO</td><td>生成顺序与业务价值 / ranker 偏好错位</td><td>在生成阶段提前吸收 downstream ranker signal</td></tr>
+</tbody></table></div><p><b>趋势：</b>重排越来越像“结构决策 + 约束验证 + value alignment”，而不是简单堆一个更大 pointwise 模型。下一步会把 creator/category diversity、freshness、business value、risk、explanation 一起放入 decision layer。</p></div>
 
-<div class="paper" id="generative"><div class="phase">Tab 05 · 生成式推荐 / Generative Retrieval & Serving</div><h2>Semantic ID 生成之后，Beam-state 与 Decode Runtime 成为新的系统边界</h2>
-<div class="table-wrap"><table><thead><tr><th>工作</th><th>解决什么</th><th>Serving 启发</th></tr></thead><tbody>
-<tr><td>TGR / EPIC / HypRQ-VAE</td><td>SID、item-level preference、long-tail namespace</td><td>生成式推荐从“能生成”走向“生成概率与 item decision 对齐”</td></tr>
-<tr><td><a href="daily/2026-09-15.html#onela"><b>OneLA</b></a></td><td>large-beam recurrent state 复制与流量</td><td>共享 prompt state + GTR + beam ancestry；端到端 1.54–2.46×</td></tr>
-<tr><td><a href="daily/2026-09-15.html#runtime"><b>vLLM adaptive verification</b></a></td><td>speculative draft depth 固定浪费</td><td>在线估计 acceptance probability，未来按 request 裁剪 draft/verify budget</td></tr>
-<tr><td><a href="daily/2026-09-15.html#forge"><b>ForgeMegakernel</b></a></td><td>decode kernel 手工优化成本高</td><td>coding agent 生成模型专用 megakernel，oracle 验证 correctness</td></tr>
-</tbody></table></div>
-<p><b>工程重点：</b>beam width、candidate recall、decode latency、state bytes、HBM traffic、acceptance rate、constraint violation、cost/request 应一起调。模型离线 Recall 涨但 beam 成本翻倍，可能没有业务价值。</p></div>
+<div class="paper" id="generative"><div class="phase">Tab 05 · 生成式推荐 / Generative Retrieval & Serving</div><h2>从 Semantic ID 到 Value-aware SID，再到 State-aware Runtime</h2>
+<div class="table-wrap"><table><thead><tr><th>工作</th><th>解决什么</th><th>Serving / Pipeline 启发</th></tr></thead><tbody>
+<tr><td>HypRQ-VAE / EPIC</td><td>long-tail namespace / item-level preference</td><td>SID 与 item decision 对齐</td></tr>
+<tr><td><a href="daily/2026-09-16.html#varg"><b>VARG</b></a></td><td>业务价值 + ranker-aligned generation</td><td>reserved generative fast lane + dual-loop refresh</td></tr>
+<tr><td><a href="daily/2026-09-15.html#onela"><b>OneLA</b></a></td><td>large-beam recurrent state 复制</td><td>shared prompt state + transition log + ancestry</td></tr>
+<tr><td>vLLM adaptive verification</td><td>speculative acceptance 随请求变化</td><td>在线估计 acceptance，再动态调 verification</td></tr>
+<tr><td>ForgeMegakernel</td><td>模型专用 decode kernel 手工优化成本高</td><td>coding agent + oracle 自动生成 / 校验 kernel</td></tr>
+</tbody></table></div><p><b>下一步：</b>把 value-aware SID、beam width、verify-K、recurrent state bytes、final ranker survival 与 P95 放在同一 cost model 里。Generative Rec 的真正“全栈”已经包含模型、地址空间、cascade 和 runtime。</p></div>
 
-<div class="paper" id="cross"><div class="phase">Tab 06 · 跨阶段统一 / Cross-stage Control Plane</div><h2>统一的不只是 Backbone，而是 State、Ownership、Verification、Budget 与 Runtime Contract</h2>
-<div class="table-wrap"><table><thead><tr><th>资产 / 控制器</th><th>代表工作</th><th>跨阶段价值</th></tr></thead><tbody>
-<tr><td><b>Interest Ownership</b></td><td><a href="daily/2026-09-15.html#mima">MIMA</a></td><td>明确哪个 latent interest 负责哪个 positive，减少多兴趣 collapse</td></tr>
-<tr><td><b>Cross-stage Preference</b></td><td><a href="daily/2026-09-12.html#unirec">UniRec</a></td><td>粗排与精排 fusion 训练时共享偏好约束，Serving 仍分阶段</td></tr>
-<tr><td><b>Cacheable User State</b></td><td><a href="daily/2026-09-15.html#chronicle">ChronicleRec</a></td><td>超长历史从 per-candidate loop 移到 per-user state refresh</td></tr>
-<tr><td><b>Preference-stage State</b></td><td><a href="daily/2026-09-15.html#drift">DRIFT</a></td><td>长期历史按兴趣阶段压缩，避免错误阶段污染 recent preference</td></tr>
-<tr><td><b>Retrieval Verification</b></td><td><a href="daily/2026-09-15.html#verifier">Generative Verifier</a></td><td>在 recall→pre-rank 边界修复 consumed-prefix recall，不必替换 retriever</td></tr>
-<tr><td><b>KV / Evidence State</b></td><td>KVShareArena / REVA</td><td>跨请求复用前验证 compatibility，evidence 也成为可复用资产</td></tr>
-<tr><td><b>Compact Execution State</b></td><td>Gated-Memory Routing</td><td>只写/读对后续路由有价值的 state，避免 full-history overload</td></tr>
-<tr><td><b>Exploration Budget</b></td><td>SAFARI</td><td>学习是否继续收集信息，把扩召回 / rewrite / tool call 变成预算化动作</td></tr>
-<tr><td><b>Beam Runtime State</b></td><td><a href="daily/2026-09-15.html#onela">OneLA</a></td><td>shared state + transition log + ancestry，生成式候选路径具备更低 state cost</td></tr>
-<tr><td><b>Adaptive Decode</b></td><td><a href="daily/2026-09-15.html#runtime">vLLM</a></td><td>在线 acceptance estimate 控制 speculative verification</td></tr>
-<tr><td><b>Verifiable Runtime Evolution</b></td><td>Ecdysis / <a href="daily/2026-09-15.html#forge">ForgeMegakernel</a></td><td>Agent 提修改，但由 failure aggregation / correctness oracle 决定是否进入全局版本</td></tr>
+<div class="paper" id="cross-stage"><div class="phase">Tab 06 · 跨阶段统一 / Cross-stage Optimization</div><h2>统一的不是一个模型，而是 Supervision、State、Verification 与 Cost Contract</h2>
+<div class="table-wrap"><table><thead><tr><th>Contract</th><th>代表工作</th><th>跨阶段作用</th></tr></thead><tbody>
+<tr><td>Credit / Ownership</td><td>MIMA</td><td>明确正样本由哪个 interest 负责</td></tr>
+<tr><td>User State</td><td>ChronicleRec / DRIFT / LION</td><td>长期历史、兴趣阶段、可变 preference 分层复用</td></tr>
+<tr><td>Candidate Verification</td><td>Generative Verifier</td><td>召回池到粗排消费短名单之间纠错</td></tr>
+<tr><td>Ranker Alignment</td><td>VARG</td><td>生成路径训练时吸收 downstream ranker preference</td></tr>
+<tr><td>Foundation Transfer</td><td>LazFormer</td><td>预训练参数与 ranking-specific feature 建立迁移边界</td></tr>
+<tr><td>Budget</td><td>DiBud / Question’s Gambit / MoE Retriever</td><td>按请求分配 retrieval access、first-move query、expert compute</td></tr>
+<tr><td>Runtime State</td><td>OneLA / vLLM / ForgeMegakernel</td><td>beam、acceptance、kernel variant 进入 runtime control plane</td></tr>
 </tbody></table></div>
-<p><b>当前最重要的架构变化：</b>为每个 request 定义 compact state schema：user-state version、interest activation、retrieval confidence、pool/consume recall proxy、stage margin、verify confidence、beam/runtime budget、failure reason。每个 stage 消费并更新这份 state，而不是互相只传 candidate list。</p>
-<p><b>可以直接做的工程实验：</b>① 线上日志补充 pool-K→consume-K survival；② 用 request 内多正样本离线复现 MIMA-style assignment；③ 将长期用户表示移出 candidate loop，做 state TTL/刷新仿真；④ 生成式 path 加 beam-state bytes 与 HBM traffic dashboard；⑤ speculative path 记录 acceptance by request cohort，验证 adaptive verification 是否有空间。</p></div>
+<p><b>推荐系统下一版 API 值得多返回什么：</b>除了 score，再返回 <b>confidence、interest/source ownership、state version、business prior、expected downstream gain、estimated cost、failure reason</b>。这样 controller 才能决定是否扩召回、走 generative fast lane、升级 ranker、读取更长历史或直接停止。</p></div>
 
-<div class="callout"><strong>链路演进一句话：</strong>召回正从“相似度匹配”变成“多意图 ownership + coverage”，召回与粗排之间开始长出 verifier，精排把超长历史变成 cacheable state，生成式路径把 beam/runtime 变成显式成本；跨阶段层最终会变成真正的<b>状态化控制平面</b>。</div>
-</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Recommendation Pipeline Map updated 2026-09-15</div></footer></body></html>
+<div class="paper"><div class="phase">2026.09.16 · 推荐工程优先级</div><h2>最值得在真实系统里验证的 5 个实验</h2><p><b>1. Generative Fast Lane：</b>传统召回不动，新加 VARG-style reserved quota，最终仍让现有 ranker 决策。<br><b>2. Pretrain Transfer：</b>sparse-only vs sparse+dense；adapter on/off；sparse reset multi-epoch on/off。<br><b>3. Three-tier User State：</b>长期 cache + recent state + sparse mutable memory，分别定义 refresh clock。<br><b>4. Budgeted Retrieval：</b>把每路固定 Top-K 改为访问成本 telemetry，再做 dynamic allocator。<br><b>5. Request-level Compute：</b>MoE expert count、verify-K、beam、sequence length 都纳入同一个 latency/quality controller。</p></div>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Pipeline Map · Updated 2026-09-16</div></footer></body></html>
