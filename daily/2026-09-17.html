@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.17｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-17 AI × 推荐算法研究日报：FlashVector、AURA、ORDER、ScienceBuddy、JustFit、Agentic Social Harness、CoSQ。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.17</span><h1>今天的主线：Agent 开始进入推荐系统“研发—诊断—Serving 优化”闭环，RAG 则从固定流水线转向按任务路由索引与证据预算</h1><p class="lead">观察窗口：<b>2026-09-16 10:00 → 2026-09-17 10:00（Asia/Shanghai）</b>。今日重点跟踪 arXiv 9 月 16 日公开 announce batch、官方项目与 GitHub 更新。部分论文的 v1 submission 时间早于严格 24 小时，但在本窗口进入公开 announce 流，本文会把“submission date”和“今日进入研究流”分开表述，避免误把旧工作当成今日首发。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>推荐系统的 Agent 化正在从“生成推荐结果”转向“理解生产失败、改代码、验证收益”</b>：AURA 直接读取海量 engagement log，定位 failure pattern，再结合代码、数据与训练管线提出并实现改进；这条路线更接近真正的 self-improving recommender。② <b>Serving 优化也开始 Agent 化且跨层</b>：FlashVector 不只写 kernel，而是同时改 GPU kernel、计算图、Triton C++ model server 与 Python feature service，在 Unity Vector 广告平台拿到最高 2× throughput / 1.98× latency speedup。③ <b>RAG 的下一步不是“再换一个 retriever”，而是按 query 选择 index / chunking / metadata / reranker / source budget</b>：ORDER 把索引配置本身变成 query-conditioned routing 问题。④ <b>长期 Agent 的可持续进化需要把模型更新与 harness 更新拆成两个学习时钟</b>：ScienceBuddy 的 inner harness evolution + outer RL 把工具、流程、rubric 与 model policy 联合迭代。⑤ <b>推理效率的主战场继续从权重压缩转向状态生命周期</b>：JustFit 用 KVExec + PhaseSwap + StateTrans 在 24 GiB M4 Pro 上把单请求完整上下文从 30,720 扩到 212,992 positions。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 FlashVector · Production Serving Agent</h3><p>对推荐算法工程最有直接工业价值。它把“性能工程”从单个 CUDA/Triton kernel 扩成完整 serving stack 的可验证搜索问题，并在真实广告平台部署。核心启发不是某个优化技巧，而是<b>把性能优化过程本身产品化、持续化、Agent 化</b>。</p></div>
+<div class="paper"><h3>🥈 AURA · Self-improving Recommender</h3><p>把传统“看 Dashboard → 人工找 case → 写 SQL → 猜问题 → 改模型”的闭环，重构为多 Agent 诊断与代码级 refinement。论文没有给出足够完整的线上增益数字，但研究问题非常值得押注：<b>如何让推荐系统自己解释自己为什么失败，并把 diagnosis 转成可验证 patch</b>。</p></div>
+<div class="paper"><h3>🥉 ORDER · Query-conditioned RAG</h3><p>比普通 router 更进一步：不仅路由模型/数据源，还路由<b>预先构建的索引配置</b>。这对搜索、RAG、企业知识库非常关键，因为 chunk size、metadata filter、rerank 组合本身就是 query-dependent decision。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Model Agent → System Agent</h3><p>FlashVector 与 AURA 都说明 Agent 的价值正在从“调用一个模型”转向“操作完整生产系统”：读日志、理解代码、提出修改、跑 workload / evaluation、接受或回滚。真正的壁垒会变成 <b>evaluation harness + safe action space + versioned evidence</b>。</p></div>
+<div class="paper"><h3>Static Pipeline → Query-conditioned Pipeline</h3><p>ORDER 把 RAG 的 chunking、metadata、source selection 与 reranking 变成可路由资产；昨天的 DiBud 又把 Top-K 改成 access budget。两者合起来意味着下一代检索控制器会先决定“走哪条链路、花多少预算”，再执行具体检索。</p></div>
+<div class="paper"><h3>Model Training → Model + Harness Co-evolution</h3><p>ScienceBuddy 把 Agent 改进拆成 inner harness evolution 和 outer model RL。对推荐/搜索同样成立：特征、召回源、评估 rubric、数据采样、Serving guardrail 与模型参数不应该共享同一个更新节奏。</p></div>
+<div class="paper"><h3>Weight Memory → Runtime State Memory</h3><p>JustFit 再次强化一个趋势：在长上下文系统里，限制可用长度的不只是权重，而是 KV、临时 buffer、组件 residency 与 phase transition。状态“何时存在、何时压缩、何时迁移、何时释放”正在成为 runtime 的一等设计变量。</p></div>
+</div>
+
+<h2>论文 / 更新优先级表</h2><p class="muted">Research Impact Score：范式变化 25%、工业证据 20%、技术创新 20%、推荐/搜索相关度 15%、后续研究空间 10%、开放/可复现性 10%。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>今日判断</th></tr></thead><tbody>
+<tr><td>S+</td><td><a href="#flashvector">FlashVector</a></td><td>Recsys Serving / Agentic Optimization</td><td>9.7/10</td><td>跨 kernel / graph / server / feature service 自动优化；Unity 生产部署，最高 2× throughput</td></tr>
+<tr><td>S+</td><td><a href="#aura">AURA</a></td><td>Production RecSys / Self-improving Agent</td><td>9.5/10</td><td>从海量用户日志做 failure diagnosis，再生成代码级 refinement；非常接近推荐系统自动研发闭环</td></tr>
+<tr><td>S</td><td><a href="#order">ORDER</a></td><td>RAG / Retrieval Routing</td><td>9.2/10</td><td>query-conditioned index + chunking + metadata + rerank + source routing</td></tr>
+<tr><td>S</td><td><a href="#sciencebuddy">ScienceBuddy</a></td><td>Agent / RL / Harness Evolution</td><td>9.2/10</td><td>inner harness evolution + outer RL；held-out single-attempt 42.2%→73.3%</td></tr>
+<tr><td>S</td><td><a href="#justfit">JustFit</a></td><td>Long-context Serving / State Management</td><td>8.9/10</td><td>24 GiB laptop 完成 212,992-position 单请求，6.93× baseline context capacity</td></tr>
+<tr><td>A+</td><td><a href="#social-harness">Agentic Societies Need a Social Harness</a></td><td>Multi-agent Safety / Protocol</td><td>8.6/10</td><td>把跨信任边界多 Agent 协作问题提升为独立 social harness 层</td></tr>
+<tr><td>A+</td><td><a href="#cosq">CoSQ</a></td><td>Selective Reasoning / Reliability</td><td>8.5/10</td><td>prompt-only answer-or-abstain；wrong commitment 13.1%→8.9%</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="flashvector"><div class="phase">Deep Dive 01 · Recommender Serving / Agentic Systems</div><h2>FlashVector：把“性能优化”从专家手工活，变成跨 Serving Stack 的持续 Agent 搜索与验证系统</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.7/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 未披露传统业务 A/B；有真实生产部署与性能收益</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>推荐和广告模型上线后，真正烧钱的不只是训练。高 QPS serving 需要同时处理 embedding / feature transformation、模型图、GPU kernel、batching、RPC / server、内存与 tail latency。传统优化由不同专家分别负责 CUDA/Triton、PyTorch 图、C++ server、Python feature pipeline，局部最优很容易在系统层互相抵消。</p>
+<p><b>现有问题：</b>最近的 kernel-agent 已经能自动写出很强的 Triton/CUDA kernel，但“单 kernel benchmark”与真实线上性能之间存在巨大断层。一个 kernel 快 20%，如果改变了 batch shape、CPU/GPU overlap、内存峰值或 server queueing，端到端 P99 反而可能变差。生产 workload 又持续变化，人工优化很快过时。</p>
+<p><b>技术方案与关键模块：</b>FlashVector 的关键不是一个新 kernel，而是一个<b>分层、可扩展的 optimization harness</b>。Agent 可以进入 GPU kernel、ML framework computation graph、model server、on-demand feature transformation 等不同技术栈，读取实现与性能信号、生成 patch、执行组件级 benchmark，再进入 full-stack load test。论文明确展示它能修改 NVIDIA Triton 的 C++ server 代码和 Python feature service，而不仅是 GPU 代码。</p>
+<p><b>训练 / 学习方法：</b>这不是传统端到端训练模型，而更像 coding/performance agent 的闭环搜索：候选修改 → 局部测试 → 端到端验证 → 接受/拒绝 → 把历史经验用于下一轮。这里真正的“数据”是 workload、profiling trace、代码状态、性能结果与失败记录。</p>
+<p><b>推理 / Serving 方案：</b>FlashVector 本身位于服务系统之外，作为持续优化控制面；对生产流量而言，核心原则是任何候选 patch 都必须经过真实 stack 的负载测试与 SLA guardrail，而不能只凭 microbenchmark 合并。这种架构很适合与 canary / shadow / automatic rollback 结合。</p>
+<p><b>实验 / 工业证据：</b>系统部署在 Unity Vector advertising platform。论文报告 model server 最高 <b>2× throughput</b>、最高 <b>1.98× latency speedup</b>，feature store 最高 <b>1.6× throughput</b>。这些收益来自 kernel、计算图、C++ server 与 Python feature transformation 多个层级。</p>
+<p><b>离线指标：</b>这里的“离线”主要是 throughput、latency、load-test 与组件 benchmark，不是 AUC/NDCG。论文最有价值的地方恰恰在于把 optimization target 从某个算子 FLOPS 提升到系统吞吐和端到端延迟。</p>
+<p><b>线上 A/B：</b>未披露 CTR/GMV 等推荐业务指标 A/B；但已经在真实广告 serving 平台部署并给出系统级生产性能收益。因此工业证据强，但不能把性能收益等同于业务增益。</p>
+<p><b>效率 / 成本收益：</b>若同等流量下吞吐翻倍，理论上可显著降低 accelerator / server fleet 需求；但论文未公开完整 TCO、GPU 节省比例和 P99/SLO 分布，不能直接把最高 speedup 当平均成本下降。</p>
+<p><b>与主流方法对比：</b>手工性能工程精确但扩展慢；AutoTVM/编译器搜索聚焦算子和 graph；kernel coding agent 聚焦 GPU code。FlashVector 的差异是把<b>异构语言 + 异构层级 + 端到端验证</b>统一进一个可持续 agent loop。</p>
+<p><b>适用场景：</b>广告/推荐高 QPS inference、GPU-heavy ranking、feature transformation 成本高的平台、频繁换模型 / GPU SKU / serving runtime 的团队。对低 QPS、模型更新很少的系统，Agent harness 的建设成本可能不划算。</p>
+<p><b>局限 / 尚未解决：</b>自动 patch 的正确性验证、跨版本回归、性能测试噪声、workload drift、agent 修改生产 C++/Python 的安全边界、收益 attribution，以及如何避免“针对 benchmark 过拟合”。</p>
+<p><b>未来研究方向：</b>把 correctness oracle、SLO、成本、能耗和业务指标共同做成多目标 reward；引入 failure clustering 与 patch provenance；与 vLLM/SGLang/Triton compiler 的自动调参联动；进一步做 request-level dynamic policy，而不是只优化静态实现。</p>
+<p><b>对推荐 / 搜索算法工程落地的启发：</b>未来高级推荐工程师不能只看模型结构。理解 profiling、GPU/CPU pipeline、batching、feature service、C++/Python runtime、load test 和可回滚实验，会直接决定一个更复杂模型能否真正上线。<b>“模型收益 / 单位 Serving 成本”会比单看 AUC 更重要。</b></p>
+<div class="resource"><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.17391">arXiv 2609.17391</a>；② 官方项目 / 技术博客：截至 2026-09-17 未发现独立官方项目页；③ 官方代码 / 模型 / 数据：未发现官方开源仓库；④ 第三方解读：<a href="https://arxivtldr.org/abs/2609.17391">ArXiv TLDR</a>；暂未发现高质量中文知乎/公众号精读。</div></div>
+
+<div class="paper" id="aura"><div class="phase">Deep Dive 02 · Production Recommender / Agentic Diagnosis</div><h2>AURA：推荐系统的下一个 Agent 入口，可能不是“帮用户推荐”，而是“帮算法工程师找出系统为何推荐失败”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.5/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 未披露</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>推荐系统经常出现一个典型盲区：整体 CTR、watch time、GMV 看起来正常，但某类用户、某类 session、某种上下文里推荐体验很差。聚合指标告诉你“变差了多少”，却很难告诉你“为什么、具体坏在哪里、应该改哪段代码”。工程师通常依赖 stakeholder 反馈、SQL case study 与领域经验。</p>
+<p><b>现有问题：</b>传统 dashboard 缺乏语义诊断；离线 metrics 把多个 failure mode 压成一个数字；人工 case review 难扩到百万 session；LLM 做少量日志总结又容易挑样本偏差和幻觉；更关键的是，诊断与代码修改之间往往还是断裂的。</p>
+<p><b>技术方案与关键模块：</b>AURA（论文全称中的 Agentic Diagnosis and Refinement）把流程拆成两段：第一组 specialized agents 读取生产 engagement logs，从 thousands 到 millions of sessions 中发现 recurring failure patterns，并提供代表性 case；第二阶段把 diagnosis 与 recommender 的代码、数据定义、训练 pipeline context 联合起来，提出并实现 code-level refinements。</p>
+<p><b>训练方法：</b>论文重点是系统设计而非一个新监督 loss。Agent 依赖生产日志、代码库、数据契约与 domain configuration；跨两个 consumer platforms 的迁移通过 configuration layer 处理领域差异。这一点比“固定 prompt 套所有业务”更可信：domain ontology 与 evaluation policy 被显式配置。</p>
+<p><b>推理 / Serving：</b>AURA 不在用户请求的毫秒级 serving path 内，而更像异步研发控制面：读取一段时间的行为 → 聚合诊断 → 定位代码 / 数据 / 训练环节 → 生成候选修改 → 经过 safeguards / evaluation 后再进入正常工程发布流程。因此它不会直接把 Agent latency 加到线上 request。</p>
+<p><b>实验设置：</b>作者报告在一家大型 media-streaming company 的两个大规模 consumer platforms 上使用生产数据做 initial tests，并讨论了 safeguards、operational learnings 与早期结果；系统设计还映射到 e-commerce / online retail。</p>
+<p><b>离线指标：</b>公开摘要没有给出足够细的统一量化表，尤其缺少 diagnosis precision、patch acceptance rate、offline metric lift 等可复核数字。今日评分因此没有给满工业成熟度；后续最值得追踪的是正文中的 case taxonomy、human verification 和 patch 成功率。</p>
+<p><b>线上 A/B：</b>摘要未披露明确 CTR / retention / watch-time A/B 数字，不能把“生产数据上测试”解释成“已经有业务 A/B uplift”。</p>
+<p><b>效率 / 成本收益：</b>潜在价值非常大：把算法工程师最耗时的“查 bad case—归因—定位 pipeline—生成修复”自动化。但如果没有可靠 sample design 和 validation，Agent 可能只把人力成本从分析转移到 review。</p>
+<p><b>与主流方法对比：</b>传统 recommender AutoML 优化超参或模型结构；LLM copilot 帮工程师写代码；LLM evaluator 给样本打标签。AURA 的关键差异是把 <b>production behavior diagnosis → code context → refinement</b> 串成 end-to-end loop。</p>
+<p><b>适用场景：</b>内容推荐、短视频、音乐/流媒体、电商、广告，尤其适合日志量巨大、failure mode 多、指标体系复杂且算法迭代频繁的平台。</p>
+<p><b>局限 / 尚未解决：</b>诊断是否因采样偏差而失真；LLM 是否把相关性误当因果；patch 的安全性与 blast radius；多个指标冲突时如何定义 improvement；用户隐私；如何防止 agent 反复优化显性指标而损害长期生态。</p>
+<p><b>未来研究方向：</b>将 AURA 与 causal / counterfactual evaluation 结合；给每个 diagnosis 生成可执行 hypothesis test；把 offline replay、shadow traffic、canary A/B 与 automatic rollback 变成闭环；学习“什么问题值得自动修、什么问题必须升级给人”。</p>
+<p><b>对推荐 / 搜索算法工程落地和职业技能的启发：</b>值得把个人能力从“会训练模型”扩展到 <b>可观测性、指标分解、bad-case taxonomy、实验设计、代码/数据 lineage、自动评估</b>。Agent 越强，能定义好 failure、构建好 evaluator、判断改动是否真的有效的人越重要。</p>
+<div class="resource"><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.16625">arXiv 2609.16625</a>；② 官方项目 / 技术博客：截至今日未发现独立官方页面；③ 官方代码 / 模型 / 数据：未发现公开仓库；④ 中文 / 高质量第三方解读：暂未发现可信的知乎/公众号深度解读，建议优先读原论文。</div></div>
+
+<div class="paper" id="order"><div class="phase">Deep Dive 03 · RAG / Retrieval Routing</div><h2>ORDER：把 RAG 从“一个固定索引服务所有 Query”，升级成“Query 先选择最合适的索引与检索策略”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 业务动机：</b>企业 RAG 常把 corpus 预处理成一个固定 index：固定 chunk size、overlap、embedding、metadata filter、retriever、reranker。这样部署简单，但“人物事实问答”“跨年代事件”“需要多源证据的分析问题”对最佳 chunk granularity 与 source mix 的要求完全不同。</p>
+<p><b>现有问题：</b>固定 index 是典型 one-size-fits-all；在线才发现 query 类型不同已经太晚，因为 chunking 在 preprocessing 阶段就固化。简单 multi-index routing 又常只选 datasource，没有联合考虑 metadata / reranking / evidence budget。</p>
+<p><b>技术方案：</b>ORDER（Optimal Routing for Dynamic Evidence Retrieval）先在历史问题上发现 semantic query clusters，再为每个 cluster 学习一套<b>chunking strategy + metadata filtering + reranking configuration</b>，并提前构建对应 index。在线 query 通过 nearest-centroid assignment 路由到相应 index。</p>
+<p><b>QRe + UMS：</b>为了处理多 collection 证据，论文再训练 supervised Query Router（QRe）预测哪些 collections 更可能包含 relevant evidence；Uniform Multi-source Sampler（UMS）把 retrieval budget 均匀分给已选 source，降低一个强 source 把候选全部占满的风险。</p>
+<p><b>训练方法：</b>离线阶段利用问题集与 corpus 做 semantic clustering，并搜索 / 学习每个 cluster 的 retrieval configuration；QRe 是监督式 source selector。其本质是把“RAG pipeline config”从全局超参变成可学习的 conditional policy。</p>
+<p><b>推理 / Serving：</b>在线额外成本主要是 query embedding + cluster/router 决策，之后仍进入预构建 index，因此避免了为每个 query 动态重切 chunk。工程上需要维护多套 index 版本、路由配置与更新一致性。</p>
+<p><b>实验设置与离线指标：</b>论文在 large-scale heterogeneous historical archives 上评估，报告 query-conditioned indexing/retrieval 持续优于 naive baseline 与强 RAG 系统。公开摘要没有给出可在此可靠复述的具体绝对分数，因此本文不填造数字；后续值得重点核对 per-query-cluster gain、router error 与 index storage overhead。</p>
+<p><b>线上 A/B：</b>无公开线上 A/B。</p>
+<p><b>效率 / 成本收益：</b>优势是把复杂策略前移到离线预构建；代价是多 index 存储、刷新和治理成本上升。如果 cluster 过多，storage / cache locality 可能反过来成为瓶颈。</p>
+<p><b>与主流方法对比：</b>普通 query router 选择 retriever/model/source；ORDER 进一步选择<b>索引本身的生成方式</b>。它与昨天 DiBud 的 access-budget retrieval 很互补：ORDER 决定“走哪条 retrieval plan”，DiBud 决定“这条 plan 访问多深”。</p>
+<p><b>适用场景：</b>企业知识库、法律/金融/历史档案、跨部门数据、长文档与多源 evidence 的搜索；对单一 corpus、query 分布非常窄的系统收益可能有限。</p>
+<p><b>局限 / 未解问题：</b>cluster drift、冷启动 query、路由错误成本、多 index 一致性、更新延迟、配置搜索成本，以及 source budget 是否真的应该 uniform。</p>
+<p><b>未来方向：</b>把 router 扩展成 budget-aware controller：同时输出 index、source、ANN probe、Top-K、reranker、LLM context token 与 halt policy；训练目标从 retrieval metric 升级到最终 answer utility / latency / cost。</p>
+<p><b>工程启发：</b>搜索工程里“索引设计”不应该永远是静态 infra 决策。未来算法岗位需要同时理解 chunking/index、retrieval/rerank、路由与 serving cost，才能做真正端到端的 RAG 优化。</p>
+<div class="resource"><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.17012">arXiv 2609.17012</a>；② 官方项目 / 技术博客：未发现；③ 官方代码 / 模型 / 数据：未发现公开仓库；④ 中文 / 高质量第三方解读：截至今日未发现可靠中文精读。</div></div>
+
+<div class="paper" id="sciencebuddy"><div class="phase">Deep Dive 04 · Agent / Reinforcement Learning / Harness</div><h2>ScienceBuddy：模型自己变强还不够，Agent 的工具、流程和评估 Harness 也必须跟着进化</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 业务动机：</b>长期运行 Agent 的瓶颈不只在 base model。一个固定的 prompt/tool/harness 会把模型锁死在旧流程；反过来，如果只让 harness 自动变更、模型完全不学，又会出现工具能力与 policy 不匹配。ScienceBuddy 的研究问题是：如何让 Agent 的“执行环境”和“模型能力”共同进化。</p>
+<p><b>技术方案：</b>提出 <b>recursive-in-recursive self-improvement</b>。内层递归固定 model，使用真实研究者请求、feedback 与 execution evidence 改进 harness；外层递归在改进后的 harness 中收集任务与 rubric，再用 RL 更新 model。新的模型会暴露新的 harness 改进机会，形成双向循环。</p>
+<p><b>工作空间 / 数据闭环：</b>ScienceBuddy 不是纯 benchmark agent，而是交互式 scientific workspace。研究者日常请求会被转成 tasks、assets、environment 与 evaluation rubrics；执行轨迹可检查。公开材料显示系统包含大量科学工具模块，并支持 Python/R/Bash 等执行环境。</p>
+<p><b>训练方法：</b>耦合实验从 Qwen3.5-4B 开始，运行 3 个 outer cycles；每个 cycle 先做 10 个 harness-evolution steps，再做 20 次 RL updates。核心价值是把 procedure search 和 policy learning 解耦成不同时间尺度。</p>
+<p><b>实验 / 离线指标：</b>三轮中 harness validation accuracy 分别 38.9→44.4%、34.4→46.7%、61.1→70.0%；相应 RL 阶段 mean training reward 33.3→38.8%、44.1→60.5%、57.8→69.8%。held-out scientific tasks 的 single-attempt accuracy 从 <b>42.2%→73.3%</b>。固定模型只演化 harness 的实验中，validation accuracy 31.1→51.1%；固定 harness 只训练 model，pass@4 从 48.3→67.8%。</p>
+<p><b>推理 / Serving：</b>真正上线时需要把 harness 版本与 model 版本绑定，并保留 execution trace，否则一旦结果变化无法判断是模型变了、工具变了还是流程变了。ScienceBuddy 的思想天然要求 versioned agent runtime。</p>
+<p><b>线上 A/B：</b>没有商业产品线上 A/B；实验是 scientific task benchmark / workspace case studies。</p>
+<p><b>效率 / 成本：</b>双循环会显著提高研发计算量：不仅训练模型，还要探索 harness。它适用于高价值、可积累 feedback 的长期 Agent；对一次性简单 workflow 可能过度设计。</p>
+<p><b>与主流方法对比：</b>传统 RL 固定 environment；prompt optimizer 固定 model；AutoML 搜模型超参。ScienceBuddy 把“模型 policy”和“执行 harness”视为互相塑造的两个对象。</p>
+<p><b>适用场景：</b>科研 Agent、代码 Agent、数据分析 Agent、推荐系统自动诊断 Agent。对推荐系统尤其有启发：diagnosis rubric、SQL/tool、实验模板、特征校验器本身也应该被版本化和演化，而不是只更新模型。</p>
+<p><b>局限：</b>双循环容易形成共同过拟合；rubric 自动生成可能被 reward hacking；harness 演化带来 reproducibility 和安全风险；真实用户 feedback 含噪且可能存在隐私问题。</p>
+<p><b>未来方向：</b>独立 holdout evaluator、跨版本 regression suite、harness mutation safety、自动回滚、off-policy replay，以及对“该改模型还是该改工具”做 causal attribution。</p>
+<p><b>职业技能启发：</b>Agent 时代很值得学习的不是更多 prompt 技巧，而是 <b>evaluation harness、tool protocol、RL、实验可复现、版本治理</b>。这些能力同样适用于推荐算法的自动诊断与自动迭代。</p>
+<div class="resource"><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.17523">arXiv 2609.17523</a>；② 官方项目页：<a href="http://science-buddy.io/">science-buddy.io</a>；③ 官方代码：<a href="https://github.com/Gen-Verse/ScienceBuddy">Gen-Verse/ScienceBuddy</a>（已核验公开，MIT License）；④ 中文解读：<a href="https://www.alphaxiv.org/zh/abs/2609.17523">alphaXiv 中文</a>。</div></div>
+
+<div class="paper" id="justfit"><div class="phase">Deep Dive 05 · Long-context Inference / State Management</div><h2>JustFit：长上下文 Serving 的核心约束，越来越像“状态生命周期调度”而不是“模型权重能不能塞进显存”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景：</b>量化让 20B–30B 模型权重能够进入消费级设备，但长 context 的 KV cache、临时执行状态和组件 residency 仍会迅速吃满统一内存。于是“权重放得下”不代表“长上下文跑得起来”。</p>
+<p><b>技术方案：</b>JustFit 是 MLX-based runtime，组合三个机制：<b>KVExec</b> 用压缩/重建方式执行 KV state；<b>PhaseSwap</b> 按 inference phase 管理组件 residency；<b>StateTrans</b> 在 serving configuration 转换时保留必要状态。它们与 weight quantization 正交。</p>
+<p><b>Serving 思想：</b>不是把所有状态永久常驻，而是按 token phase / component lifecycle just-in-time materialize 与 release。这个思路和大规模 GPU 集群里的 KV offload / cache tiering 本质一致，只是 JustFit 在 24 GiB laptop 上把约束逼到了极致。</p>
+<p><b>实验：</b>24 GiB M4 Pro MacBook，Qwen3.8-27B MXFP4。三次独立 full-execution run 完成 196,608 input + 16,384 output，即 <b>212,992 positions</b>；相对 mlx-vlm baseline 30,720 positions 是 <b>6.93×</b>。另一个双请求测试保留 229,376 aggregate positions。</p>
+<p><b>性能：</b>32K input / 64 output probe 达到 <b>19.11 tok/s</b>；重复 32K+6K workload median peak process footprint 为 <b>16,374 MiB</b>。完整 runtime 在 AIME 2026 上答对 29/30。</p>
+<p><b>线上 A/B：</b>无；这是单机 runtime capacity / performance study。</p>
+<p><b>效率 / 成本：</b>它证明长 context capacity 可以通过 state management 获得数量级提升，而不是只能买更多内存。代价是状态压缩 / 重建、swap 与 transition 逻辑会增加实现复杂度，且 laptop 数字不能直接外推到数据中心 GPU。</p>
+<p><b>与主流方法对比：</b>weight quantization 解决模型常驻参数；PagedAttention 解决 KV allocation；offload 解决跨层存储；JustFit 强调把 <b>KV execution + component residency + serving transition</b> 联合成一个生命周期系统。</p>
+<p><b>适用场景：</b>本地 coding agent、长文档 RAG、单用户长推理、边缘部署。对高并发推荐 ranker，直接方案未必适用，但“状态按阶段 materialize”的原则适用于 user-history cache、cross-request state 与 large-beam generation。</p>
+<p><b>局限：</b>只在特定 Apple Silicon / MLX / model configuration 上验证；缺少大规模 concurrent users、P99、功耗与不同模型的全面测试；状态压缩对不同 attention architecture 的适配也需继续验证。</p>
+<p><b>未来方向：</b>自动决定 KV compression ratio / offload tier、跨请求 state reuse、prefill/decode 分离、memory-pressure-aware scheduler，以及把 GPU/CPU/SSD/统一内存视为一体化 state hierarchy。</p>
+<p><b>推荐 / 搜索启发：</b>当生成式推荐开始带大 user history、beam、retrieval context 时，算法工程师也要理解 state size、cache hit、lifetime 与 recompute cost。模型设计若完全忽略 runtime state，往往很难在真实 QPS 下成立。</p>
+<div class="resource"><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.17475">arXiv 2609.17475</a>；② 官方项目 / 技术博客：未发现；③ 官方代码：截至今日未发现可核验官方仓库；④ 第三方：<a href="https://arxivtldr.org/abs/2609.17475">ArXiv TLDR</a>；暂未发现高质量中文精读。</div></div>
+
+<div class="paper" id="social-harness"><div class="phase">Watch · Multi-agent Protocol / Safety</div><h2>Agentic Societies Need a Social Harness：多 Agent 系统需要独立于个人 Agent 的“社会协议层”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.6/10</span> · <span><b>工业成熟度</b> ★★☆☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★☆☆</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p>论文关注跨 trust boundary 的 agentic society：即使每个 agent 单独都“诚实且能力足够”，现有 message primitive 仍可能导致协调失败；faulty / malicious agent 还能通过 communication 漏洞拖延、操纵结果。作者提出分层 <b>social harness</b>：预防一类协议级失败、运行时检测无效消息、事后调查与问责。对未来推荐 Agent、商家 Agent、广告 Agent、平台 Agent 互相协商非常关键——安全边界不能只靠每个模型自己的 system prompt。</p>
+<p><b>实验 / 指标：</b>论文报告实验性展示 existing harness 下 honest agent 也会失败，但当前公开摘要未提供足够具体数字供可靠复述；无线上 A/B。</p>
+<p><b>研究判断：</b>短期离推荐主链路较远，但长期“多 Agent 商业生态”一旦出现，消息 schema、capability、authentication、rate limit、audit log、dispute resolution 会像 API gateway 一样成为基础设施。</p>
+<div class="resource"><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.17527">arXiv 2609.17527</a>；② 官方项目 / 代码：未发现；③ 中文精读：截至今日未发现可靠来源。</div></div>
+
+<div class="paper" id="cosq"><div class="phase">Watch · Reliability / Selective Reasoning</div><h2>CoSQ：与其让模型“总要回答”，不如显式学习什么时候应该拒答 / 升级给更强模型</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.5/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★☆☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未发现</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p>Chain-of-Self-Questioning 是 prompt-only selective risk control：模型先显式检查回答需要哪些信息、当前证据是否足够，再决定 answer / abstain。817-item TruthfulQA validation、11 个模型家族、17 个条件中，Grounded-CoSQ 在 τ=0.90 下把 unconditional wrong-commitment 从 <b>13.1% 降到 8.9%</b>（相对 -32.1%），answered accuracy 86.9→89.7%，coverage 87.6%；改善在 11 个模型与所有阈值上保持。</p>
+<p>对搜索/推荐的真正启发是 <b>selective escalation</b>：简单 query 直接走轻模型，证据不足时扩大检索、调用 reranker / reasoning model，风险过高时 abstain。它可以和 DiBud 的 access budget、ORDER 的 route、MoE expert budget 共同形成 request-level controller。</p>
+<p><b>局限：</b>prompt-based self-assessment 仍可能过度自信；TruthfulQA 与真实商业请求分布不同；abstention 的业务成本必须按场景定义。</p>
+<div class="resource"><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.17516">arXiv 2609.17516</a>；② 官方项目 / 代码：未发现；③ 中文精读：截至今日未发现可靠来源。</div></div>
+
+<div class="callout"><strong>给推荐 / 搜索算法工程师的今日行动项：</strong>如果只投入 2 小时，建议按 <b>FlashVector → AURA → ORDER</b> 的顺序读。前两篇分别对应“如何自动优化生产 Serving”和“如何自动诊断生产推荐”，ORDER 对应“如何让 RAG / 搜索 pipeline 本身变成可路由策略”。如果你在做生成式推荐 / Agent 平台，再补 ScienceBuddy；如果你在做推理性能，再补 JustFit。今天最值得带回工作中的不是某个新网络结构，而是三个系统设计原则：<b>① 优化必须端到端可验证；② pipeline configuration 应该 query-conditioned；③ model、harness、runtime state 应拥有不同的更新时钟与版本。</b></div>
+</div></section></main>
+<footer><div class="wrap">AI × 推荐算法研究站 · Daily 2026-09-17 · 研究价值优先于数量</div></footer></body></html>
