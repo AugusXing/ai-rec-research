@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.19｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-19 AI × 推荐算法研究日报：Spotify Hypothesis-Driven Shelf Generation、MSS-Complement/SERBench、SoL-Pi、RAFT、Coding Harness Design、FootprintRAG、Agentic Web RecSys。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.19</span><h1>今天最重要的变化：推荐开始生成“可解释的内容意图”，检索开始优化“还缺什么证据”，Agent 则进入 Harness 的成本与状态控制层</h1><p class="lead">观察窗口：<b>2026-09-18 10:00 → 2026-09-19 10:00（Asia/Shanghai）</b>。今天优先采用 Spotify Research、arXiv、作者项目页与官方 GitHub。部分论文 v1 submission 早于严格 24 小时，但在 9 月 18 日通过官方研究博客、公开 announce 或社区研究流进入视野；本文显式区分“论文首次提交时间”和“今日值得跟进的公开更新”，避免把旧论文误写成今日首发。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>生成式推荐正在从“直接生成 Item”上移一层到“先生成可读的推荐意图，再完成目录履约”</b>：Spotify 的 Hypothesis-Driven Shelf Generation 把 shelf planning 与 catalogue fulfilment 解耦，并用 constrained generative retrieval + shelf alignment + 离线预计算进入真实 Home 供给。② <b>检索目标正在从 pointwise relevance 变成 state-conditioned set sufficiency</b>：MSS-Complement 不是继续给相似 passage 打分，而是问“当前 Agent 已经看过什么、下一步决策还缺哪组事实”。③ <b>历史案例不该被当成静态文档</b>：RAFT 将 case 拆成 state timeline，在与当前阶段匹配的 entry 上检索，再返回后续轨迹。④ <b>Agent 效率优化开始从模型层转向 Harness 数据流</b>：SoL-Pi 用自动研究筛出 action fusion、context compaction、observation packaging 与 evidence-preserving reduction，在不训练模型的情况下将 token traffic 降低约一半。⑤ <b>Harness 不存在“永远更好”的固定配置</b>：176 个 matched settings 显示 planning、tool interface、context management 的收益高度依赖模型能力与上下文预算。⑥ <b>推荐系统的“用户”正在分裂为 human 与 agent 两类接收者</b>：Spotify 的 Agentic Web position paper 提醒未来需要 dual-audience objective，而不是继续只优化人类点击/消费。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 Spotify · Hypothesis-Driven Shelf Generation</h3><p>推荐算法工程最值得精读。把静态 shelf template 改成自然语言 hypothesis，随后做 constrained generative retrieval、candidate selection、shelf alignment，并把昂贵生成全部前移到离线预计算；既有工业链路、又有早期线上随机曝光评估。</p></div>
+<div class="paper"><h3>🥈 MSS-Complement / SERBench</h3><p>检索范式很值得押注：从“找最像 query 的文档”改成“在当前 state 下补齐决策所需的最小充分证据集合”。Complete-MSS@5 从 Qwen3 embedding+rerank 的 61.4% 提到 73.0%。</p></div>
+<div class="paper"><h3>🥉 SoL-Pi · Efficient Agent Harness</h3><p>对长时 Agent 的工程价值非常直接：自动搜索 Harness 机制，而不是只做 prompt 微调。EdgeBench 上相对 Pi 将 recorded token traffic 降低 44.7–49.0%，API cost 约降三分之一。</p></div>
+<div class="paper"><h3>⭐ RAFT · Stateful Case Retrieval</h3><p>把案例检索从“整篇 case similarity”改为“当前阶段与历史 case 中间状态的匹配”，命中后返回从该状态开始的 parent-case trajectory。对客服、运维、对话搜索、session 推荐都很可迁移。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Item Generation → Intent Planning → Catalogue Fulfilment</h3><p>生成式推荐不一定要直接替代全链路。更稳的工业路径可能是：LLM 生成可解释 intent / hypothesis，专用 retrieval executor 负责目录约束与召回，成熟 ranker 负责最终曝光。</p></div>
+<div class="paper"><h3>Relevance Ranking → Missing-Complement Retrieval</h3><p>Agent 已经拥有大量 context 时，继续返回“最相关”内容会高度重复。真正的检索信号应是 <b>marginal information gain / sufficiency gain</b>，甚至以“整个证据集合是否覆盖必要事实”作为目标。</p></div>
+<div class="paper"><h3>Static Document → Stateful Trajectory</h3><p>对话、故障、用户兴趣都不是静态文本。RAFT 提醒我们：历史对象应表示为可寻址的阶段 / 状态，并在匹配状态后读取后续轨迹，而不是只拿整段 summary 做向量相似。</p></div>
+<div class="paper"><h3>Model Scaling → Harness Economics</h3><p>SoL-Pi 与 Harness Study 的共同信号是：长时 Agent 的成本上限很大一部分来自重复上下文、观察结果、工具边界和计划机制，而不是模型参数本身。未来 router 要同时选择 model、tool、context policy 与 compaction policy。</p></div>
+</div>
+
+<h2>论文 / 更新优先级表</h2><p class="muted">Research Impact Score 参考：范式变化 25%、工业证据 20%、技术创新 20%、与你方向相关度 15%、后续研究空间 10%、开放/可复现性 10%。评分是本站研究优先级判断，不等同于论文质量的绝对排名。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>今日判断</th></tr></thead><tbody>
+<tr><td>S+</td><td><a href="#spotify-shelf">Hypothesis-Driven Shelf Generation</a></td><td>Generative Rec / Industrial RecSys</td><td>9.8/10</td><td>自然语言 hypothesis → constrained generative retrieval → alignment → offline serving；真实 Spotify Home 早期线上评估</td></tr>
+<tr><td>S+</td><td><a href="#serbench">MSS-Complement / SERBench</a></td><td>Retrieval / Agent Memory</td><td>9.7/10</td><td>从 pointwise relevance 转成 state-conditioned set sufficiency；Complete-MSS@5 61.4%→73.0%</td></tr>
+<tr><td>S+</td><td><a href="#solpi">SoL-Pi</a></td><td>Agent / Harness / Cost</td><td>9.6/10</td><td>自动研究 Harness；token traffic -44.7%~-49.0%，API cost 约 -1/3</td></tr>
+<tr><td>S</td><td><a href="#raft">RAFT</a></td><td>Stateful RAG / Troubleshooting</td><td>9.3/10</td><td>entry-level state match + parent-case trajectory；Case Hit 在各阶段优于 vanilla RAG / GraphRAG</td></tr>
+<tr><td>S</td><td><a href="#harness">Harness Design Study</a></td><td>Agent Architecture</td><td>9.2/10</td><td>176 matched settings：planning/tool/context policy 应按模型能力与 budget 自适应</td></tr>
+<tr><td>A+</td><td><a href="#footprint">FootprintRAG</a></td><td>RAG / Evidence Refinement</td><td>8.9/10</td><td>把 evidence context 变成可检查、可编辑、可追溯对象，而非隐藏的检索流水线</td></tr>
+<tr><td>A+</td><td><a href="#agentic-web">Who Are We Recommending To?</a></td><td>Agentic RecSys</td><td>9.0/10</td><td>提出 delegation spectrum 与 human/agent dual-audience recommendation 问题</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="spotify-shelf"><div class="phase">Deep Dive 01 · Full-stack Generative Recommendation / Spotify</div><h2>Hypothesis-Driven Shelf Generation：先“发明一个值得展示的个性化主题”，再让目录系统完成履约</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.8/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否（未发现官方代码）</span> · <span><b>是否有线上 A/B</b> 有线上随机曝光评估</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>Spotify Home 的核心展示单位不是单个 item，而是 shelf——例如某个主题下的一整行内容。传统工业系统通常由人工定义 shelf template，再为每种 template 编写专用 retrieval logic。它的优点是可控，但个性化“主题空间”被产品模板锁死，无法覆盖用户兴趣的长尾组合。</p>
+<p><b>现有问题：</b>如果直接让 LLM 端到端生成 shelf + item，会同时承担意图规划、目录合法性、召回、集合一致性、文案、Serving latency 等任务，难以单独优化和诊断。Spotify 的关键决策是<b>把“应该推荐什么概念”与“目录里有哪些 item 能兑现这个概念”拆开</b>。</p>
+<p><b>技术方案与关键模块：</b>系统分四阶段：① <b>Hypothesis Generation</b>：从用户上下文生成自然语言 shelf hypothesis，描述主题、内容类型、熟悉度等意图；② <b>Catalogue Fulfilment</b>：以 hypothesis 为条件，通过受约束的生成式检索在目录实体上解码，约束合法 item；③ <b>Candidate Selection + Shelf Alignment</b>：从召回候选中选出最终集合，并调整 title/subtitle，使“标题承诺”与实际 item 一致；④ <b>Offline Serving</b>：整套昂贵生成流程离线完成，预计算 shelf 作为 Home ranking 的额外供给。</p>
+<p><b>训练方法：</b>官方摘要明确提到可以把 frontier LLM 的行为蒸馏到 compact model，并使用 constrained generative retrieval over catalogue entities。论文的价值不在一个单模型 loss，而在“teacher 负责高质量 hypothesis / judge，student 与检索器负责可规模化履约”的系统分工。对未在官方摘要中披露的具体超参、蒸馏比例与训练资源，本站不补写。</p>
+<p><b>推理 / Serving：</b>最工业化的一点是<b>没有把 frontier LLM 放到 Home 请求实时 critical path</b>。高成本的 hypothesis、generative retrieval、alignment 先离线预计算，在线只需把预生成 shelves 注入成熟 Home ranking。这样把生成式推荐的主要风险从 P99 latency 变成 freshness / storage / recompute cadence，可用传统批处理与版本回滚治理。</p>
+<p><b>实验设置：</b>官方 Spotify Research 页面说明包含离线分析、LLM-as-a-judge，以及 Spotify Home 上 under uniform random exposure 的 early online evaluation。这样的随机曝光设计比“只看被 ranker 选中的曝光”更适合估计新 shelf 供给本身的吸引力，减少上层 ranker selection bias。</p>
+<p><b>离线指标：</b>论文比较 hypothesis 与 user taste 的一致性、retrieved shelf 对 hypothesis 的兑现程度，以及 shelf alignment 后的集合质量。高质量第三方精读 Paper Archivist 汇总该论文结果：generative retrieval 在多项 judge 维度优于 BM25 / dense / hybrid baseline，且 post-hoc alignment 对整体 shelf quality 有明显增益；这些数字建议以原论文表格为准复核后再用于复现。</p>
+<p><b>线上 A/B / 在线证据：</b>官方表述是“early online evaluation under uniform random exposure”，并指出不同 content type 的 engagement 差异明显，在部分设置可与强生产 shelves 竞争。它非常重要，因为结果并非“所有内容类型都赢”，而是暴露了生成式供给需要按品类、surface、用户状态做 routing。</p>
+<p><b>效率 / 成本收益：</b>主要收益来自离线化与蒸馏：不让大模型进入每次请求；hypothesis planning 与 catalogue retrieval 可以独立升级；同一个检索执行器也可服务大量动态 hypothesis。代价是 shelf freshness 取决于预计算周期，并需要管理离线产物的缓存、TTL、版本与回收。</p>
+<p><b>与主流方法的优劣：</b>相比手工 shelf template，它覆盖长尾兴趣、减少产品规则数量；相比端到端 LLM 直接生成 item，它保留 catalog constraint 与工程可控性；相比纯 embedding retrieval，它增加了一个显式的“为什么要推荐这一组”的自然语言中间层。弱点是多阶段误差会累积——hypothesis 错、retrieval 漏、alignment 只能局部修复。</p>
+<p><b>适用场景：</b>音乐 / 视频 / 电商首页的主题卡片、集合推荐、探索型推荐、运营供给扩展；尤其适合“用户想要的主题组合远多于人工模板”的场景。</p>
+<p><b>局限 / 尚未解决：</b>① hypothesis hallucination 与用户兴趣过度推断；② shelf 内 item 多样性与整体 coherence 的权衡；③ 离线预计算造成 freshness lag；④ 新 hypothesis 对成熟 ranker 的分布漂移；⑤ LLM-as-a-judge 与真实长期满意度之间的偏差；⑥ 生成 shelf 是否会挤压生态公平 / 探索空间。</p>
+<p><b>未来研究方向：</b>把 hypothesis quality、catalogue fulfilment、final-ranker survival、长期满意度统一进可分解 reward；学习 query/user-conditioned shelf budget；用 online feedback 反向训练 hypothesis planner；给 hypothesis 加版本与 provenance；进一步让“shelf hypothesis”成为跨召回、排序、解释与 Agent 对话共享的中间表示。</p>
+<p><b>对推荐 / 搜索工程与职业技能的启发：</b>值得重点补的不是“再学一种 LLM fine-tune”，而是<b>生成式模块如何插进成熟推荐系统</b>：constrained decoding / Semantic ID、离线蒸馏与预计算、集合级评估、LLM judge 校准、ranker integration、随机曝光实验设计。它是很典型的“算法 + 系统 + 实验”复合能力。</p>
+<h3>资源区</h3><ul><li>① Paper：<a href="https://arxiv.org/abs/2607.25823">arXiv 2607.25823</a>（v1 2026-07-28；今日为 Spotify Research / RecSys 2026 官方集中发布）</li><li>② 官方项目页 / 技术博客：<a href="https://research.atspotify.com/publications/hypothesis-driven-shelf-generation-for-personalised-recommendation">Spotify Research publication</a>；<a href="https://research.atspotify.com/2026/9/contexts-conversations-and-connections-spotify-research-at-recsys-2026">Spotify RecSys 2026 overview</a></li><li>③ 官方代码 / 模型 / 数据：截至本次检索未发现官方开源仓库或模型。</li><li>④ 中文 / 高质量第三方：<a href="https://www.paper-archivist.com/reading/2026/improving-item-discoverability-in-e-commerce-search-via-rela/">Paper Archivist 的相关工业对比解读（含 Spotify shelf 工作对比）</a>；<a href="https://www.themoonlight.io/en/review/hypothesis-driven-shelf-generation-for-personalised-recommendation">Moonlight 精读</a>；<a href="https://www.alphaxiv.org/abs/2607.25823">alphaXiv</a>。</li></ul></div>
+
+<div class="paper" id="serbench"><div class="phase">Deep Dive 02 · Retrieval / Re-ranking / Agent Memory</div><h2>The Missing Complement：检索不该问“最相关的是谁”，而应问“这一步决策还缺哪组证据”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.7/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>传统 dense retrieval / reranking 假设 query 是主要信息载体，每个 passage 独立计算 relevance。但长时 Agent 已经读过大量 repository / docs；同一个 issue 中，最像 query 的内容往往恰好也是它已经知道的内容。</p>
+<p><b>现有问题：</b>pointwise ranker 容易把 top-K 填满“同一事实的不同表述”，导致局部相关但集合不充分。论文把矛盾明确拆开：<b>relevance 属于 passage，sufficiency 属于 set</b>。真正目标是恢复当前决策依赖的所有必要 evidence groups，而且要尽量小。</p>
+<p><b>技术方案与关键模块：</b>提出 state-conditioned Minimal Sufficient Evidence recovery 与基准 SERBench。MSS-Complement 用三次 semantic call：先提出一个 jointly sufficient set，再显式搜索 missing pieces，最后返回 4–8 个 intact source units，总预算 6,144 tokens。核心不是把 reranker 换成更强模型，而是改变 acquisition policy：下一轮查询由“集合还缺什么”驱动。</p>
+<p><b>训练方法：</b>这是 retrieval policy / inference framework，不依赖重新训练一个大 encoder。配置在 calibration data 上固定，然后在 held-out state 上评估；这使提升更能归因于 set-level policy，而不是额外训练算力。</p>
+<p><b>推理 / Serving：</b>Serving 上可理解为三阶段 controller：<b>propose → diagnose gap → complement</b>。这天然适合和 cached state 结合：先把 agent 已读 evidence 显式放入 state，再只对缺口发起检索。推荐系统可类比为：已有候选集合已经覆盖哪些兴趣 / 约束，下一路召回应专门补哪类 coverage，而不是每一路都追求独立 relevance。</p>
+<p><b>实验设置：</b>SERBench 在 45 个 repository 的 500 个 held-out agent states 上评测，并记录 Agent 已看到的内容；只有证据集合覆盖当前决策标注的全部必要事实才计 complete。另在 AMA-Bench 检查对下游回答 / memory agent 的迁移价值。</p>
+<p><b>离线指标：</b>Complete set recovery：@5 为 <b>73.0%</b>，@8 为 <b>80.6%</b>；Qwen3 embedding + reranking 对应 <b>61.4%</b> 与 <b>72.4%</b>。matched similarity-only control 为 <b>66.6%</b>，说明收益主要来自 set policy 而非多算几次相似度。在 frozen repository source、无 gold-derived pool 条件仍领先 5.0 points。AMA-Bench 的 answer prompt 缩小 <b>76.2%</b>，准确率比其 memory agent 高 <b>2.08 points</b>。</p>
+<p><b>线上 A/B：</b>无生产 A/B，当前证据是 coding-agent / memory retrieval benchmark。</p>
+<p><b>效率 / 成本收益：</b>表面上多了 semantic calls，但通过返回更小、信息更互补的集合，最终 answer prompt 大幅缩短；对长 horizon Agent，减少重复 evidence 的价值可能高于单次 retriever latency。工业落地必须进一步测 end-to-end token、P95、cache reuse 与 failure fallback。</p>
+<p><b>与主流方法优劣：</b>相比 bi-encoder / cross-encoder reranking，它显式优化集合覆盖与互补；相比 MMR，它不是简单 relevance-diversity tradeoff，而是以“当前 decision 所需事实”定义 sufficiency；相比 memory compression，它仍返回原始 intact source units，provenance 更清楚。缺点是需要可靠地判断“缺哪类事实”，这一步本身可能由 LLM 误判。</p>
+<p><b>适用场景：</b>Agent code search、RAG 多跳问答、复杂客服、法律 / 研究证据集合、推荐多兴趣召回、需要多来源证据的搜索。</p>
+<p><b>局限 / 尚未解决：</b>必要事实 annotation 成本高；coding repo 与通用 Web retrieval 的分布差异；集合目标与 latency / source cost 还未联合；缺口诊断可能被错误 state 污染；并未解决 stale evidence / conflicting evidence。</p>
+<p><b>未来研究方向：</b>学习式 complement router、set-level contrastive / RL objective、counterfactual coverage credit、与 query-conditioned access budget 联合、将 “marginal sufficiency gain / cost” 作为召回路由目标。</p>
+<p><b>工程 / 职业启发：</b>对推荐算法工程师尤其值得迁移：多路召回的融合不一定只是 source score calibration，可尝试把 candidate set 的<b>兴趣覆盖、属性约束、业务目标缺口</b>显式建模，并让后续 source 专门补缺。这个方向连接 retrieval、set optimization、LLM reasoning 和 online budget control。</p>
+<h3>资源区</h3><ul><li>① Paper：<a href="https://arxiv.org/abs/2609.20050">arXiv 2609.20050</a></li><li>② 官方项目页 / 技术博客：官方 benchmark README 见代码仓库；未发现独立研究博客。</li><li>③ 官方代码 / 数据：<a href="https://github.com/LordTARN1SHED/SERBench">SERBench GitHub</a>（论文明确给出的 benchmark / evaluation resources）。</li><li>④ 中文 / 高质量第三方：截至本次检索未发现可靠中文精读；可参考 <a href="https://arxivtldr.org/abs/2609.20050">ArXiv TLDR</a> 辅助速读。</li></ul></div>
+
+<div class="paper" id="solpi"><div class="phase">Deep Dive 03 · Agent / Harness / Training & Inference Efficiency</div><h2>SoL-Pi：不改模型参数，也能靠“自动研究 Harness”把长时 Agent 的 token traffic 砍掉近一半</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.6/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>当 Coding / Research Agent 从几十步扩到无人值守的长时探索，成本不再只取决于单次模型价格，而是同一上下文、工具输出和日志在几十到几百轮 API call 中反复传输。Harness 的数据流会放大每一个冗余 token。</p>
+<p><b>现有问题：</b>手工优化常常是局部有效、全局变差：压缩过早会丢证据；工具合并过激会破坏 decision point；日志截断会隐藏真正错误。SoL-Pi 把 Harness 优化本身当成 auto-research 问题，用大量可执行环境筛机制，而不是凭经验写规则。</p>
+<p><b>技术方案与关键模块：</b>研究过程从 152 个方向出发，在 535 个开发环境、3000+ runs、60000+ agent-environment interactions 中筛选。最终四类机制存活：<b>Action Fusion</b>（可预测连续动作合并）、<b>Online Context Compact</b>（根据未来增长/剩余请求判断是否值得压缩）、<b>ObservationPack</b>（重复大输出变稳定 handle，可精确分页召回）、<b>Evidence-Preserving Reducer</b>（将诊断日志变 compact receipt，同时保留可核验原证据）。</p>
+<p><b>训练方法：</b>不训练底层 LLM。所谓“学习”发生在 Harness auto-research loop：提出机制→实现→固定实验→审查 trajectory→按 capability threshold + efficiency improvement 接受 / 淘汰；用 Pareto 风格保留不同 cost/performance tradeoff 的候选。</p>
+<p><b>推理 / Serving：</b>这些机制位于模型 API 外层，因此能跨 GPT-5.6 Sol / Opus 5 使用。对 Serving 的启发是：context 不应只是字符串，而应成为可寻址对象；observation 可存本地、只传 handle；completed planning state 可以按未来经济收益压缩；具备 deterministic validation 的动作可 fusion。</p>
+<p><b>实验设置：</b>主评测 EdgeBench 51 tasks，其中一部分用于候选单向 acceptance，40 个保留做 final evaluation；还用 Terminal-Bench CPU tasks、Lean4 IMO 题、kernel optimization swarm 做外部检查。</p>
+<p><b>离线指标：</b>EdgeBench 上 GPT-5.6 Sol：SoL-Pi recorded token <b>2.154B→1.099B（-49.0%）</b>，API cost <b>$1339→$894（-33.2%）</b>；Opus 5：<b>2.370B→1.310B（-44.7%）</b>，cost <b>$1741→$1158（-33.5%）</b>。论文强调最低成本配置不一定是最高分配置，说明应按目标 routing，而不是全局固定开关。</p>
+<p><b>线上 A/B：</b>无生产业务 A/B；证据是多 benchmark / 多 backend 的可执行工作负载。</p>
+<p><b>效率 / 成本收益：</b>这是论文主贡献。与 native Codex / Claude Code harness 相比估算每小时节省 $8.75–$13.50；相对 Pi 每小时节省 $4.36–$5.71。更重要的是它减少的是<b>重复传输</b>，因此对更长 trajectory 的收益可能进一步放大。</p>
+<p><b>与主流方法优劣：</b>相比模型量化 / speculative decoding，它不碰模型；相比 prompt compression，它能控制 tool call、observation、plan lifecycle；相比单项 heuristic，它用自动实验筛出跨环境机制。弱点是结果依赖 base harness 与 backend，且触发率在不同模型间差异明显。</p>
+<p><b>适用场景：</b>coding agent、自动研究、长时数据分析、运维 agent、需要大量工具输出的企业 Agent；也适合推荐研发 Agent 的日志/实验迭代控制面。</p>
+<p><b>局限 / 未解决：</b>仅两个主 model backend；Harness 搜索本身成本高；mechanism interaction 可能随 provider cache / pricing 改变；自动压缩仍存在隐性信息损失；尚未把 correctness risk、latency 与 cost 放进统一在线策略。</p>
+<p><b>未来方向：</b>Harness policy router、按任务学习 compaction threshold、provider-cache-aware optimization、budget-conditioned tool policy、基于 provenance 的可逆压缩，以及 model-harness co-training。</p>
+<p><b>工程 / 职业启发：</b>Agent 工程未来不只是 prompt engineering。需要理解<b>状态机、缓存、工具协议、trace 分析、token economics、验证器与 SLO</b>。对推荐算法工程师而言，这与在线推荐的 feature cache / candidate cache / 多阶段 budget controller 非常同构。</p>
+<h3>资源区</h3><ul><li>① Paper：<a href="https://arxiv.org/abs/2609.20519">arXiv 2609.20519</a></li><li>② 官方项目页：<a href="https://nvlabs.github.io/SoL-Pi/">NVIDIA SoL-Pi project</a></li><li>③ 官方代码：<a href="https://github.com/NVlabs/SoL-Pi">NVlabs/SoL-Pi</a></li><li>④ 中文 / 高质量第三方：<a href="https://www.alphaxiv.org/zh/abs/2609.20519">alphaXiv 中文</a>；英文深度梳理可看 <a href="https://academy.dair.ai/papers/sol-pi-recursively-scaling-auto-research-loops-for-efficient-agent-harness-2609.20519">DAIR.AI Academy</a>。</li></ul></div>
+
+<div class="paper" id="raft"><div class="phase">Deep Dive 04 · Stateful RAG / Search</div><h2>RAFT：历史案例不是一篇文档，而是一条“从状态 A 走到状态 B”的可检索轨迹</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.3/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是（论文声明 release；本次未确认仓库 URL）</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 业务动机：</b>企业 troubleshooting、客服 case、复杂对话都是多阶段过程。一个当前 case 进行到“已尝试重启、日志仍报 X”时，最有价值的历史经验不是“整篇最像的 case”，而是曾经到达类似中间状态的 case 接下来怎么处理。</p>
+<p><b>现有问题：</b>vanilla RAG 把一个历史 case 当静态文档；GraphRAG 即使连接实体，也通常没有把 timeline progress 当成检索主键。整篇相似会被开头描述、产品名等全局词汇主导，忽略当前真正状态。</p>
+<p><b>技术方案：</b>RAFT 将 closed case 抽象成 directed chain of timeline entries；在线以 active case 的当前 entry 做 entry-level retrieval，命中某个历史中间状态后，返回该 entry 所属 parent case 的后续 trajectory。可选 case-level graph 再通过 configurable similarity representation 连接相关 case。</p>
+<p><b>训练方法：</b>论文重点是表示与检索框架，不依赖训练一个新的大模型。核心工程投入在 case abstraction、entry representation、state matching 与 trajectory reconstruction。</p>
+<p><b>推理 / Serving：</b>路径是 current state → entry retriever → matched historical state → parent trajectory。相比把全部 case chunk 丢给 RAG，它更像一个“状态索引 + trajectory store”。这适合做两层存储：ANN index 只放 entry state，命中后通过 case id O(1) 回取后续步骤。</p>
+<p><b>实验设置：</b>由于公开多阶段 troubleshooting 数据稀缺，作者用 Microsoft Learn Windows Server 文档构造 synthetic benchmark，并用带人工 duplicate label 的 Apache Jira issues 做真实 case transfer 检查。</p>
+<p><b>离线指标：</b>论文摘要报告 RAFT 在 case progress 的每个阶段都提升 Case Hit，相对 strongest vanilla RAG / GraphRAG baseline 的提升具有统计显著性；Jira 结果提供真实 case history 上的方向性迁移证据。摘要未给出逐阶段完整数值，本站不补写。</p>
+<p><b>线上 A/B：</b>无。作者明确选择直接评估 retrieval layer，而非依赖生产 Agent deployment。</p>
+<p><b>效率 / 成本：</b>entry-level index 会增加索引条目数，但能显著减少将整篇历史 case 放入 prompt 的浪费；命中后只需取与当前状态相关的后续 trajectory。工业需要进一步量化 index expansion、case update、state extraction 成本。</p>
+<p><b>与主流方法优劣：</b>相比 whole-case RAG，它对 progress 更敏感；相比通用 GraphRAG，它的边与节点具有“时间 / 状态推进”语义；相比简单 conversation summary，它能返回可复用行动轨迹。限制是 timeline extraction 质量会直接决定检索质量。</p>
+<p><b>适用场景：</b>客服、故障诊断、运维 Agent、医疗流程辅助、法律 case workflow、对话式搜索；推荐中可映射为 session stage / funnel stage 检索历史相似轨迹。</p>
+<p><b>未来方向：</b>学习 state abstraction、trajectory segment scoring、success-conditioned retrieval、stage-aware negative mining、跨 case causal confound control、动态停止条件。</p>
+<p><b>工程 / 职业启发：</b>值得把“长期行为序列”从单个 user embedding 升级为<b>可寻址状态节点 + 后续轨迹</b>。这会连接 sequential recommendation、case-based reasoning、vector search 与 graph / temporal retrieval。</p>
+<h3>资源区</h3><ul><li>① Paper：<a href="https://arxiv.org/abs/2609.20754">arXiv 2609.20754</a>（EMNLP 2026 Industry Track）</li><li>② 官方项目页 / 技术博客：未发现独立官方博客。</li><li>③ 官方代码 / 数据：论文明确声明 release benchmark、implementation 与 Apache Jira evaluation set；截至本次检索未可靠确认具体官方仓库 URL，因此不猜链接。</li><li>④ 中文 / 高质量第三方：截至本次检索未发现可靠中文精读；可参考 <a href="https://www.ppdeck.com/">PaperDeck 当日论文卡片</a> 作为速览。</li></ul></div>
+
+<div class="paper" id="harness"><div class="phase">Deep Dive 05 · Agent Architecture / Controlled Ablation</div><h2>An Empirical Study of Harness Design：Planning、工具、Context 管理都不是“越多越好”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 现有问题：</b>大家习惯比较 OpenHands、SWE-Agent 等“整套系统”，但结果无法说明提升到底来自 prompt、plan、tool schema、context compression 还是 stopping rule。论文固定主执行 loop，只改三个组件，做 component-level 因果味更强的对照。</p>
+<p><b>技术与实验：</b>四个模型、SWE-Bench Verified 与 Terminal-Bench 2.1，共 <b>176 matched settings</b>；覆盖 5 种 context-management strategy、4 种 context-window budget，以及 planning / action-space targeted ablation。</p>
+<p><b>关键发现：</b>① context management 的主要价值是防 overflow，window 越紧越重要；② <b>rule-based elision → LLM summarization</b> 的分阶段策略效率最好，而“让被删内容可恢复”增加系统复杂度但几乎没被模型利用、也没带来 accuracy gain；③ planning 对弱模型更像 accuracy scaffold，对强模型更像 cost saver；④ 预定义结构化 tools 帮助 bash 能力弱的模型，而 shell 能力强的模型用 bash-only 反而更便宜，尤其 CLI task。</p>
+<p><b>训练 / Serving：</b>无需训练；价值是把 Harness 配置视作运行时 policy。它和 DRAG / ORDER 一样都暗示：不要为所有请求固定一个 execution graph，而应按 model capability、task type、context pressure 选择配置。</p>
+<p><b>线上 A/B：</b>无。评测以可执行 software benchmark 为主。</p>
+<p><b>效率 / 成本：</b>论文明确做 accuracy-cost 分析。最重要的工程结论不是某个统一数字，而是 crossover：某组件对一个模型是提升 accuracy，对另一个模型可能只是降低 cost，甚至成为冗余开销。</p>
+<p><b>优劣 / 局限：</b>控制变量设计比“系统榜单”更有解释性；但 planning/action-space 的一些 ablation 只在特定 context 条件测试，每个 task 运行次数有限，Terminal-Bench 规模也不大，且模型能力不能仅由参数量代理。</p>
+<p><b>未来方向：</b>online harness routing、自动测量模型 tool proficiency、context pressure predictor、组件交互实验、expected-success-per-dollar 目标。</p>
+<p><b>工程 / 职业启发：</b>Agent 系统面试和工程能力会越来越重视“为什么用这个 harness 组件、在哪种条件下应该关掉它”，而不是会不会接一个框架。推荐系统里同理：粗排、重排、特征、检索路数应该是 request-conditioned resource allocation。</p>
+<h3>资源区</h3><ul><li>① Paper：<a href="https://arxiv.org/abs/2609.20804">arXiv 2609.20804</a></li><li>② 官方项目页 / 博客：未确认。</li><li>③ 官方代码 / 数据：截至本次检索未确认官方代码仓库。</li><li>④ 中文 / 高质量第三方：<a href="https://www.alphaxiv.org/abs/2609.20804">alphaXiv</a>；<a href="https://www.emergentmind.com/papers/2609.20804">EmergentMind</a>。</li></ul></div>
+
+<div class="paper" id="footprint"><div class="phase">Focused Brief 06 · RAG / Evidence Refinement</div><h2>FootprintRAG：把隐藏在 RAG 里的 evidence context 变成“可检查、可修改、可追溯”的一等对象</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>核心问题：</b>开放式文献探索中，retrieval / reranking / filtering 往往是黑箱；用户只看到 summary，不知道哪些 evidence 被留、被丢、或为什么被丢。</p>
+<p><b>方案：</b>把论文解析成 text + figure evidence units；并行扩展 query variants；多轮 retrieve / assess；从 corpus-level evidence space 追加 ERS-ranked supplementary candidates；用 coordinated views 展示 retrieval trajectory、evidence-state revision 与 provenance-aware synthesis。</p>
+<p><b>实验：</b>两组 case study、user study 与 representative RAG workflow comparison；官方摘要结论是系统帮助用户比较检索方向、恢复遗漏证据并把 summary trace 回支持单元。未披露线上业务 A/B。</p>
+<p><b>工程判断：</b>它更像“human-in-the-loop evidence reranker / debugger”而非自动化 SOTA retriever。对高风险搜索、研究助手、推荐解释审查很有价值，尤其适合做 RAG evaluation console。</p>
+<p><b>未来：</b>将 evidence editing log 反向作为 reranker preference data；自动学习哪些 evidence revision 最能减少 hallucination；把 provenance / conflict / freshness 纳入 context selection objective。</p>
+<h3>资源区</h3><ul><li>① Paper：<a href="https://arxiv.org/abs/2609.19601">arXiv 2609.19601</a></li><li>② 官方项目页：GitHub README / demo（若仓库提供）。</li><li>③ 官方代码：<a href="https://github.com/meteorshowering/FootprintRAGVA">FootprintRAGVA</a></li><li>④ 中文 / 高质量第三方：截至本次检索未发现可靠中文精读；可参考 <a href="https://arxivtldr.org/abs/2609.19601">ArXiv TLDR</a>（若可访问）或原论文。</li></ul></div>
+
+<div class="paper" id="agentic-web"><div class="phase">Focused Brief 07 · Agentic RecSys / Research Agenda</div><h2>Who Are We Recommending To?：当 Agent 成为推荐结果的直接消费者，目标函数必须重写</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★☆☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 不适用（position paper）</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>核心观点：</b>过去默认“推荐结果直接给人”。Agentic Web 中，routine purchase、travel、受约束交易可能先由 Agent 浏览、比较、谈判甚至执行，真正“读取 ranking”的是 Agent；娱乐、艺术、高风险选择仍更偏 human-final。</p>
+<p><b>关键框架：</b>提出 <b>delegation spectrum</b>，用 preference specifiability、outcome verifiability、decision stakes 等维度判断某类推荐应该由 human 还是 agent 承接，并提出 agent preference modeling、dual-audience optimization、agent attention economy 等研究议程。</p>
+<p><b>训练 / 推理 / 实验：</b>这是 position paper，不提出新的训练算法、Serving 架构或离线 benchmark，也没有 A/B；不要把研究议程误写成已验证提升。</p>
+<p><b>对推荐系统的直接影响：</b>未来 ranker 可能要同时输出 human-facing utility 与 agent-readable structured attributes / constraints / provenance；“解释”不再只是用户体验，而可能成为下游 Agent 决策的 machine-consumable feature。</p>
+<p><b>值得押注：</b>dual-audience ranking、agent-compatible item schema、delegation-aware exposure policy、人类最终满意度与 Agent intermediate action 的 credit assignment、对 GEO / recommendation manipulation 的防御。</p>
+<h3>资源区</h3><ul><li>① Paper：<a href="https://arxiv.org/abs/2609.11945">arXiv 2609.11945</a>（论文较早公开；Spotify 于 2026-09-18 RecSys 专题集中发布）</li><li>② 官方博客：<a href="https://research.atspotify.com/publications/who-are-we-recommending-to-recommender-systems-in-the-agentic-web">Spotify Research</a>；<a href="https://research.atspotify.com/2026/9/contexts-conversations-and-connections-spotify-research-at-recsys-2026">RecSys 2026 overview</a></li><li>③ 官方代码 / 模型 / 数据：不适用 / 未提供。</li><li>④ 中文 / 高质量第三方：截至本次检索未发现可靠中文精读，优先阅读官方 position paper。</li></ul></div>
+
+<div class="callout"><strong>今日对推荐 / 搜索研发的落地清单：</strong>① 尝试把生成式模块放在“intent / hypothesis planning”而不是直接替换 final ranker；② 多路召回增加 set-level coverage / marginal gain 指标，避免每路重复返回同类候选；③ 将 session / case / user history 表示成可寻址 state，并支持从 state 读取 trajectory；④ Agent 平台记录 context bytes、重复 observation、tool-call fanout、compaction hit rate 与 cost/task；⑤ Harness 配置按模型能力和 budget 路由，不要全局固定 planning / tool schema；⑥ 为将来的 Agentic Rec 提前建设 machine-readable item attributes、约束与 provenance。</div>
+</div></section></main>
+<footer><div class="wrap">AI × 推荐算法研究站 · 2026-09-19 · 一手来源优先 · Research impact over paper count</div></footer></body></html>
