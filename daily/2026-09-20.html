@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN"><head><title>2026.09.20｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-20 AI × 推荐算法研究日报：UniPolicy、MERIT-Rank、On-Demand Attention、RetireOPD、SPARSEUP、SwitchSD、F2DR、MATCH。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main>
+<div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.20</span><h1>今天最值得关注的不是“更大的模型”，而是更细粒度的控制面：多目标 Policy、Multi-Trajectory Rerank、按需 Attention、可退出 Teacher、可读 Sparse Retrieval</h1><p class="lead">观察窗口：<b>2026-09-19 10:00 → 2026-09-20 10:00（Asia/Shanghai）</b>。今天是周末，arXiv cs.CL 的最近列表仍停留在 <b>Fri, 18 Sep 2026</b>，严格 24 小时内没有新的 arXiv 批次。因此本文采用“<b>严格窗口更新 + 最新可用批次补读</b>”策略：SPARSEUP 在 9 月 19 日进入更广泛技术传播；其余论文来自 9 月 18 日最新 arXiv 批次、此前尚未在本站重点拆解。本文不会把这些论文误写成 9 月 20 日首发。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>① <b>生成式召回的多目标优化正在从 reward 加权转成“多 Policy 共用一个 Backbone”</b>：UniPolicy 用 objective prefix + sparse MoE-LoRA + objective-specific FFN 把 relevance / CTR / commercial value 显式分路，线上 CTR +0.71%、RPS +1.58%、收入 +1.32%。② <b>LLM Reranker 的下一步不是单条 CoT 更长，而是多视角 trajectory 再融合</b>：MERIT-Rank 让 semantic / intent / evidence 等互补路径共同决定排序。③ <b>推理优化正在从静态稀疏化走向“模型自己决定什么时候读全局信息”</b>：ODA 用轻量 recall head 控制 global attention；SwitchSD 则用内部表征判断何时 copy、何时 neural draft。④ <b>Agent RL 的 teacher 不应永久存在</b>：RetireOPD 将 teacher 视作临时 scaffold，并用训练信号自动退休。⑤ <b>稀疏检索仍有工业生命力</b>：SPARSEUP 用 149M ModernBERT、可读 token-weight 表示和 inverted-index-friendly Serving，在 BEIR-13 达 56.4 nDCG@10，并以 Apache 2.0 开源。⑥ <b>Agent / DeepSearch 的学习闭环开始细化到“样本难度、工具参数、轨迹质量”</b>：MATCH 与 F2DR 分别解决 tool-call reward leakage 和 full-pipeline reward/evaluation。</div>
+
+<h2>今日最值得看</h2><div class="grid">
+<div class="paper"><h3>🥇 UniPolicy · Generative Search Ads</h3><p>最贴近推荐/搜索工业落地。不是把多目标 reward 加权成一个标量，而是共享 backbone、分离 objective-specific policy，再在 Serving 阶段按业务配额并行 beam search。更关键的是有真实 7-day A/B。</p></div>
+<div class="paper"><h3>🥈 MERIT-Rank · Multi-Trajectory Reranking</h3><p>对你当前“重排是否更有研究潜力”的方向非常直接：把 reasoning rerank 从单 trajectory 升级为多视角证据空间，并通过 progressive RL 让这些轨迹稳定、可融合。</p></div>
+<div class="paper"><h3>🥉 On-Demand Attention</h3><p>长上下文 Agent Serving 的重要信号：不是永久 local attention，也不是每 token 全局 attention，而是让模型的 decoding state 预测“这一步是否值得读全历史”。</p></div>
+<div class="paper"><h3>⭐ RetireOPD</h3><p>Agent RL 很值得借鉴的训练范式：teacher 只负责早期提供 dense supervision，一旦 student 已吸收技能且 teacher/student 开始冲突，就自动退出。</p></div>
+<div class="paper"><h3>⭐ SPARSEUP</h3><p>检索工程价值高：开放、可解释、可用 inverted index，单 H100 可训练；在 MS MARCO + Seismic 上 >97% exact-search recall 时约 380µs/query（single-thread）。</p></div>
+</div>
+
+<h2>技术趋势</h2><div class="grid">
+<div class="paper"><h3>Scalar Reward → Policy Portfolio</h3><p>多目标系统如果把 CTR、relevance、GMV/eCPM 全压成单一 reward，gradient domination 很难避免。UniPolicy 提供了一个更工业化的方向：共享表示，但让目标拥有独立适配空间和独立生成 policy，在线再组合。</p></div>
+<div class="paper"><h3>Single CoT → Evidence Portfolio</h3><p>MERIT-Rank 把 reranking 的不确定性显式化：一个 query-document pair 可以从语义、意图、证据等多条轨迹审视，再统一决策。未来 listwise rerank 很可能进一步走向 trajectory routing + verifier。</p></div>
+<div class="paper"><h3>Fixed Compute → State-conditioned Compute</h3><p>ODA 和 SwitchSD 的共同点不是某个 kernel，而是<b>用模型内部信号控制计算路径</b>。这类 controller 可以扩展到 retrieval depth、reasoning budget、KV read、draft strategy、tool execution。</p></div>
+<div class="paper"><h3>Permanent Teacher → Temporary Scaffold</h3><p>RetireOPD 说明 teacher supervision 的边际价值会随 student 能力变化。推荐/搜索中的 distillation、expert guidance、rule teacher 也应思考何时减弱或退出，而不是固定 loss weight 训练到底。</p></div>
+<div class="paper"><h3>Opaque Dense → Interpretable Hybrid Retrieval</h3><p>SPARSEUP 并没有证明 sparse 全面优于 dense；反而它诚实显示在同 backbone / data 下仍落后 DenseOn 1.52 nDCG 点。但可读 term weight、倒排兼容、rare lexical match 与亚毫秒检索，使 sparse 在 hybrid recall 中仍有明确位置。</p></div>
+</div>
+
+<h2>论文 / 更新优先级表</h2><p class="muted">Research Impact Score 参考：范式变化 25%、工业证据 20%、技术创新 20%、与你方向相关度 15%、后续研究空间 10%、开放/可复现性 10%。评分是本站研究优先级判断，不等同于论文质量绝对排名。</p>
+<div class="table-wrap"><table><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>Impact</th><th>为什么值得看</th></tr></thead><tbody>
+<tr><td>S+</td><td><a href="#unipolicy">UniPolicy</a></td><td>Generative Retrieval / Ads / RL</td><td>9.7/10</td><td>多目标从 reward fusion 变 objective-specific policy；7-day online A/B</td></tr>
+<tr><td>S+</td><td><a href="#merit">MERIT-Rank</a></td><td>Reasoning / Reranking</td><td>9.3/10</td><td>Multi-Trajectory Reasoning Space + Progressive Rank Policy Optimization</td></tr>
+<tr><td>S+</td><td><a href="#oda">On-Demand Attention</a></td><td>Inference / Long Context</td><td>9.4/10</td><td>用 recall head 按 token 决定是否 global attention；vLLM GPU-side conditional execution</td></tr>
+<tr><td>S</td><td><a href="#retireopd">RetireOPD</a></td><td>Agent RL / Distillation</td><td>9.1/10</td><td>teacher 从永久监督变成可自动退出 scaffold；官方代码已开源</td></tr>
+<tr><td>S</td><td><a href="#sparseup">SPARSEUP</a></td><td>Retrieval / Sparse Embedding</td><td>9.0/10</td><td>149M 开放 sparse baseline；BEIR-13 56.4；Apache 2.0；sub-ms inverted-index retrieval</td></tr>
+<tr><td>S</td><td><a href="#switchsd">SwitchSD</a></td><td>Serving / Speculative Decoding</td><td>8.8/10</td><td>内部表征识别 copy intent，动态切换 neural draft / context copy；最高 +15% throughput</td></tr>
+<tr><td>A+</td><td><a href="#f2dr">F²DR</a></td><td>DeepSearch / Reward Model</td><td>8.5/10</td><td>将 DeepSearch reward/eval 拆为 Content / Trajectory / Answer</td></tr>
+<tr><td>A+</td><td><a href="#match">MATCH</a></td><td>Tool Learning / Agent RL</td><td>8.4/10</td><td>能力边界自适应 curriculum + tool-name→arg-key→arg-value gated reward</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="unipolicy"><div class="phase">Deep Dive 01 · Generative Retrieval / Search Advertising / Industrial RL</div><h2>UniPolicy：多目标生成式召回，不再把所有业务目标压成一个 Reward</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.7/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否（截至检索未发现官方代码/模型）</span> · <span><b>是否有线上 A/B</b> 是，7 天真实广告系统</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>搜索广告早期召回一旦丢掉高价值候选，后续粗排/精排无法恢复。生成式召回让下游业务目标可以更早进入 candidate generation，但现实系统至少同时关心 relevance、click propensity 和 commercial value，单目标 RL 或简单 reward fusion 都很难兼顾。</p>
+<p><b>现有问题：</b>把多目标线性加权成一个 reward，本质仍让所有目标竞争同一参数空间，优势更强的目标会压过其他信号；同时 click-only 监督浪费了 Exposure-but-Unclicked 与 Miss 中的相对偏好信息。推理时，单 policy beam search 也无法在固定候选预算内显式控制“相关性候选、点击候选、商业价值候选各占多少”。</p>
+<p><b>技术方案与关键模块：</b>① <b>Objective-specific Prefix Token</b> 告诉共享生成模型当前优化目标；② <b>Sparse MoE-LoRA</b> 为不同目标动态选择低秩适配路径；③ <b>Objective-specific Residual FFN</b> 进一步提供独立表达空间；④ 使用 Click &gt; Exposure &gt; Miss 的多阶段行为构造 pairwise preference；⑤ 推理阶段执行 <b>parallel multi-policy beam search</b>，按业务配置分配各 policy 的 candidate quota，最终 merge。</p>
+<p><b>训练方法：</b>每个 objective 使用自己的 reward 做 on-policy RL，而不是先融合成一个统一 reward。这样共享 backbone 保留跨目标通用表示，同时 objective-specific 路径降低 gradient competition。多阶段行为偏好又补充了 clicked / exposed-uncliked / unexposed 的相对边界。</p>
+<p><b>推理 / Serving：</b>工业上最关键的是作者没有为每个目标部署独立大模型，而是在单模型内共享 common-prefix computation，并行生成不同 policy 的 beam，再做 candidate merge / backfill。论文强调通过共享请求计算、并行解码控制额外 overhead。</p>
+<p><b>实验设置与离线指标：</b>论文在大规模真实搜索广告数据上对比 single-objective RL 与 naive multi-reward fusion。完整模型在检索质量与多个业务代理指标之间取得更均衡改进；论文报告示例结果包含 Hit@1 23.88、Hit@10 61.15、NDCG@10 0.4218，并同时观察 eCPM / CTR / relevance 等目标。</p>
+<p><b>线上 A/B：</b>真实搜索广告系统进行 7-day A/B：<b>CTR +0.71%、RPS +1.58%、广告收入 +1.32%</b>，且作者称 serving latency 保持稳定。这是今天所有工作里最强的工业证据。</p>
+<p><b>与主流方法相比：</b>相较 OneRec / OneSearch 一类统一 generative policy，UniPolicy 更像“共享 backbone 上的 policy portfolio”；相较传统 multi-task learning，它把差异不仅放在 head，而是一路延伸到生成 policy 与 beam quota。优势是可控和可诊断；代价是 routing、quota、policy calibration 与 Serving 实现更复杂。</p>
+<p><b>适用场景：</b>广告召回、电商搜索、多目标推荐召回、需要在固定 candidate budget 下兼顾相关性/点击/成交/生态目标的系统。</p>
+<p><b>局限 / 尚未解决：</b>目标间 quota 仍需要业务配置；objective 增多后 MoE/FFN 路径、calibration 和在线实验空间会膨胀；短期 CTR/RPS/revenue 不等于长期用户价值；论文未提供开源实现。</p>
+<p><b>未来研究：</b>把 quota 也学习成 policy；将 objective routing 与 user/query state 联合；加入 diversity / long-term satisfaction / seller ecosystem；研究 policy interference 的可观测指标与自动扩缩容。</p>
+<p><b>对推荐/搜索工程落地的启发：</b>与其争论“多目标加权系数怎么调”，更值得把系统设计成<b>目标可寻址的 policy portfolio</b>：共享昂贵 backbone，目标拥有小型可切换适配器，Serving 层显式组合候选。职业技能上应加强 generative retrieval、RL preference alignment、MoE/PEFT 与 online multi-objective experimentation。</p>
+<p><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.20630">arXiv 2609.20630</a>；② 官方项目/博客：未发现独立项目页；③ 官方代码/模型/数据：截至 2026-09-20 未发现官方公开仓库；④ 中文/第三方：<a href="https://www.arxivdaily.com/companies/meituan">arXivDaily 美团专区（含中文摘要）</a>。暂无可靠的知乎/微信公众号深度精读。</p></div>
+
+<div class="paper" id="merit"><div class="phase">Deep Dive 02 · Reasoning / Re-ranking</div><h2>MERIT-Rank：Reranker 不再押注一条推理链，而是建立 Multi-Trajectory Reasoning Space</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.3/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否（截至检索未发现官方代码）</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>Reasoning-based reranking 已证明 LLM 能在传统 embedding/reranker 之后进一步理解复杂 query-document 关系，但多数工作只生成一条 reasoning trajectory。一旦这条轨迹误解 query、忽略某种 evidence 或发生 hallucination，最终排序直接被带偏。</p>
+<p><b>现有问题：</b>相关性是多因素的：semantic match、intent satisfaction、evidence support、constraint compliance 可能给出不同视角。单 trajectory 将这些信号过早压缩为一条链，既不鲁棒，也难判断错误来自哪一类 reasoning。</p>
+<p><b>技术方案：</b>MERIT-Rank 构造 <b>Multi-Trajectory Reasoning Space（MTRS）</b>，从互补视角生成 query-document reasoning，再由 joint reranker 融合这些路径。训练上提出 <b>Progressive Rank Policy Optimization（PRPO）</b>，不是一步到位对最终 ranking 做 RL，而是通过阶段化目标先稳定 reasoning path，再持续提升 ranking quality。</p>
+<p><b>训练方法：</b>论文包含 cold-start supervised stage 与 progressive policy optimization。消融显示去掉 cold SFT 或 P-GRPO 都会显著下降，说明“先让多轨迹可读、再用 ranking reward 对齐”比直接让 RL 自发学出多视角更稳。</p>
+<p><b>推理 / Serving：</b>多 trajectory 天然比单 trajectory 贵。作者通过 sliding-window / selective processing 控制开销：在部分设置中使用 3 个窗口即可达到/超过对手使用 9 个窗口的效果，说明多视角并不意味着简单乘以推理成本。工业落地仍需要 trajectory router、early exit 或蒸馏。</p>
+<p><b>实验与结果：</b>在 reasoning-intensive BRIGHT 以及传统 retrieval benchmark 上，4B MERIT-Rank 已能超过多数 7B、甚至部分 32B reranker。论文报告 4B 相对同规模 eRank 在 BRIGHT 约提升 6.1%；7B 版本 BRIGHT NDCG@10 达约 37.13。消融中移除 semantic / intent / evidence / synthesis 路径均有损失，全部去掉 reasoning 的下降最大，支持“互补路径确实提供独立信息”。</p>
+<p><b>线上 A/B：</b>无。当前证据仍停留在 benchmark reranking。</p>
+<p><b>与主流方法的优劣：</b>相较 pointwise cross-encoder，MERIT-Rank 解释力和复杂 query 能力强，但成本高；相较 single-CoT reranker，它通过多视角降低单链 failure risk；相较 listwise generative rerank，它更强调 pair/query-doc 证据融合，尚未完全处理整个 slate 的 diversity / business constraints。</p>
+<p><b>适用场景：</b>复杂搜索、RAG evidence reranking、法律/科研检索、需要 explainable relevance 的高价值 query；推荐侧可迁移到“内容相关性 + 用户意图 + 商业目标 + 多样性”多轨迹重排。</p>
+<p><b>局限：</b>trajectory 数量增加带来 token/latency；不同轨迹可能高度相关而非真正互补；benchmark 提升不保证在 production distribution 上成立；没有在线 A/B 与开源代码。</p>
+<p><b>未来研究：</b>学习 trajectory selection；只对高不确定 candidate 触发多轨迹；将 verifier / uncertainty 用作 early exit；从 pairwise 扩展到 listwise multi-trajectory；蒸馏到小 reranker。</p>
+<p><b>对工程与职业技能的启发：</b>重排方向的竞争点正从“换一个更强 encoder”转向 <b>reasoning decomposition + verifier + budget control</b>。如果你把重排作为未来研究主线，值得系统补齐 listwise learning-to-rank、RL ranking objective、LLM inference optimization 和 uncertainty/calibration。</p>
+<p><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.20131">arXiv 2609.20131</a>；② 官方项目/博客：未发现；③ 官方代码/模型/数据：截至检索未发现官方公开；④ 第三方：<a href="https://arcxiv.org/abs/2609.20131">ArcXiv 条目</a>。暂无可靠中文深度解读。</p></div>
+
+<div class="paper" id="oda"><div class="phase">Deep Dive 03 · Long-context Inference / Serving</div><h2>On-Demand Attention：让模型自己决定“这一 token 值不值得读全历史”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.4/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 否（截至检索未发现公开代码）</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>背景 / 业务动机：</b>Agent、Deep Research、长 session 推荐都会让历史 context 越来越长。传统 full attention 在每个 decoding step 都读取整个 history，即使当前 token 根本不需要远端信息，KV bandwidth 和 attention FLOPs 仍照付。</p>
+<p><b>现有问题：</b>固定 local attention 便宜但会漏掉偶发的远程依赖；固定 full attention 准确但浪费；静态 sparse pattern 不知道“当前这一步”是否需要全局信息。</p>
+<p><b>技术方案：</b>ODA 采用 <b>local-first decoding</b>：模型先基于局部窗口形成 decoding state，再由一个轻量 <b>recall head</b> 预测执行 global attention 的收益；只有预测值得时才读取全局 KV。重要的是完整历史 KV 仍保留，因此跳过某一步不意味着永久遗忘，后续 token 随时可 recall。</p>
+<p><b>训练方法：</b>冻结 pretrained LM，只训练 recall head。这样避免重训主模型，也使 ODA 更接近可插拔 Serving 层。作者的核心发现是：pretrained model 的内部 state 在执行 global read 之前已经携带“是否会从全局信息受益”的信号。</p>
+<p><b>推理 / Serving：</b>作者在 vLLM 中实现 GPU-side conditional execution，使“少做 global read”真正转换为 wall-clock speedup，而不是只在 FLOPs 统计上更省。长上下文、较低 global-call rate 时收益最大；短上下文或条件分支 overhead 较高时，收益会缩小甚至可能被 runtime overhead 抵消。</p>
+<p><b>实验：</b>覆盖 Qwen、Gemma，包括 hybrid-attention backbone。论文展示 selective recall 能恢复大部分纯 local attention 损失的质量，同时大幅减少 global reads；在一个 128K input + 1K output、global-call 率约 12.5% 的受控设置中，主要 decoding FLOPs 可下降约 76%，单请求 full-attention 对比吞吐最高约 1.98×。这些数字依赖序列长度、模型和 runtime 配置，不应直接外推为所有线上 workload。</p>
+<p><b>线上 A/B：</b>无；证据是 benchmark + vLLM prototype。</p>
+<p><b>与主流方法相比：</b>相较 sliding-window/static sparse attention，ODA 是动态的；相较 KV eviction，它不删除历史、只控制 read；相较 retrieval-augmented memory，它仍在模型 KV 内寻址，不承担外部索引语义误差。缺点是需要额外 head、条件执行与 kernel/runtime 支持。</p>
+<p><b>适用场景：</b>长对话 Agent、代码 Agent、长 session personalization、长 prompt RAG、长文推理；尤其适合“多数 token 只需局部信息、少数 token 需要远程 recall”的分布。</p>
+<p><b>局限 / 未解问题：</b>recall head 错过一次关键 global read 可能造成不可逆生成偏差；不同层是否需要不同 recall policy；batching 下不同请求分支发散如何影响 GPU utilization；训练 recall head 所需标签与 workload shift。</p>
+<p><b>未来研究：</b>layer/token 双层 adaptive attention；与 retrieval router / KV compression / speculative decoding 联合；把质量风险纳入 SLO-aware recall threshold；在线自校准 recall rate。</p>
+<p><b>工程启发：</b>推荐/搜索 Serving 的优化思路可以从“所有 request 使用同样计算图”变为 <b>state-conditioned compute graph</b>。这与 query-level model routing 是同一类问题，只是粒度从 request 下沉到了 token/layer。</p>
+<p><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.20734">arXiv 2609.20734</a>；② 官方项目/博客：未发现；③ 官方代码/模型/数据：截至检索未发现；④ 中文/高质量第三方：截至今日未找到可靠深度解读。</p></div>
+
+<div class="paper" id="retireopd"><div class="phase">Deep Dive 04 · Agent RL / On-policy Distillation</div><h2>RetireOPD：Teacher 最有价值的时刻，可能也是它应该开始准备退出的时候</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.1/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是，ZJU-REAL/SDAR</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 业务动机：</b>多轮 Agent RL 常只有 trajectory-level scalar reward，中间 action 缺乏 dense supervision。On-policy distillation（OPD）用 teacher 在 student 自己采样的状态上提供 token-level guidance，能显著加快早期学习。</p>
+<p><b>现有问题：</b>作者发现两个常被忽略的假设并不成立：① teacher 即使拥有 privileged skill/context，也未必天然比 student 可靠；② teacher guidance 并非训练全过程都有效。随着 student 变强，reward optimization 可能要求它超越 teacher，此时继续模仿反而形成上限。</p>
+<p><b>技术方案：</b>RetireOPD 分三阶段：① <b>Teacher Construction</b>：先用环境 reward 单独训练 skill-conditioned teacher，确保它真的会利用 privileged skill；② <b>Joint GRPO + OPD</b>：student 无 skill context，既接受环境 RL，也接受 teacher dense supervision；③ <b>Adaptive Retirement</b>：监控 teacher-student discrepancy 与 student/teacher relative competence，一旦差距不再缩小且 student 达到 teacher 的目标性能比例，就移除 OPD，仅继续 GRPO。</p>
+<p><b>训练方法：</b>student objective 为 GRPO + λ·OPD。OPD 使用 student-generated trajectory 上的 teacher/student token log-prob gap 近似 reverse-KL。退休判据同时检查 discrepancy 趋势与 success-rate 比例，避免 student 还很弱时因噪声过早退出 teacher。</p>
+<p><b>推理 / Serving：</b>student 在推理时不需要 privileged skill，也不需要 teacher；teacher 仅训练期存在，而且退休后连训练 forward 都省掉。这比永久 dual-model distillation 更接近可规模化训练。</p>
+<p><b>实验：</b>Qwen2.5 1.5B / 3B / 7B，在 ALFWorld 与 WebShop 上对比 GRPO、GiGPO、OPD、OPSD 和 hybrid baselines。相对 RL baseline，ALFWorld success rate 提升 <b>14.1%–18.8%</b>，WebShop accuracy 提升 <b>11.8%–19.0%</b>，并在所有设置超过自己的 skill-conditioned teacher。官方仓库给出的 RetireOPD 结果包括 ALFWorld 89.8/93.8/95.3（1.5B/3B/7B）和 WebShop 75.8/77.3/84.4。</p>
+<p><b>线上 A/B：</b>无。</p>
+<p><b>与主流方法比较：</b>固定 annealing 预先决定 teacher 权重如何衰减；RetireOPD 用训练动态决定何时退出。优势是自适应、能超越 teacher；缺点是需要可靠的 monitoring metric 和额外 teacher training。</p>
+<p><b>适用场景：</b>工具使用、Web Agent、Search Agent、复杂多步环境；也可迁移到推荐/搜索中“规则/旧模型/大模型 teacher → 小模型 student”的 distillation lifecycle。</p>
+<p><b>局限：</b>当前主要是小中型 Qwen 与两个 Agent benchmark；退休阈值仍有超参；teacher/student 同容量和 skill 构造方式是否适用于 frontier-scale agent 未验证。</p>
+<p><b>未来研究：</b>per-task / per-skill retirement；teacher ensemble 的动态进入/退出；把 curriculum difficulty 与 retirement 联合；在线 non-stationary 环境中允许 teacher 重新激活。</p>
+<p><b>工程与职业启发：</b>Distillation 不应只学“怎么加 teacher loss”，还要学 <b>teacher lifecycle management</b>。训练系统需要监控 capability gap、gradient conflict、teacher cost，并支持动态切换 loss graph。</p>
+<p><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.20784">arXiv 2609.20784</a>；② 官方项目/技术页：<a href="https://github.com/ZJU-REAL/SDAR">ZJU-REAL/SDAR</a>；③ 官方代码：已开源，Apache-2.0，仓库含 RetireOPD 两阶段训练脚本；④ 中文/第三方：截至今日未找到可靠中文深度精读。</p></div>
+
+<div class="paper" id="sparseup"><div class="phase">Deep Dive 05 · Retrieval / Sparse Embedding / Open Release</div><h2>SPARSEUP：Dense 时代为什么还值得重新看 Learned Sparse Retrieval？</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是，Apache 2.0 权重</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>背景 / 业务动机：</b>Dense embedding 成为主流后，learned sparse retrieval 的更新速度明显落后，但 sparse 仍有三个工业优势：天然兼容 inverted index、rare lexical matching 强、每个维度对应词表 token 因而可读可诊断。Linkup 希望在与 DenseOn / LateOn 相同 backbone family 和训练数据下，补一个开放的 sparse baseline。</p>
+<p><b>现有问题：</b>现代 encoder 的 MLM head 直接套 SPLADE 容易产生过密、噪声扩展：logit scale 不适合 log(1+ReLU)，每个 token 可以向 50k 词表任意扩展，byte-level BPE 又造成大小写和 word-start 重复维度。</p>
+<p><b>技术方案：</b>149M ModernBERT（LateOn-unsupervised）+ 原 ModernBERT MLM head + SPLADE-style pooling，并加三处很“工程但有效”的修改：① <b>logit_shift=15</b>，让 support 从稀疏区域起步；② <b>per-position top-k=12</b>，限制每个输入 token 的扩展 fan-out，而不是最终 vector top-k；③ <b>case folding</b>，将约 50k 输出 vocab 折叠到约 34k，合并大小写与 space-marked/bare 变体。</p>
+<p><b>训练：</b>与 DenseOn/LateOn 使用相同 mixture，contrastive learning；从 50 个 hard-negative pool 中采 7 个 negatives，再加 in-batch negatives；小量 sparse regularization；temperature=6。官方称训练可在单张 H100 上完成。</p>
+<p><b>推理 / Serving：</b>query/document 变成可读 sparse vocabulary vector，可放入 Seismic inverted index。MS MARCO 上平均约 47 query non-zeros / 190 doc non-zeros；在 single-thread Seismic 中，>97% recall vs exact search 时约 <b>380µs/query</b>。这不是与 dense ANN 的公平 latency 对比，但证明它本身处于实际可用的 sub-ms 区间。</p>
+<p><b>实验：</b>BEIR-13 平均 <b>56.4 nDCG@10</b>，Linkup 称其为 &lt;150M 公共 vocabulary-based sparse encoder 中最强。控制 backbone/data 后，它仍落后 DenseOn：56.36 vs 57.88（-1.52）；decontaminated BEIR 平均差距缩到约 -0.17，但作者明确提醒部分子集 query 太少、噪声大。它在 ArguAna、Touché、HotpotQA 等 lexical-heavy 场景表现较好，在更语义化集合和 DBPedia 上存在短板。</p>
+<p><b>线上 A/B：</b>无。</p>
+<p><b>与主流方法比较：</b>相较 BM25，它能学习 synonym/semantic expansion；相较 dense embedding，它可解释且适合倒排；相较 late interaction，索引/Serving 更简单但表征能力弱。它不是“替代 dense”的赢家，更适合作为 hybrid recall 的互补路。</p>
+<p><b>适用场景：</b>搜索召回、RAG first-stage retrieval、需要 lexical precision / entity matching / 可解释召回的场景；也适合作为 dense + sparse + late-interaction 三路实验基线。</p>
+<p><b>局限：</b>英语为主；数字和实体 expansion 会出现明显错误；vocab-bound sparse 对 multilingual / multimodal 不自然；同数据下仍弱于 DenseOn/LateOn。</p>
+<p><b>未来研究：</b>sparse-specific pretraining；更合理 vocab / latent sparse dimensions；teacher distillation；将可读 term attribution 用于 hard-negative mining、reranker debugging 和 query rewriting。</p>
+<p><b>工程与职业启发：</b>检索工程不要只会向量库。倒排索引、SPLADE、hybrid recall、ANN/Seismic/impact-ordered index、可解释 error analysis 仍然是有区分度的技能。</p>
+<p><b>资源：</b>① Paper：本次为官方技术发布，<b>未提供独立新 Paper</b>；② 官方技术博客：<a href="https://www.linkup.so/blog/introducing-sparseup-by-linkup">Linkup Research · Introducing SPARSEUP</a>；③ 官方模型：<a href="https://huggingface.co/Linkup-Platform/linkup-sparseup-embed-v1">Hugging Face · linkup-sparseup-embed-v1</a>（Apache 2.0）；④ 第三方：<a href="https://cloudtechreport.com/linkup-research-releases-sparseup-a-149m-parameter-open-source-sparse-embedding-model/">Cloud Tech Report</a>。暂无高质量中文深度解读。</p></div>
+
+<div class="paper" id="switchsd"><div class="phase">Research Note 06 · Speculative Decoding</div><h2>SwitchSD：让内部表征决定“Copy 还是 Draft”</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★☆☆</span> · <span><b>是否官方开源</b> 否（截至检索未发现）</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>问题：</b>EAGLE3 一类 neural draft 泛化稳，但 copy-intensive 文本中 context copying 更快；纯 n-gram overlap 容易把偶然重复误判为结构性 copy，触发低质量 speculative branch。</p><p><b>方法：</b>训练轻量 probe 读取 target model 内部表示，检测 genuine copy-intent，AUC &gt; 0.99；运行时在 EAGLE-style neural drafting 与 context copying 间动态切换。</p><p><b>实验 / 效率：</b>在 Llama/Qwen 系列报告相对 EAGLE3 最高约 <b>15% throughput gain</b>。核心意义是把 speculative decoding 从“固定算法选择”变成 state-conditioned decoder controller。</p><p><b>局限：</b>需要额外 probe、不同模型/领域可能重新校准；最高 15% 是 best case，不代表平均线上收益；没有 production A/B。</p><p><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.20186">arXiv 2609.20186</a>；② 官方项目：未发现；③ 官方代码/模型：未发现；④ 第三方：<a href="https://kblip.com/research/to-copy-or-not-to-copy-controlling-speculative-decoding-via-Zn3FXxB">KBlip 摘要</a>，暂无可靠中文精读。</p></div>
+
+<div class="paper" id="f2dr"><div class="phase">Research Note 07 · DeepSearch / Reward Modeling</div><h2>F²DR：DeepSearch 的 Reward Model 不能只盯最终答案</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.5/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 暂未；数据集声明将公开</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>问题：</b>DeepSearch 是 planning/reflection → retrieval → answer generation 的闭环，但现有 RM/benchmark 多是静态单轮，无法判断“答案正确但检索轨迹浪费”“轨迹看似合理但证据不足”等中间失败。</p><p><b>方法：</b>F²DR 将评估拆成 <b>Content / Trajectory / Answer</b> 三维，并构建 DeepSearch RM-Bench 检查 reward model 是否真正理解整个 workflow。</p><p><b>实验：</b>作者报告相对 self-evaluation baseline 有更高的一致性，且 RM-Bench 能区分现有 open-source reward model；完整数据集尚未发布，作者表示将公开。</p><p><b>工程启发：</b>Agent 搜索线上评估应从 final answer score 扩展到 source quality、query/action trajectory、evidence sufficiency、cost/latency，才能做真正的 credit assignment。</p><p><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.19827">arXiv 2609.19827</a>；② 官方项目：未发现；③ 代码/数据：DeepSearch RM-Bench 宣布“soon”公开，当前未确认仓库；④ 第三方：<a href="https://jp.ibbac.eu.org/papers/2609.19827v1">DeepPaper 条目</a>，暂无可靠中文精读。</p></div>
+
+<div class="paper" id="match"><div class="phase">Research Note 08 · Tool Learning / Agent RL</div><h2>MATCH：Tool Call 的 Reward 应该有“前置条件”，Curriculum 也应跟着模型能力移动</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.4/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 否（截至检索未发现）</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>问题：</b>固定难度 curriculum 很快与模型当前能力边界错位；tool-call additive reward 还会出现 credit leakage——连 tool 名都错了，却可能因为参数局部相似拿到 reward。</p><p><b>方法：</b><b>Model-Aware Curriculum Learning（MACL）</b> 用当前 reward 动态维护样本难度，每 epoch 选能力边界附近样本并混入更难 top-k；<b>Hierarchical Tool-call Gated Reward（HTGR）</b> 按 tool name → argument key → argument value 逐级 gate，只有前一级正确才给后一级 credit。同一 HTGR 同时用于 GRPO 更新与 curriculum difficulty refresh。</p><p><b>实验：</b>API-Bank overall accuracy <b>72.19%</b>、BFCL V3 <b>62.87%</b>，在四个 backbone、两个模型家族中均有一致改进。</p><p><b>工程启发：</b>推荐/搜索中的结构化 action（选择召回源→选择参数→执行）也适合 hierarchical reward；训练样本采样不应固定 curriculum，而应围绕当前 policy 的 uncertainty/capability frontier。</p><p><b>资源：</b>① Paper：<a href="https://arxiv.org/abs/2609.20082">arXiv 2609.20082</a>；② 官方项目：未发现；③ 官方代码/模型/数据：截至检索未发现；④ 中文/第三方：截至今日未找到可靠深度解读。</p></div>
+
+<div class="callout"><strong>今天对推荐 / 搜索算法工程最值得带走的 5 个动作：</strong>1）多目标生成式召回不要只调 reward weight，尝试 objective-conditioned adapter/policy；2）重排实验加入 multi-perspective reasoning + verifier，而不是只扩 CoT；3）Serving 指标从“平均 FLOPs”升级到 conditional compute / P95/P99 / branch divergence；4）Distillation 监控 teacher-student gap，给 teacher 设计退出机制；5）召回基线至少保留 dense + sparse + late-interaction 三类，尤其对 rare entity / lexical-heavy query 做分桶。</div>
+<p><a href="../index.html"><b>← 返回首页</b></a></p>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Daily 2026-09-20 · 研究价值优先于数量</div></footer></body></html>
