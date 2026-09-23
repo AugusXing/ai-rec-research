@@ -1,0 +1,127 @@
+<!doctype html><html lang="zh-CN"><head><title>2026.09.23｜AI × 推荐算法技术日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-23 AI 与推荐算法技术日报：LinkedIn CC Retriever、Baidu UNIQUE、MuSeR、Inherit4Rec、Answer-Oriented Context Construction、H-Spec、Netflix Counterfactual Observability、MoE Expert Coactivation。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main><div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.23</span><h1>今天最强的信号：召回、粗排、精排与 Serving 的边界继续被打穿，但“统一”不等于“一切塞进一个模型”</h1><p class="lead">检索窗口：<b>2026-09-22 10:00 → 2026-09-23 10:00（Asia/Shanghai）</b>。本期以 9 月 22 日 arXiv new-list / version update 与当天官方页面为主要发现边界；受 arXiv 周末与批次发布时间影响，部分 v1 的提交时间在 9 月 18–21 日，但其首次公开批次或版本更新落在本窗口，因此按“过去 24 小时新进入技术视野”纳入。今天最值得追踪的不是单点模型结构，而是四个工业问题：<b>如何把图关系直接带进 GPU 粗排、如何真正统一召回与排序、如何把 10⁴–10⁵ 行为压入在线预算、以及如何让训练阶段的路由选择直接服务推理硬件。</b></p></div>
+<section><div class="wrap"><div class="callout"><strong>今日核心结论：</strong><b>推荐 / 搜索正在从“stage-by-stage model”转向“shared state + stage-collapsing execution + hardware-aware control + counterfactual measurement”。</b> LinkedIn CC Retriever 把十万级之前的候选图关系直接 join 到 GPU 粗排；Baidu UNIQUE 用单层 flat quantization + early fusion 把生成式召回与 target-aware ranking 合进一次表示学习；MuSeR 把长期兴趣状态搬出请求路径；H-Spec 与 MoE coactivation 则说明模型训练必须提前理解 KV、DRAM/NPU 搬运与并发。Netflix 的反事实可观测性补上另一块：如果不能区分内容质量、曝光偏差和模型行为，线上指标本身也可能误导研发方向。</div>
+
+<div class="section-title"><h2>今日最值得看</h2><p>8 条 · 一手来源优先 · 工业证据与可落地性权重高</p></div><div class="grid">
+<div class="card"><span class="badge">S+ · Pre-ranking / Graph</span><h3>LinkedIn CC Retriever</h3><p>十亿级 connected-content index，经网络约束收敛到数万候选；GPU sorted-search 在 5–10ms 内把 viewer-author 图亲和力与文档特征 join，模型参数规模提升 50×，线上 content time spent +2.5%。</p></div>
+<div class="card"><span class="badge">S+ · Unified Rec</span><h3>Baidu UNIQUE</h3><p>单层 flat quantization + generative code retrieval + target-aware ranking 的 early-fusion 统一架构；Mobile Baidu 线上总观看时长 +0.96%、分发量 +1.08%、留存 +0.70%，P99 89ms、MFU 44.23%。</p></div>
+<div class="card"><span class="badge">S+ · Long-sequence Retrieval</span><h3>MuSeR</h3><p>10⁴–10⁵ 行为经分层时间压缩进入固定服务预算，多兴趣 query + LLM 蒸馏文本语义 + 异步表示刷新；线上 DAU +0.26%、总时长 +0.89%。但消融显示主要收益来源需要谨慎归因。</p></div>
+<div class="card"><span class="badge">S · Continual Scaling</span><h3>Inherit4Rec</h3><p>针对推荐数据分布持续漂移，分别解决 Dense→Dense 扩容与 Dense→Sparse MoE 转换；重点不是“初始化更好”，而是保持 forward function、optimizer/update continuity 与 expert activation 结构。</p></div>
+<div class="card"><span class="badge">S · AI Search / RAG</span><h3>Answer-Oriented Context Construction</h3><p>把搜索目标从“文档排序满意度”改写成“为正确回答构造可靠上下文”：Answer Support → Trustworthiness → Context Organization，并将 retrieval-side 与 answer-side 评估串起来。</p></div>
+<div class="card"><span class="badge">S · LLM Serving</span><h3>H-Spec</h3><p>并行 speculative drafter 不再维护独立 KV cache：复用 target KV，仅注入最后位置 hidden state；平均 accepted length +5.0–13.3%，batch=1 ITL speedup +5.3–12.6%。</p></div>
+<div class="card"><span class="badge">A+ · RecSys Measurement</span><h3>Netflix Counterfactual Observability</h3><p>把“推荐系统表现如何”形式化为反事实测量；11 组历史 row-removal A/B 上，离线 incrementality 与线上效果 weighted R²=0.8212。</p></div>
+<div class="card"><span class="badge">A+ · MoE × Spec Decode</span><h3>Expert Coactivation</h3><p>训练 router 时显式提高多个验证 token 的 expert coactivation，减少 speculative decoding 下 DRAM→NPU 专家搬运；吞吐相对 MoE baseline +21%，准确率基本持平。</p></div>
+</div>
+
+<div class="section-title"><h2>技术趋势</h2><p>今天 8 条工作汇成 6 个值得持续跟踪的方向</p></div><div class="grid">
+<div class="card"><h3>1. Pre-ranking 正在吞掉一部分 Ranking</h3><p>LinkedIn 的信号很强：当 GPU join 与 dense graph feature 的在线读取足够快，粗排不再必须是极小模型。真正约束从“参数不能大”变成“特征 join + batch shape + memory layout 能否把大模型喂满”。</p></div>
+<div class="card"><h3>2. “统一召回与排序”开始出现可上线形态</h3><p>UNIQUE 的关键不是用生成式模型替换所有 stage，而是共享 early-fusion representation，同时保留 code-level candidate generation 与 target-aware discriminative scoring 两种 execution semantics。</p></div>
+<div class="card"><h3>3. 长序列推荐的答案更像 State System</h3><p>MuSeR 把超长历史的主要计算搬到异步 refresh/cache，在线只消费压缩后的多兴趣状态。未来竞争点会从“能读多长”转到状态更新频率、TTL、漂移检测、缓存成本与召回收益。</p></div>
+<div class="card"><h3>4. 模型训练开始为 Serving 拓扑负责</h3><p>MoE expert coactivation 直接把 router 的训练目标和 DRAM/NPU 数据搬运绑定；H-Spec 把 drafter 架构与 target KV ownership 绑定。训练与 serving 不再能被两个团队完全解耦。</p></div>
+<div class="card"><h3>5. AI Search 的目标函数从 relevance 迁移到 answer utility</h3><p>Answer-oriented framework 把文档是否“相关”继续拆成是否支持回答、是否可信、如何在 context budget 内组织。这与昨日的 retrieval confidence / abstention 共同指向 evidence-aware search。</p></div>
+<div class="card"><h3>6. 推荐实验需要反事实可观测层</h3><p>Netflix 的工作提醒：raw engagement 不是内容质量，也不是模型贡献。未来算法平台需要把 propensity、曝光位置、替代内容和级联 stage provenance 当成一等数据。</p></div>
+</div>
+
+<div class="section-title"><h2>论文优先级</h2><p>Research Impact Score：范式变化 25% / 工业证据 20% / 技术创新 20% / 推荐搜索相关度 15% / 后续空间 10% / 开放复现 10%</p></div><div class="table-wrap"><table><thead><tr><th>#</th><th>工作</th><th>方向</th><th>Impact</th><th>工业证据</th><th>优先级</th></tr></thead><tbody>
+<tr><td>1</td><td><a href="#cc"><b>Connected Content Retriever</b></a></td><td>Graph Pre-ranking / GPU</td><td>9.8</td><td>LinkedIn online +2.5%</td><td>S+</td></tr>
+<tr><td>2</td><td><a href="#unique"><b>UNIQUE</b></a></td><td>Unified Retrieval + Ranking</td><td>9.7</td><td>3 场景生产 A/B</td><td>S+</td></tr>
+<tr><td>3</td><td><a href="#muser"><b>MuSeR</b></a></td><td>Long-sequence Retrieval</td><td>9.4</td><td>Baidu APP A/B</td><td>S+</td></tr>
+<tr><td>4</td><td><a href="#inherit"><b>Inherit4Rec</b></a></td><td>Continual Scaling / MoE</td><td>9.1</td><td>工业短视频离线</td><td>S</td></tr>
+<tr><td>5</td><td><a href="#context"><b>Answer-Oriented Context</b></a></td><td>AI Search / RAG</td><td>9.2</td><td>工业实现</td><td>S</td></tr>
+<tr><td>6</td><td><a href="#hspec"><b>H-Spec</b></a></td><td>Speculative Decoding</td><td>9.1</td><td>3 target models</td><td>S</td></tr>
+<tr><td>7</td><td><a href="#netflix"><b>Counterfactual Observability</b></a></td><td>RecSys Measurement</td><td>8.9</td><td>11 historical A/B</td><td>A+</td></tr>
+<tr><td>8</td><td><a href="#coact"><b>Expert Coactivation</b></a></td><td>MoE Serving</td><td>8.8</td><td>系统 benchmark</td><td>A+</td></tr>
+</tbody></table></div>
+
+<div class="paper" id="cc"><div class="phase">Deep Dive 01 · Pre-ranking / Graph Serving · LinkedIn</div><h2>Connected Content Retriever：真正的突破不是“GPU 粗排”，而是让图关系特征在 5–10ms 内可被大模型消费</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.8/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p class="one">一句话：LinkedIn 把“viewer↔author 的 dense graph edge feature”从离线/轻量粗排信号升级成 GPU 大模型可以在线直接消费的特征，使 pre-ranking 的容量边界显著上移。</p>
+<h3>背景 / 业务动机</h3><p>LinkedIn Feed 中，来自 connection/follow 网络的内容贡献超过 70% 的曝光与互动。1 度作者内容再叠加“1 度联系人互动过的陌生作者内容”后，索引超过十亿；按 viewer 网络约束后仍有数万活动需要在总 <b>120ms p99</b> 预算内筛到几百条交给 ranker。传统 CPU 粗排的瓶颈不只是模型 FLOPs，而是高维 viewer-author 图特征和 doc feature 的在线 join。</p>
+<h3>现有问题</h3><p>如果只用轻量 embedding / hand-crafted affinity，候选在进入精排前已经发生不可逆的信息损失；如果把完整图特征临时回源，随机访问与 join latency 又会吃掉粗排 SLA。于是“更强模型”与“可获取特征”实际上是同一个系统问题。</p>
+<h3>技术方案与关键模块</h3><p>CC Retriever 的核心是一个 GPU-resident sorted-search primitive：把 viewer→author 的 dense graph affinity 与 document-level features 以适合批量访问的布局放在 GPU 侧，在运行时完成 join，论文报告 join 本身约 <b>5–10ms</b>。在这个基础上，pre-ranker 可以使用完整深度 ranking model，而不是极简 scorer；迁移到 GPU 后模型参数规模约提升 <b>50×</b>。</p>
+<h3>训练方法</h3><p>论文重点在 serving stack 而非提出新的 loss。建模仍遵循 feed ranking 的监督范式：将 network affinity、作者/内容特征与交互信号联合输入深模型，训练目标与下游内容消费一致。关键工程点是线上特征语义与训练特征保持一致，避免 GPU feature store 与离线样本拼接产生 skew。</p>
+<h3>推理 / Serving 方案</h3><p>候选先由 network fan-out 收敛到数万；随后 GPU 批量读取文档特征，并通过 sorted-search 找到对应 viewer-author edge feature，再统一打分。相比“先 CPU join、再 RPC 给 GPU”，这种布局减少主机侧随机访问和跨设备搬运，使更大模型进入 120ms p99 总预算成为可能。</p>
+<h3>实验 / 线上证据</h3><p>最重要证据是线上：模型容量放大 50× 后，LinkedIn Feed 的 <b>content time spent +2.5%</b>。论文强调这一增益显著高于平台通常的 Feed 实验增益。候选索引 >1B、请求内数万候选、图 join 5–10ms 给出了很强的规模可信度。</p>
+<h3>效率 / 成本收益</h3><p>价值不应只理解为“GPU 更快”。真正收益是将原来无法实时读取的高价值 graph edge feature 变成可用特征，从而提高每个进入精排候选的质量，减少后续 stage 为早期误杀买单。代价是 GPU memory footprint、特征刷新一致性以及更复杂的数据布局。</p>
+<h3>与主流方法的优劣势</h3><p>相对 Two-Tower/ANN，它能使用候选相关的高阶交互与关系边；相对传统轻量 pre-ranker，模型容量大幅提高；相对“直接把所有候选交给精排”，仍保留严格粗排边界和可控成本。缺点是强依赖业务图、GPU feature residency 和平台级 feature pipeline，复现门槛高。</p>
+<h3>适用场景 / 局限 / 未解决问题</h3><p>最适合社交/关注图、作者关系、用户-商家关系等 edge feature 很重要的 Feed/电商。未解决问题包括图特征 freshness、长尾 author edge 冷启动、GPU memory 压力、不同 request fan-out 的 batch 失衡，以及粗排模型变强后精排的边际价值如何重新分配。</p>
+<h3>对推荐工程与职业技能的启发</h3><p>值得补的不是又一种 DNN，而是 <b>GPU feature join、memory layout、batching、feature freshness、candidate fan-out</b>。未来推荐工程师的上限越来越由“模型 + 在线数据结构 + runtime”共同决定。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.22441">原始 Paper</a>；② 官方项目/技术博客：截至本期未发现独立 LinkedIn Engineering 项目页，论文即一手来源；③ 官方代码/模型/数据：<b>未发现官方开源</b>；④ 中文/第三方精读：截至本期未发现足够可靠的中文深度精读，暂不为了“有链接”而加入低质量转载。</p></div>
+
+<div class="paper" id="unique"><div class="phase">Deep Dive 02 · Unified Retrieval & Ranking · Baidu</div><h2>UNIQUE：统一召回与排序的关键，是共享表示而不是抹掉两种任务的 execution 差异</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.7/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p class="one">一句话：UNIQUE 用单层 flat code 做生成式候选检索，再在同一个 early-fusion Transformer 内进行 target-aware ranking，让“召回时学什么”和“排序时需要什么”第一次在生产里真正共享梯度与表示。</p>
+<h3>背景 / 业务动机</h3><p>传统 Feed 的 retrieval→ranking 分离带来两种损失：层次量化在动态内容/长尾 item 上容易 code imbalance 与 error propagation；召回和排序模型独立训练又造成 representation gap，召回阶段会丢掉对排序真正重要的候选。</p>
+<h3>技术方案与关键模块</h3><p>框架包含 <b>End-to-End Quantization Network（EQN）</b>、<b>User Interest Generation Network（UIGN）</b> 与 <b>Target-Code-Aware Discriminative Network（TDN）</b>。EQN 用单层 flat codebook 代替多层 residual code；UIGN 依据用户多时间尺度行为生成 code distribution；TDN 将候选 item/code token 与用户 prefix 做 target-aware 交互。Balanced Quantization 对过度拥挤的 code 施加频率相关惩罚，提高 codebook 利用率和长尾覆盖。</p>
+<h3>训练方法</h3><p>训练把 ranking loss、generative code loss、code assignment / quantization loss 统一优化。业务目标同时覆盖 relevance、CTR、观看/完成等；二值目标使用加权 BCE，时长目标使用 regression，并对低质量/不满意点击降权。真正重要的是 code retrieval 与 target ranking 共享 backbone，使 ranking supervision 能反向塑造可生成地址空间。</p>
+<h3>推理 / Serving</h3><p>线上先编码 user prefix 得到 code 概率，选择 Top codes 映射回 item，并结合 freshness/popularity/availability 等业务约束形成候选；同一 early-fusion 表示随后让 TDN 对候选做多目标评分。生产 <b>P99 89ms、MFU 44.23%</b>，说明不是只做离线统一。</p>
+<h3>实验设置 / 离线指标</h3><p>公开实验使用 KuaiRand-Pure（27,285 users、7,583 items、约 1.19M interactions），与 SASRec、TIGER、DIN/DCN、HSTU、UniGRF-HSTU 等比较，分别评估 HR/NDCG 与 CTR-AUC。Balanced Quantization 将 code 使用方差从约 <b>1510.85 降至 389.57</b>，top-1 category purity 约从 65.43% 提到 78.08%，说明 flat code 并非简单牺牲语义结构换稳定性。</p>
+<h3>线上 A/B / 效率</h3><p>Mobile Baidu 首页 Feed、发现页和短视频场景上线。公开结果：<b>总观看时长 +0.96%、总分发量 +1.08%、留存 +0.70%</b>；生成式候选约占候选池 22.5%。新用户观看时长/分发量约 +1.44%/+1.24%，高活跃用户约 +1.11%/+1.29%。</p>
+<h3>与现有方法的优劣势</h3><p>相对 TIGER/RQ-VAE 类多级 Semantic ID，单层 code 减少级联错误并更容易做在线映射；相对完全分离的 two-stage pipeline，ranking supervision 能修正 retrieval representation。代价是 codebook 容量与冲突管理变成核心问题，而且“统一训练”仍不等于“一个 forward 完成所有业务 stage”。</p>
+<h3>适用场景 / 局限 / 未来</h3><p>适合高速变化 Feed、长尾内容和需要新用户改善的场景。未来值得看：增量 code assignment、版本化 codebook、candidate source attribution、flat code 的容量扩张，以及与传统 ANN/sparse retrieval 的 portfolio 组合。</p>
+<h3>工程 / 职业启发</h3><p>对生成式推荐方向，最值得补齐的是 <b>quantization/codebook、candidate generation、target-aware interaction、online MFU/P99</b> 的完整闭环，而不是只会训练一个 token generator。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.23718">原始 Paper</a>；② 官方项目/技术博客：未发现独立官方项目页；③ 官方代码/模型/数据：<b>未发现官方开源</b>；④ <a href="https://arxiv.deeppaper.ai/papers/2609.23718v1">DeepPaper 解读</a>（第三方，适合快速浏览，关键数字仍以原文为准）。</p></div>
+
+<div class="paper" id="muser"><div class="phase">Deep Dive 03 · Long-sequence Retrieval · Baidu</div><h2>MuSeR：长序列推荐真正需要解决的是“状态如何活着”，而不是 Transformer 最长能吃多少 token</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.4/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p class="one">一句话：MuSeR 的价值主要是把超长历史、多兴趣与语义特征一起放进真实召回 Serving；但论文的消融也提示，不能把全部线上增益简单归因于“时间压缩”。</p>
+<h3>背景 / 业务动机</h3><p>真实用户可能累计 10⁴–10⁵ 行为，而在线召回一般只能读取数百条。与此同时，新闻、问答、短视频等内容跨模态，纯 ID 表示难覆盖新内容语义和长周期兴趣。</p>
+<h3>技术方案与关键模块</h3><p>三部分：① <b>Hierarchical Temporal Compression</b>：近期行为高分辨率保留，较老历史逐级池化；公开精读中给出的实现是近期约 800 条原样、中期约 16×、更老约 64× 压缩，最终固定长度约 1000；② 多个 learnable query 抽取不同兴趣，并用 orthogonality regularization 减少兴趣坍缩；③ 用大模型生成/蒸馏内容摘要再编码成语义向量，与 sparse ID 互补。</p>
+<h3>训练方法</h3><p>模型在已部署 MGS 检索系统之上训练多兴趣用户表示，对目标 item 做多目标匹配。语义侧通过 ERNIE 系列生成/蒸馏摘要并由文本 embedding 模型编码，等于把昂贵 LLM 计算放在内容侧离线完成，而不是请求时调用。</p>
+<h3>推理 / Serving</h3><p>长期 user representation 异步刷新并自适应缓存，短期 session 在线更新；召回使用 hierarchical beam-search，并跨异构硬件执行。这个设计的本质是把超长历史变成“可维护 state”，从请求 critical path 中拿走大部分长序列计算。</p>
+<h3>实验 / 线上 A/B</h3><p>三个公开 benchmark + 工业数据上 Recall@K 持续提升。Baidu APP 首页/发现/短视频线上 A/B 报告 <b>DAU +0.26%、总 session duration +0.89%</b>，均 p&lt;0.05，同时报告延迟和成本下降。</p>
+<h3>必须关注的消融争议</h3><p>高质量第三方精读指出：公开数据集把序列截到 50，无法真正验证超长压缩；工业 Home Feed 消融中，去掉多模态语义后 Recall@500 约 <b>0.1636</b>，低于 NANN baseline 的 <b>0.1982</b>，且分层压缩相对“不压缩”在该消融中呈负贡献。因此更稳妥的结论是：<b>MuSeR 证明了系统级组合能上线，但尚未单独证明“压缩机制本身”是主要收益来源。</b></p>
+<h3>与主流方法的优劣势</h3><p>相比直接把 10⁵ history 输入大 Transformer，成本更可控；相比单兴趣 cached embedding，多 query 能覆盖兴趣分叉；相比纯 ID，文本语义对 cold/fresh item 更友好。弱点是组件多、归因困难，representation freshness 与 cache 策略可能比模型结构更决定线上效果。</p>
+<h3>未来研究 / 工程启发</h3><p>值得押注 <b>multi-timescale state store</b>：为长期偏好、兴趣簇、session、负反馈分别设更新频率、TTL 与漂移检测；用 request-level controller 决定读取哪一层 state。推荐算法工程师要把 cache hit、refresh lag、embedding version 当模型指标一样看。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.23677">原始 Paper</a>；② 官方项目/技术博客：未发现独立官方页；③ 官方代码/模型/数据：<b>未发现官方开源</b>；④ <a href="https://paper-archivist.com/reading/2026/muser-scalable-long-sequence-recommendation-with-multi-inter/">Paper Archivist 中文精读</a>（强烈建议连同其消融质疑一起看）。</p></div>
+
+<div class="paper" id="inherit"><div class="phase">Deep Dive 04 · Continual Scaling · Recommender Training</div><h2>Inherit4Rec：推荐模型扩容不能照搬 LLM 的“静态语料模型继承”</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.1/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p class="one">一句话：它把模型扩容拆成两个不同问题——Dense→Dense 要保证函数与更新连续，Dense→Sparse 要保证能力继承与 expert 激活结构。</p>
+<h3>背景 / 现有问题</h3><p>推荐训练数据持续滚动，今天的 P(x,y) 与数天后的分布不同。每次把 dense model 扩大后从零训练既慢又浪费历史能力；直接 Net2Net/复制参数又可能在最新窗口产生 prediction jump。将 dense 直接切成 MoE 则会遇到 expert 随机切分破坏协同特征、路由失衡。</p>
+<h3>D2D：Dense-to-Dense</h3><p>核心是 <b>hybrid growth + asymmetric training</b>：扩展 FFN 等容量时尽量保持旧网络 forward function，同时让新增通道以不会瞬间破坏输出的方式进入学习；更重要的是继承 optimizer state，维持 update continuity。论文在工业流式数据设置中使用多日窗口验证，而不是静态一次性 train/test。</p>
+<h3>D2S：Dense-to-Sparse</h3><p>先根据 dense channel 的 co-activation 关系做 expert partition，再保留 shared expert，并用 top-1 routed expert + load-balancing objective 防止热点 expert。这个思路与今天的 MoE coactivation 论文形成有趣对照：<b>一个用共激活保护 dense 能力迁移，一个用共激活降低 serving 搬运。</b></p>
+<h3>实验 / 指标</h3><p>KuaiRand-1K 与工业短视频数据上对多个 prediction objective 评估 GAUC。公开结果显示 D2D 对最强 inheritance baseline 的增益通常在约 0.05%–0.22% 区间；D2S 与从零训练的 sparse oracle 差距被压到很小。消融显示重置 optimizer state 或取消 co-activation partition 会明显退化。</p>
+<h3>Serving / 成本收益</h3><p>D2D 的收益在训练效率与迭代速度；D2S 的目标是把更大参数容量转成稀疏激活，降低每请求 compute。论文未给线上业务 A/B，因此“模型继承更快”与“线上价值更高”之间仍需生产验证。</p>
+<h3>局限 / 未来</h3><p>缺少线上 A/B；对 embedding table、跨版本 feature schema、multi-task tower 的扩容覆盖有限。下一步值得研究自动 growth policy：什么时候扩宽、什么时候切 MoE、哪些层保持 dense，以及如何把 serving cost/SLO 直接加入 inheritance 决策。</p>
+<h3>工程 / 职业启发</h3><p>持续训练系统里，<b>optimizer state、data window、model version、prediction continuity</b> 与网络结构同等重要。想做大规模推荐训练平台，需要掌握 checkpoint surgery、online/offline feature version 与 continual learning，而非只会从零训模型。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.23111">原始 Paper</a>；② 官方项目页/技术博客：未发现；③ 官方代码/模型/数据：<b>未发现官方开源</b>；④ 中文高质量精读：截至本期未发现可靠深度解读，建议直接读原文实验与消融。</p></div>
+
+<div class="paper" id="context"><div class="phase">Deep Dive 05 · AI Search / RAG</div><h2>From Ranked Documents to Reliable Contexts：AI Search 的检索目标正在从 relevance 变成“可用于生成正确答案的上下文效用”</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 未披露</span> · <span><b>阅读优先级</b> S</span></div>
+<p class="one">一句话：传统搜索优化“用户愿不愿点这篇文档”，AI Search 更需要优化“这组材料是否足以、可信且紧凑地支撑生成答案”。</p>
+<h3>三阶段框架</h3><p>① <b>Answer Support</b>：文档是否真的贡献答案所需事实，而非只语义相关；② <b>Content Trustworthiness</b>：从来源、时效、事实一致性判断能否作为可靠依据；③ <b>Context Organization</b>：在有限 token budget 下选择、去重、组织材料，使 generator 获得互补且不冲突的上下文。</p>
+<h3>训练 / 优化工作流</h3><p>论文提出 prior + posterior 两侧优化：检索前通过 query/document 表示、source/temporal signal 提升候选质量；生成后再用 answer feedback 判断哪些 context 真正支持正确答案。这样 retrieval metric 与 final-answer metric 不再各自为政。</p>
+<h3>Serving 形态</h3><p>这套框架天然对应一个 context pipeline：candidate retrieval → support filter → trust filter → dedup/aggregation → context packing → generation。工程上需要让每步都输出可追踪 provenance，否则无法定位错误来自 recall、可信度判断、context compression 还是 generator。</p>
+<h3>实验与证据</h3><p>论文报告 Retrieval 与 Answer 两侧均有一致改善，并说明已形成工业 workflow，但摘要未给出可独立核验的线上 A/B 业务指标，因此本期不把“工业实现”等同于“已证明线上增益”。</p>
+<h3>与现有 RAG 的优劣势</h3><p>相比只优化 Recall@K/NDCG，它直接对齐 answer utility；相比单一 reranker，它显式处理信任与 context budget。弱点是多阶段 evaluator 可能引入新的误差链，并且 source/factual trust 的标注成本高。</p>
+<h3>推荐 / 搜索落地启发</h3><p>搜索团队可把候选质量指标从“相关性”扩展成 <b>support / trust / novelty / marginal answer gain</b>；推荐侧同理，slate 中每个 item 的价值不仅是自身 pCTR，还包括对当前列表的增量覆盖与可信/生态约束。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.23354">原始 Paper</a>；② 官方项目/博客：未发现独立页；③ 官方代码/模型/数据：<b>未发现官方开源</b>；④ <a href="https://arxiv.deeppaper.ai/papers/2609.23354v1">DeepPaper 解读</a>（第三方；关键结论以论文为准）。</p></div>
+
+<div class="paper" id="hspec"><div class="phase">Deep Dive 06 · LLM Inference / Speculative Decoding</div><h2>H-Spec：Speculative Decoding 下一阶段的瓶颈，不是 draft FLOPs，而是“谁拥有 KV”</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.1/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p class="one">一句话：并行 drafter 如果为每个请求再维护一份自身 KV cache，高并发下会重新把系统拖回 memory-bound；H-Spec 通过 target KV reuse + last-token hidden-state injection 把这份 cache 去掉。</p>
+<h3>现有问题</h3><p>Block diffusion / parallel drafter 能一次预测多个 token，但通常需要把 target hidden states 投影成 drafter-side KV cache。并发一上来，额外 KV 写入与显存占用随请求数增长；若简单只复用 target KV，又会因为语义空间不匹配导致后续 draft position 质量下降。</p>
+<h3>技术方案</h3><p>H-Spec 使用 hybrid target-context injection：attention 模块直接复用 target KVs；Mamba 模块则只用最后输入位置的 target hidden state 初始化 recurrent state。Mamba 的 parallel scan 保留 block-parallel drafting，因此不是为了省 cache 又退回逐 token 串行。</p>
+<h3>训练 / 推理</h3><p>训练目标仍是让 drafter 最大化 target 接受率；区别在于 context interface 被约束为“target KV + last hidden state”。推理时无需单独维护 drafter KV，使 speculative pipeline 的 request-state footprint 更小，尤其利于高并发和长上下文。</p>
+<h3>实验</h3><p>跨 3 个 target model 和多任务，平均 accepted length 相对最佳 baseline 提升 <b>5.0–13.3%</b>；batch=1 inter-token latency speedup 多 <b>5.3–12.6%</b>。并发 Serving 下同时报告更高吞吐与更低 KV cache utilization。</p>
+<h3>优劣势 / 局限</h3><p>优势是完全 lossless、直接打到 memory-state 瓶颈；劣势是需要 target 暴露可复用 KV/hidden interface，和不同架构 runtime 的耦合更深。尚未看到大规模在线业务流量与长期稳定性数据。</p>
+<h3>工程 / 职业启发</h3><p>推理优化需要理解 <b>KV ownership、state layout、draft/target interface、concurrency</b>。未来 vLLM/SGLang 类框架中的优势越来越来自“架构语义感知”，而不是单一 kernel trick。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.24197">原始 Paper</a>；② <a href="https://systems.seas.harvard.edu/seminar/2026-09-22-weifan-jiang/">Harvard Systems 官方 Seminar</a>；③ 官方代码/模型/数据：<b>截至本期未发现公开仓库</b>；④ 中文辅助：<a href="https://www.arxivdaily.com/universities/harvard">arXivDaily 哈佛专区</a>有中文摘要，暂无独立高质量精读。</p></div>
+
+<div class="paper" id="netflix"><div class="phase">Deep Dive 07 · Measurement / Observability · Netflix</div><h2>Beyond Raw Engagement：推荐平台需要一层“反事实可观测性”，否则算法团队连自己优化了什么都可能说不清</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 否</span> · <span><b>是否有线上 A/B</b> 是（11 组历史 A/B 用作验证真值）</span> · <span><b>阅读优先级</b> A+</span></div>
+<p class="one">一句话：views/clicks 混合了内容质量、模型行为、曝光位置和 audience reach；Netflix 用 logged propensity + counterfactual estimator 试图回答“如果没有这个 item/这次决策，会发生什么”。</p>
+<h3>核心方法</h3><p>框架覆盖三类 measurement：<b>bias reduction</b> 用 propensity / SNIPS 类方法校正展示偏差；<b>relativity</b> 比较 item / policy 在位置调整后的相对表现；<b>incrementality</b> 估计移除一个 item 或 row 后 engagement 会怎样变化，并扩展到 cascading recommender。</p>
+<h3>数据与估计</h3><p>基于 Exploration & Exploitation 流量记录 selection probability，使用 self-normalized IPS / Hájek 等估计；row-removal 场景中通过 match function 定义“无此 row 时替代结果”，并对极端 propensity 做 clipping 与最小样本过滤。</p>
+<h3>验证</h3><p>将离线 row incrementality 与 11 组历史移除式 A/B 进行对齐，报告 weighted <b>R²=0.8212</b>。它说明反事实指标具有一定方向性，但这不是“框架带来 0.x% 业务增益”的 A/B。</p>
+<h3>局限</h3><p>第三方精读指出验证点较少、拟合可能受到少数点影响，且论文没有报告因该 observability framework 本身带来的直接业务收益。因此应把它视为“测量基础设施方法”，不是新的推荐模型。</p>
+<h3>工程 / 职业启发</h3><p>高级推荐工程能力必须包括 <b>propensity logging、counterfactual estimation、实验设计、级联 attribution</b>。在多阶段系统里，“提升来自哪里”本身就是模型问题。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.22747">原始 Paper</a>；② 官方独立技术博客：截至本期未发现；③ 官方代码/数据：<b>未开源</b>；④ <a href="https://paper-archivist.com/reading/2026/beyond-raw-engagement-a-counterfactual-observability-framewo/">Paper Archivist 中文精读</a>（含对验证范围的批判性讨论）。</p></div>
+
+<div class="paper" id="coact"><div class="phase">Deep Dive 08 · MoE × Speculative Decoding · Apple</div><h2>Expert Coactivation：让 MoE Router 在训练时就学会“少搬几次专家”</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p class="one">一句话：Speculative Decoding 一次验证更多 token 时，MoE 可能激活更多不同 expert，DRAM→NPU 搬运反而吃掉加速；论文把“同一验证块尽量共激活 expert”变成训练目标。</p>
+<h3>技术方案</h3><p>作者系统比较 router design 后，组合 <b>global load-balancing loss、shared experts、consistency loss、autoregressive expert selection</b>，提高相邻/同块 token 的 expert coactivation，同时避免所有 token 只挤到少数专家。</p>
+<h3>训练与 Serving 的耦合</h3><p>这项工作最重要的范式是：router 不再只优化 token-level model quality/load balance，还要优化“验证块会触发多少 distinct expert”。这直接决定 off-chip memory traffic，因此是训练期可学习的 serving metric。</p>
+<h3>实验</h3><p>在 billion-parameter Transformer 上，相比 MoE baseline，最终配置在准确率基本持平时吞吐提升约 <b>21%</b>。论文强调 memory transfer 常是部署瓶颈，因此 gain 主要来自减少 expert weight movement，而非减少数学运算本身。</p>
+<h3>局限 / 未来</h3><p>尚未看到广泛模型规模、不同 NPU/GPU memory hierarchy 和生产流量验证。后续可以把 expert placement、prefetch、speculation depth 与 router objective 联合训练，甚至让 serving runtime 的 telemetry 反哺 routing policy。</p>
+<h3>推荐系统启发</h3><p>推荐里的 sparse MoE 同样存在“模型路由 ≠ 系统最优路由”。如果一组候选/一个 batch 激活过多 expert，通信和 cache miss 会吞掉稀疏计算收益。<b>coactivation-aware batch / router</b> 很值得迁移。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.22471">原始 Paper</a>；② 官方项目/技术博客：未发现独立页；③ 官方代码/模型/数据：<b>截至本期未发现公开仓库</b>；④ <a href="https://arxiv.deeppaper.ai/papers/2609.22471v1">DeepPaper 中文解读</a>。</p></div>
+
+<div class="paper"><div class="phase">今日工程判断</div><h2>如果你只把今天的论文转成 5 个工程动作</h2><p><b>① 粗排：</b>开始统计 feature join latency，而不只是 model latency；识别哪些 graph/author/item edge feature 值得 GPU-resident。<br><b>② 召回：</b>把“召回”和“排序”的共享表示损失做成一个可控实验，不要一上来推翻整个 pipeline；先看 candidate survival、cold/new-user segment 与 P99。<br><b>③ 用户状态：</b>把 30d/180d 长期兴趣做异步缓存，明确 freshness SLA 与 refresh cost，再讨论超长 Transformer。<br><b>④ Serving：</b>对 sparse/MoE 模型记录 distinct-expert-per-batch、KV footprint、memory traffic；不要只看理论 FLOPs。<br><b>⑤ 实验：</b>给候选 source、position、propensity、model version 做完整 provenance，否则跨 stage 的增益无法可靠归因。</p></div>
+
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Daily 2026-09-23 · 一手来源优先，工业证据优先</div></footer></body></html>
