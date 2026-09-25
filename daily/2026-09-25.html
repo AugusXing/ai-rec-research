@@ -1,0 +1,141 @@
+<!doctype html><html lang="zh-CN"><head><title>2026.09.25｜AI × 推荐算法技术日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-25 AI 与推荐算法技术日报：GPT-6 Sol/Luna、PaMER Agent Memory、TEMPS 时间检索、SkillApt 技能激活、序列推荐可解释性、Context Planning 负结果、DGD 群体行为建模。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main><div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.25</span><h1>今天最强的信号：AI 系统开始把“是否需要某段上下文、某项技能、某个模型”本身变成可学习决策</h1><p class="lead">检索窗口：<b>2026-09-24 10:00 → 2026-09-25 10:00（Asia/Shanghai）</b>。优先使用官方发布、Technical Report、arXiv 与官方 GitHub。本期筛出 7 条真正值得跟进的进展：<b>PaMER 把 Agent memory 从长度阈值升级成状态感知控制；SkillApt 把技能“召回”与“激活”拆开；TEMPS 把时间从语义 embedding 中解耦；GPT-6 Sol/Luna 则继续压低高能力模型的单位任务成本。</b>这些工作共同指向同一件事：下一代 AI / 推荐系统不只学习 score，还要学习 execution policy。</p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong><b>推荐 / 搜索 / Agent 的下一层抽象，很可能是“条件化执行控制器”。</b>它不再只回答“哪个 item 分更高”，而是回答：<b>调用哪路召回、加载哪组特征、是否取长期记忆、是否启用技能、用哪个模型、给多少候选/推理预算、何时退出。</b> PaMER、SkillApt、TEMPS 与 GPT-6 的共同价值，是把这些过去靠规则决定的动作变成可学习、可测量、可按成本约束优化的决策。</div>
+
+<div class="section-title"><h2>今日最值得看</h2><p>7 条 · 工业证据、推荐/搜索相关度与后续研究空间优先</p></div><div class="grid">
+<div class="card"><span class="badge">S+ · Model Routing / Cost</span><h3>GPT-6 Sol / Luna</h3><p>OpenAI 把同代强能力继续下沉到更低成本档位；Sol/Luna API 价格相对 GPT-5.6 对应档约下降 50%，让“按任务价值动态选模型”更具现实 ROI。</p></div>
+<div class="card"><span class="badge">S+ · Agent Memory</span><h3>PaMER / PaMER+</h3><p>action 之前的 hidden state 已能预测何时压缩、何时需要旧记忆；PaMER+ 在 WorkBuddyBench 260 任务上 token -71.7%，平均分 69.9→71.6。</p></div>
+<div class="card"><span class="badge">S · Temporal Retrieval</span><h3>TEMPS</h3><p>冻结 semantic retriever，外挂 temporal embedding branch；TS-Retriever R@1 19.92→25.39，TimeQA RAG EM 0.2915→0.3845。</p></div>
+<div class="card"><span class="badge">S · Skill Routing</span><h3>SkillApt</h3><p>Retriever 负责“可能相关”，Activator 决定“现在值得加载吗”；在相同准确率下 Skill 激活率 100%→31.5%，平均 token -74.3%。</p></div>
+<div class="card"><span class="badge">A+ · Sequential Rec / XAI</span><h3>Temporal Attribution Benchmark</h3><p>10 种解释方法 × 4 类序列模型 × 多数据集；Integrated Gradients / GradientSHAP 最稳，raw attention 尤其在长序列下不应被直接当作解释。</p></div>
+<div class="card"><span class="badge">A+ · RAG Negative Result</span><h3>Context Planning vs Strong Retrieval</h3><p>LongBench-v2 控制实验中，learned planner 没打过强 hybrid retrieval：18k budget 36.18% vs 34.19%。更复杂的 controller 并不自动优于强基线。</p></div>
+<div class="card"><span class="badge">A · Rec Dynamics</span><h3>DGD</h3><p>用可微 Gaussian mixture + feedback recurrence 学群体行为动力学；Retail 2010 的 one-day MAE 6.88→4.71，适合长期效应与 simulator 研究。</p></div>
+</div>
+
+<div class="section-title"><h2>技术趋势</h2><p>今天 7 条工作汇成 5 个值得持续追踪的问题</p></div><div class="grid">
+<div class="card"><h3>1. “检索到”不等于“值得加载”</h3><p>SkillApt 明确拆分 retrieval 与 activation。对推荐系统同样成立：candidate retrieved ≠ candidate worth scoring，feature available ≠ feature worth materializing。</p></div>
+<div class="card"><h3>2. Memory 控制正在从长度阈值转向状态感知</h3><p>PaMER 说明 pre-action hidden state 已包含“是否该压缩/回忆”的信号。未来 long-history recommendation 也更像 recent state + external memory + learned recall gate。</p></div>
+<div class="card"><h3>3. Dense Retrieval 需要显式的非语义约束轴</h3><p>TEMPS 把时间单独建模，而不是逼一个 cosine space 同时学 topic、time、freshness。相同范式可扩到 geo、inventory、price、trust。</p></div>
+<div class="card"><h3>4. Controller 的基线必须足够强</h3><p>Context Planning 的负结果很重要：BM25 / dense / hybrid / reranker 做强后，learned planner 可能只是在添加弱 relevance signal。所有 routing 研究都应做 budget-matched comparison。</p></div>
+<div class="card"><h3>5. Model Routing 正从“能力路由”走向“经济路由”</h3><p>GPT-6 Sol/Luna 继续改变 cost frontier。真实系统的路由目标应是 quality × latency × task value / cost，而不是简单“难题上大模型”。</p></div>
+</div>
+
+<div class="section-title"><h2>论文 / 进展优先级</h2><p>Research Impact Score：范式变化 25% / 工业证据 20% / 技术创新 20% / 推荐搜索相关度 15% / 后续空间 10% / 开放复现 10%</p></div>
+<table class="table"><thead><tr><th>#</th><th>工作</th><th>方向</th><th>Impact</th><th>最强证据</th><th>优先级</th></tr></thead><tbody>
+<tr><td>1</td><td><a href="#gpt6"><b>GPT-6 Sol / Luna</b></a></td><td>Model Routing / Agent</td><td>9.2</td><td>价格约 -50%，多项 Agent/Coding cost-per-task 改善</td><td>S+</td></tr>
+<tr><td>2</td><td><a href="#pamer"><b>PaMER / PaMER+</b></a></td><td>Agent Memory</td><td>9.1</td><td>260 tasks：token -71.7%，Avg +1.7</td><td>S+</td></tr>
+<tr><td>3</td><td><a href="#temps"><b>TEMPS</b></a></td><td>Retrieval / RAG</td><td>8.9</td><td>TS-Retriever R@1 19.92→25.39</td><td>S</td></tr>
+<tr><td>4</td><td><a href="#skillapt"><b>SkillApt</b></a></td><td>Agent Skill Routing</td><td>8.7</td><td>同准确率，token -74.3%</td><td>S</td></tr>
+<tr><td>5</td><td><a href="#xai"><b>Sequential Rec XAI Benchmark</b></a></td><td>Sequential Rec</td><td>8.5</td><td>10 XAI × 4 backbones × 3 datasets</td><td>A+</td></tr>
+<tr><td>6</td><td><a href="#planner"><b>Context Planning Negative Result</b></a></td><td>RAG / Rerank</td><td>8.4</td><td>Strong hybrid retrieval &gt; learned planner</td><td>A+</td></tr>
+<tr><td>7</td><td><a href="#dgd"><b>DGD</b></a></td><td>Recommendation Dynamics</td><td>8.1</td><td>Retail MAE 6.88→4.71</td><td>A</td></tr>
+</tbody></table>
+
+<div class="paper" id="gpt6"><div class="phase">Deep Dive 01 · Frontier Model / Model Routing / Agent Economics</div><h2>GPT-6 Sol / Luna：下一阶段模型竞争的核心指标，正在变成“每美元能完成多少真实任务”</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 否</span> · <span><b>是否有线上 A/B</b> 非论文式 A/B；官方已上线 API 与成本数据</span> · <span><b>阅读优先级</b> S+</span></div>
+<p class="one">一句话：Sol / Luna 的技术信号不只是新 benchmark，而是更强能力继续向低成本模型层下沉，使 model routing 从“省钱手段”变成系统级算法问题。</p>
+<h3>背景 / 业务动机</h3><p>Agent、RAG、自动标注、推荐解释与研究助手都越来越依赖多轮调用。若所有请求都走最大模型，成本会随着 tool-call、reflection、verification 成倍放大；但切到过小模型又会损失复杂规划和工具使用能力。</p>
+<h3>现有问题</h3><p>传统 routing 往往只按 prompt 长度或简单难度阈值切模型，缺少对任务价值、失败风险、latency、cache hit 与 downstream reward 的统一建模。随着模型档位更多、价差更大，固定规则会越来越次优。</p>
+<h3>技术方案与关键模块</h3><p>OpenAI 未公开完整训练 recipe；官方披露 Sol/Luna 与 Astra 同代，重点提升推理、Agent、coding 与 computer-use 的 cost/performance，并继续优化 caching、inference 与 serving。系统层面最重要的是形成 Astra / Sol / Luna 多层能力—成本前沿，为 router 提供更连续的 action space。</p>
+<h3>训练方法</h3><p>公开材料未披露可复现的预训练数据规模、RL recipe 或完整 loss 设计，因此不对未公开训练细节作推断。对工程侧更有确定性的是模型层级、API 价格与 benchmark 成本。</p>
+<h3>推理 / Serving</h3><p>官方 API 定价：Sol 约 <b>$2/M input、$10/M output</b>；Luna 约 <b>$0.10/M input、$0.50/M output</b>，对应层级相对 GPT-5.6 约下降 50%。这会直接改变“是否值得多做一次 rerank / verification / tool call”的经济边界。</p>
+<h3>实验设置 / 离线指标</h3><p>AutomationBench 上 Sol xhigh 报告 <b>33.2%</b>、约 <b>$0.27/task</b>；DeepSWE v1.1 上 Sol max <b>68.8%</b>，Luna max <b>66.6%</b>。OSWorld 2.0 offline 中 Sol xhigh 约 60.5%。这些数字更应从“成功任务 / 成本”而不是单一准确率阅读。</p>
+<h3>线上 A/B / 效率收益</h3><p>没有推荐系统式线上 A/B，但 API 已正式上线，价格与 serving 是直接工业证据。高调用量 pipeline 中，成本下降可能使过去不划算的 second-pass rerank、self-verification 与 agent reflection 重新进入可接受区间。</p>
+<h3>与主流方法的优劣</h3><p><b>优势：</b>低成本层能力进一步提高，直接拓展动态 routing 的收益空间；工具链成熟。<b>局限：</b>闭源；训练细节与权重不可复现；官方 benchmark 仍需结合独立评测；对推荐/搜索必须自行校准业务价值。</p>
+<h3>适用场景 / 尚未解决的问题 / 未来方向</h3><p>适合把 expensive-model-only 流程拆成多层执行：低成本模型做大规模理解、过滤和特征化，中档处理 hard cases，最高档只处理高价值/高风险流量。关键研究问题包括 router calibration、fallback、value-aware objective、风险约束和 cache-aware scheduling。</p>
+<h3>对推荐 / 搜索算法工程与职业技能的启发</h3><p>推荐工程师需要补齐 <b>model routing、cost-aware serving、缓存复用与 value-per-dollar measurement</b>。未来真正有价值的能力不是“会调用一个大模型”，而是能把模型价格曲线映射到 CTR、GMV、满意度与 SLA。</p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://openai.com/index/introducing-gpt-6-sol-and-luna/">官方发布 · Introducing GPT-6 Sol and Luna</a></li><li class="missing">Paper / Technical Report：截至 2026-09-25 10:00 未发现独立公开技术报告。</li><li class="missing">官方代码 / 权重 / 数据集：未开源。</li><li class="missing">中文 / 高质量第三方解读：发布时间很新，暂未发现足够可靠的独立深度解读。</li></ul></div></div>
+
+<div class="paper" id="pamer"><div class="phase">Deep Dive 02 · Agent Memory / Context Management</div><h2>PaMER：不要等 context 爆了才压缩——模型在行动前已经“知道”自己是否需要整理记忆</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.1/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S+</span></div>
+<p class="one">一句话：PaMER 把 Agent memory 从“token 长度触发”升级为“pre-action state 触发”，压缩后的旧历史进入外部 memory，PaMER+ 再做更细的 step-level evidence selection。</p>
+<h3>背景 / 业务动机</h3><p>长程 Agent 的历史会不断增长。固定窗口容易丢证据，周期性 summary 又会对无关信息做无谓加工；更关键的是，同样长度的两个轨迹，其“是否需要压缩”与“是否需要旧证据”可能完全不同。</p>
+<h3>现有问题</h3><p>主流 context compression 把长度当成 memory pressure 的代理，无法刻画当前任务状态；而一旦压缩，后续任务若重新需要历史证据，还必须解决精确 recall。压缩和恢复长期以来被分成两套 heuristic。</p>
+<h3>技术方案与关键模块</h3><p>作者读取每个 action 前最后一个 token 的 hidden state，训练线性 probe 预测 compression / recall need。AUROC 分别达到 <b>0.831 / 0.765</b>，超过只看长度、turn、tool metadata 的 <b>0.758 / 0.549</b>。PaMER 在线保留 task prefix + 最近 2 个完整 interaction block；较老 block 触发压缩后生成 summary 并存入外部 memory，后续通过 embedding Top-3 找回。PaMER+ 再从被召回 summary 对应的 raw history 中选择当前真正需要的 step，避免 recall 后 token 再次膨胀。</p>
+<h3>训练方法</h3><p>核心 LM 冻结；memory controller 使用 5 个独立 compression heads 投票。训练目标结合 compression label 与 full-context teacher prediction，主状态提取模型使用冻结的 Qwen3.5-9B。研究还显示 Recent2 只使用约 <b>26%</b> 的 full-context token，却保留大部分 memory-control 可预测性。</p>
+<h3>推理 / Serving</h3><p>older candidate 至少 1024 tokens 后才考虑压缩；5 个 heads 中至少 3 个超过阈值才执行。summary 用 Qwen3-Embedding-8B 编码进入外部 memory，后续以 task + Recent2 查询 Top-3 summary。memory 操作失败时保留原历史作为 fallback，保证不会因压缩异常破坏轨迹。</p>
+<h3>实验设置</h3><p>WorkBuddyBench 全量 <b>260 tasks</b>：80 Code、50 Office、60 Security、70 Web；另用 Pilot40 做细粒度消融。token 统计包含主 Agent 与辅助 memory 调用。</p>
+<h3>离线指标</h3><p>DeepSeek-V4-Flash base：Avg <b>69.9</b>、2.69M tokens；PaMER：69.4、0.72M（<b>-73.2%</b>）；PaMER+：<b>71.6</b>、0.76M（<b>-71.7%</b>）。Pilot40 上 PaMER+ 同样在明显降低 token 的同时小幅提高分数。</p>
+<h3>线上 A/B / 效率成本</h3><p>没有生产线上 A/B；当前证据来自 benchmark。跨 backbone 并非始终正收益，例如在部分 GPT-5.6-Luna 设置中 token 显著下降但任务质量略降，说明 memory controller 的迁移与阈值校准仍是工程难点。</p>
+<h3>与主流方法的优劣势</h3><p><b>优点：</b>从任务状态而非长度触发；压缩与 evidence retrieval 组合；token 下降非常明显。<b>缺点：</b>probe 可预测不等于因果；recall probe 尚未完全成为在线 gate；跨模型转移不完全稳定。</p>
+<h3>适用场景 / 局限 / 未解决问题</h3><p>适合 code agent、research agent、长工作流与多工具任务。下一步值得研究：让 recall probe 真正进入 gate、joint optimize compression+retrieval、用 task reward 训练 controller、以及把 memory state 与 KV / serving cache 联合设计。</p>
+<h3>对推荐 / 搜索工程与职业技能的启发</h3><p>这与长行为序列高度同构：不是所有旧行为都该永久挂在 request context。更合理的是 <b>Recent Session State + External Long-term Memory + State-aware Retrieval</b>，对应用户兴趣 state 的 refresh、recall 与 TTL controller。</p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2609.27286">Paper · arXiv:2609.27286</a></li><li class="missing">官方项目页 / 技术博客：截至本期未发现独立官方页面。</li><li class="missing">官方代码 / 模型 / 数据：截至本期未确认公开仓库。</li><li class="missing">中文 / 高质量第三方解读：未发现可靠独立精读，建议优先阅读原文。</li></ul></div></div>
+
+<div class="paper" id="temps"><div class="phase">Deep Dive 03 · Search / Retrieval / RAG</div><h2>TEMPS：语义相似不代表时间正确——时间应该成为独立的 Retrieval Axis</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p class="one">一句话：TEMPS 不重训你的 semantic retriever，而是外挂一个 temporal embedding branch，把“主题相关”和“时间匹配”分别建模，再在 inference 融合。</p>
+<h3>背景 / 业务动机</h3><p>新闻、法律、临床、商品价格、库存与政策问答都会遇到同一类错误：文档主题完全相关，但时间不对。普通 dense retriever 主要优化 semantic proximity，很难自然表达“2024 年 3 月属于 2024 年，但不属于 2023 年”的非对称时间包含关系。</p>
+<h3>现有问题</h3><p>若把时间文本直接拼进 query/document，模型需要用一个 embedding space 同时承担 topic、time 与范围包含，往往牺牲其中一项；若全部依赖后置规则，又无法与模糊自然语言时间表达联合学习。</p>
+<h3>技术方案与关键模块</h3><p>TEMPS 将 absolute date、offset、season、duration、interval 等表达 grounding 成时间区间，再用 moment matching 把区间变成 Gaussian label。模型端输出 latent Gaussian，通过 KL-based directional inclusion score 学 temporal compatibility，最终 temporal score 与冻结 semantic retriever score 线性融合。</p>
+<h3>训练方法</h3><p>训练数据来自约 <b>6000 万</b> synthetic + temporal-tagging tuples，不依赖人工 temporal-similarity 标注；使用 CoSENT 风格排序目标学习 label-side Gaussian ordering。语义主干冻结，因此属于低侵入增量训练。</p>
+<h3>推理 / Serving</h3><p>Serving 只新增一条 temporal branch 与 score fusion，可进一步由 query router 只对 time-sensitive query 启用。相比重训整个检索器，这种模块化设计更适合生产系统迭代与回滚。</p>
+<h3>实验设置 / 离线指标</h3><p>TS-Retriever 上，prior TSContriever 的 R@1/P@1/R@100 约 <b>19.92/58.63/94.57</b>；E5-base-v2 + TEMPS 达到 <b>25.39/69.14/98.95</b>。</p>
+<h3>RAG 下游指标</h3><p>TimeQA 使用 Qwen2.5-7B-Instruct 作为 generator：E5-base-v2 单独 EM/F1/Containment 为 <b>0.2915/0.3644/0.3352</b>，加入 TEMPS 后为 <b>0.3845/0.4665/0.4423</b>，说明 retrieval gain 能传导到 answer quality。</p>
+<h3>线上 A/B / 效率成本</h3><p>没有生产 A/B。增量成本主要是一条 temporal embedding 分支；若只对时间敏感流量开启，成本相对可控。</p>
+<h3>与主流方法的优劣势</h3><p><b>优势：</b>模块化、兼容不同 semantic retriever、无需人工时间相似度标签、显式表达 interval inclusion。<b>局限：</b>依赖 temporal tagger / grounding；对跨句 antecedent、隐式事件顺序、模糊时间关系仍弱。</p>
+<h3>适用场景 / 未解决问题 / 未来方向</h3><p>适用于搜索、RAG、新闻、电商库存/价格、政策问答。更大的方向是把 temporal branch 扩成 <b>constraint-specific embeddings</b>：geo、freshness、price、trust、inventory 各自作为可插拔轴。</p>
+<h3>对推荐 / 搜索工程与职业技能的启发</h3><p><b>不要逼一个 embedding 吃掉所有业务约束。</b> 语义召回可以保持稳定，时间、新鲜度、地理与价值通过独立 scorer/embedding 分支融合，通常更可解释、更容易做专项评估和回滚。</p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2609.28048">Paper · arXiv:2609.28048</a></li><li class="missing">官方项目页：截至本期未发现。</li><li class="missing">官方代码 / 模型 / 数据：截至本期未确认公开仓库。</li><li class="missing">中文 / 高质量第三方解读：未发现可靠独立精读。</li></ul></div></div>
+
+<div class="paper" id="skillapt"><div class="phase">Deep Dive 04 · Agent / Skill Routing</div><h2>SkillApt：Retriever 负责“可能相关”，Activator 负责“现在值得用吗”</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.7/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p class="one">一句话：Agent skill 也需要“粗召回→价值过滤”：检索相关技能只是 candidate generation，是否真的注入 context 应由历史执行收益决定。</p>
+<h3>背景 / 业务动机</h3><p>越来越多 Agent 把 SOP、tool recipe、domain guideline 作为 Skill 检索后直接放进 prompt。问题是“相关”不等于“必要”：技能可能重复模型已有知识、制造干扰、浪费 token，甚至降低执行质量。</p>
+<h3>现有问题</h3><p>主流 skill-RAG 优化 retrieval recall / similarity，却几乎不建模“如果不加载这个 Skill，任务是否仍能完成”。因此 relevance 与 execution utility 被混为一谈。</p>
+<h3>技术方案与关键模块</h3><p>SkillApt 基于历史相似状态构造 WITH / WITHOUT Skill 的反事实执行证据，记录任务 outcome，再为当前 candidate skill 决定 LOAD / ABSTAIN。核心是把技能使用看成 treatment，把 activation boundary 建在真实任务收益上。</p>
+<h3>训练方法</h3><p>训练信号来自 matched counterfactual runs，本质接近 contextual treatment effect / nearest-neighbor utility estimation：在相似任务状态下比较“加载技能”和“不加载技能”的结果差异。</p>
+<h3>推理 / Serving</h3><p>retrieval 仍照常执行；新增轻量 activation decision。主要收益不是降低检索开销，而是减少注入 prompt 的 Skill 数量，从而降低下游 attention 与 token cost。</p>
+<h3>实验设置 / 离线指标</h3><p>在 frozen SRA-Bench 上，SkillApt-E 与 BM25 Top-1 observed accuracy 均为 <b>0.838</b>，但 Skill activation rate 从 <b>100%</b> 降到 <b>31.5%</b>，mean token usage 降低 <b>74.3%</b>。</p>
+<h3>线上 A/B / 效率</h3><p>无生产 A/B。离线结果说明一个关键事实：降低 context 并不必然降低效果，若 gate 能识别“没必要加载”的部分，反而可能提高信噪比。</p>
+<h3>与主流方法的优劣势</h3><p><b>优势：</b>把 retrieval relevance 与 execution utility 解耦；成本收益直接。<b>局限：</b>依赖可获得的 counterfactual history；activation boundary 会随 base model 能力变化，跨模型迁移需要重新校准。</p>
+<h3>适用场景 / 未解决问题 / 未来方向</h3><p>适合工具型 Agent、企业知识 Skill、代码 Agent。最值得继续的方向是把 Skill activation、memory recall、model routing 统一成一个 cost-aware controller。</p>
+<h3>对推荐 / 搜索工程与职业技能的启发</h3><p>与推荐链路完全同构：召回只负责 coverage，后面要有“是否值得继续算”的 activation/gating。可迁移到 feature group、candidate source、expensive cross feature、LLM rerank 的动态启停。</p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2609.26863">Paper · arXiv:2609.26863</a></li><li class="missing">官方项目页 / 代码 / 数据：截至本期未确认公开。</li><li class="missing">中文 / 高质量第三方解读：未发现可靠独立精读。</li></ul></div></div>
+
+<div class="paper" id="xai"><div class="phase">Deep Dive 05 · Sequential Recommendation / Explainability</div><h2>Sequential Rec XAI Benchmark：Attention 不是解释；在长序列里尤其不是</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.5/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p class="one">一句话：如果要解释“用户历史里的哪几个行为真正推动了这次推荐”，Integrated Gradients / GradientSHAP 比 raw attention 更可靠；attention-based attribution 在长序列中明显退化。</p>
+<h3>背景 / 业务动机</h3><p>SASRec / BERT4Rec 类模型大量依赖 attention，但工程上常把 attention heatmap 直接当作行为贡献解释。这会误导模型诊断，也可能让面向用户或审核的解释缺乏 faithfulness。</p>
+<h3>现有问题</h3><p>许多解释评估使用同一个模型既产生 attribution 又验证 attribution，存在循环性；同时 masking 会造成输入分布偏移，使“删掉一个行为后概率下降”本身不可靠。</p>
+<h3>技术方案与关键模块</h3><p>作者提出 dual-model masking metric：一个模型输出每个 timestep attribution，另一个单独训练、对 masking 鲁棒的 probe 测量移除高 attribution 行为后预测概率是否按预期变化，从而减少 self-evaluation bias。</p>
+<h3>训练方法</h3><p>主推荐模型按各自标准目标训练；probe 额外接受 masked sequences，学习在缺失行为下保持可校准预测。XAI 方法覆盖梯度、integrated gradient、SHAP、attention 与 gradient-weighted attention 等 10 种路线。</p>
+<h3>实验设置</h3><p>覆盖 CNN、Vanilla Transformer、SASRec、BERT4Rec；数据包括 KuaiRand-1k、KuaiRand-1k-LONG 与 MovieLens-1M，其中长序列 KuaiRand 最大长度 1000。</p>
+<h3>离线指标</h3><p>Integrated Gradients / GradientSHAP / DeepLift 系列整体最 faithful。CNN + GradientSHAP 的 faithfulness coefficient 在 KuaiRand-1k 约 <b>-0.986</b>、长序列约 <b>-0.940</b>。Grad-SAM 在 SASRec/BERT4Rec 多数设置可到 &lt;-0.9，但 Vanilla Transformer 长序列下降到约 <b>-0.308</b>。</p>
+<h3>推理 / Serving</h3><p>这不是在线 ranker 改动，而是诊断层。Integrated Gradients 需要多次插值 forward，更适合离线 audit、模型 debug 和抽样解释，不适合每个请求全量在线计算。</p>
+<h3>线上 A/B / 成本收益</h3><p>无线上 A/B。价值在于减少错误归因、指导序列裁剪、发现模型真正依赖的历史行为，并为长期兴趣 state 的 compression 提供更可靠依据。</p>
+<h3>与主流方法的优劣势</h3><p><b>优势：</b>系统 benchmark、多 backbone、多序列长度、评估设计更严格。<b>局限：</b>faithfulness 仍是 proxy；没有真实用户可理解性研究，也未证明解释能直接带来线上收益。</p>
+<h3>适用场景 / 未来方向</h3><p>适合行为 attribution、异常行为 debug、序列裁剪和长期兴趣建模。更有潜力的是把 attribution 直接用于 memory pruning、sample reweighting 与 long-sequence compression，形成“解释→控制”的闭环。</p>
+<h3>对推荐 / 搜索工程与职业技能的启发</h3><p>做 long-sequence foundation ranker 时，应补上 <b>attribution / counterfactual / sequence audit</b> 能力，不能只会看 attention map 和 feature importance。</p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2609.27201">Paper · arXiv:2609.27201</a></li><li class="missing">官方项目页 / 代码：截至本期未确认。</li><li class="missing">中文 / 高质量第三方解读：未发现可靠独立精读。</li></ul></div></div>
+
+<div class="paper" id="planner"><div class="phase">Focused Read 06 · RAG / Retrieval / Reranking</div><h2>When Learned Context Planning Fails to Beat Strong Retrieval：一个很有价值的负结果</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.4/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★☆☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p class="one">一句话：更复杂的 context planner 并没有稳定超过强 hybrid retrieval，说明“Agentic / learned controller”只有在强基线之上创造可重复增量才值得进入生产。</p>
+<h3>背景与问题</h3><p>RAG 越来越倾向引入 planner，让模型先决定要读什么、怎么分预算、如何拼 context。但许多论文并没有在同样 budget 下与强 BM25+dense+reranking 基线严格比较，容易把检索基线偏弱误认为 planner 收益。</p>
+<h3>方案 / 实验设置</h3><p>作者在 LongBench-v2 多选 QA 上控制 retrieval、routing、budgeted selector 与 reranking，主模型 Qwen2.5-7B-Instruct，并单独报告 untouched 152题 test，避免只看 transductive diagnostic。</p>
+<h3>离线结果</h3><p>18k 字符 budget 下，anchored hybrid retrieval <b>36.18%</b>，BM25 <b>35.98%</b>，最佳 direct planner <b>34.19%</b>；untouched 152 test 上 anchored hybrid <b>42.11%</b> vs planner <b>36.84%</b>。紧 budget 下 planner 偶有小幅优势，但置信区间不稳定。</p>
+<h3>训练 / Serving / 成本</h3><p>planner 引入额外模型调用与决策步骤，却没有带来稳定 accuracy gain，因此 quality-per-cost 明显不占优。负结果的工程价值就在这里：控制器必须以预算匹配的强静态策略为 baseline。</p>
+<h3>线上 A/B</h3><p>没有生产 A/B。</p>
+<h3>相对主流方法的优劣</h3><p><b>优点：</b>实验控制严、负结果对研究方向有纠偏作用。<b>局限：</b>主要在 LongBench-v2 / 单一 base model，不能证明所有 planner 都无效。</p>
+<h3>推荐 / 搜索启发</h3><p>动态 candidate budget、source routing、LLM rerank depth 研究也应遵循同一原则：<b>同样候选数、同样延迟、同样 token 预算，与最强 static policy 比。</b></p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2609.26976">Paper · arXiv:2609.26976</a></li><li class="missing">官方代码 / 项目页：截至本期未确认。</li><li class="missing">中文 / 高质量第三方解读：未发现可靠独立精读。</li></ul></div></div>
+
+<div class="paper" id="dgd"><div class="phase">Focused Read 07 · Recommendation / Population Dynamics</div><h2>DGD：从个体打分转向可微的群体行为动力学</h2><div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.1/10</span> · <span><b>工业成熟度</b> ★★☆☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A</span></div>
+<p class="one">一句话：DGD 不试图替代在线 ranker，而是显式建模“曝光 / 接触 → 群体行为 → 下一轮分布变化”，更适合长期效应 simulator 与 policy evaluation。</p>
+<h3>背景 / 业务动机</h3><p>推荐系统大量优化短期个体概率，却很少直接建模群体分布如何因系统曝光发生变化。对内容生态、促销、流量分配和长期策略，这会遗漏反馈回路。</p>
+<h3>技术方案与关键模块</h3><p>Differentiable Gaussian Dynamics 用 Gaussian mixture 表达人群异质 response propensity，用可微聚合把 contact intensity 映射为行为概率，再用 feedback recurrence 更新后续 response state。</p>
+<h3>训练方法</h3><p>模型通过端到端可微目标拟合行为分布与计数，同时学习 mixture 参数和动态转移；与固定 Gaussian、时序预测模型及去掉 feedback 的版本做消融。</p>
+<h3>推理 / Serving</h3><p>定位更接近离线 simulator / policy evaluator，而不是实时毫秒级 ranker。它适合在策略上线前做长期方向比较，或做 synthetic rollout。</p>
+<h3>实验设置 / 离线指标</h3><p>使用 KuaiRand-Pure 与 Online Retail II 的多个时间窗。Retail 2010 one-day behavior-count MAE 从 DeepAR adaptation 的 <b>6.88</b> 降到 <b>4.71</b>；KuaiRand standard recommendation window 中，学习分布相对 fixed Gaussian 的 behavioral NLL 改善约 <b>10.82%</b>。控制实验中移除 feedback 后 joint KL 从 <b>0.0340→0.2577</b>。</p>
+<h3>线上 A/B / 效率</h3><p>无线上 A/B；因此目前更适合作为研究 simulator，而非直接支撑生产策略结论。</p>
+<h3>优劣势 / 局限</h3><p><b>优势：</b>显式建模 heterogeneous population 与 feedback；可微、能端到端学习。<b>局限：</b>Gaussian mixture 是强结构假设；离线分布拟合不等同于真实 intervention causal effect。</p>
+<h3>适用场景 / 未来方向</h3><p>适合长期流量策略、内容生态、促销、策略模拟与 counterfactual evaluation。未来应与 causal exposure model、真实 A/B calibration 和 user-level ranker 联合。</p>
+<h3>对推荐算法工程的启发</h3><p>当团队讨论“短期 CTR 涨了，但长期生态如何”时，需要的不只是更复杂的 ranker，而是 <b>population dynamics + counterfactual measurement + simulator</b> 这一层。</p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2609.28405">Paper · arXiv:2609.28405</a></li><li><a href="https://github.com/OranAi-Ltd/oransim">官方代码 / 仿真仓库 · OranAi-Ltd/oransim</a></li><li class="missing">中文 / 高质量第三方解读：未发现可靠独立精读。</li></ul></div></div>
+
+<div class="paper"><div class="phase">Today → Your Roadmap</div><h2>对推荐 / 搜索算法工程最值得带走的 6 个动作</h2><ol>
+<li><b>给所有昂贵模块加“是否值得执行”的 gate：</b>LLM rerank、复杂 feature、Skill、long-memory、deep retrieval 都不应默认 100% 开。</li>
+<li><b>把长期用户行为拆成 Recent State + External Memory：</b>研究状态感知的压缩、召回和 TTL，而不是无限堆 sequence length。</li>
+<li><b>给检索增加独立约束轴：</b>time / freshness / geo / inventory 不必全部挤进同一个 semantic embedding。</li>
+<li><b>Controller 研究必须 budget-matched：</b>同样 token、同样候选数、同样延迟，与最强 static baseline 比。</li>
+<li><b>建立 trajectory / attribution 诊断：</b>长序列推荐不要只看 attention；用更 faithful 的 attribution 找真正有效行为。</li>
+<li><b>把 model routing 和业务价值打通：</b>路由目标应该是 GMV / 满意度 / 成功率 per dollar，而不是经验式“大模型/小模型”切换。</li>
+</ol></div>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Daily updated 2026-09-25</div></footer></body></html>
