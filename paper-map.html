@@ -1,7 +1,21 @@
 <!doctype html><html lang="zh-CN"><head><title>Paper Map｜AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="AI、推荐、搜索、RAG 与 Agent 技术树：按研究问题组织论文承接关系、核心矛盾、成熟度、代表 Paper、精读路线和值得押注的问题。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="index.html#latest">最新进展</a><a href="year.html">年度综述</a><a href="paper-map.html"><b>Paper Map</b></a><a href="pipeline-map.html">推荐链路</a><a href="index.html#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">Research Problem Map · 更新至 2026.09.25</span><h1>不按论文年份堆列表，而按“核心矛盾 → 承接关系 → 下一步问题”组织</h1><p class="lead">技术树中心已经从单模型能力转向 <b>Shared State → Specialist Executor → Conditional Controller → Counterfactual / Trajectory Measurement</b>。生成式召回、LLM 排序、Agentic Search、Long-context Serving 和 Model Routing 表面不同，本质都在回答：有限预算下，哪个状态应该被读、哪个执行路径值得走、收益如何被可靠归因。</p></div>
+<main><div class="wrap hero"><span class="kicker">Research Problem Map · 更新至 2026.09.26</span><h1>不按论文年份堆列表，而按“核心矛盾 → 承接关系 → 下一步问题”组织</h1><p class="lead">技术树中心已经从单模型能力转向 <b>Shared State → Specialist Executor → Conditional Controller → Counterfactual / Trajectory Measurement</b>。生成式召回、LLM 排序、Agentic Search、Long-context Serving 和 Model Routing 表面不同，本质都在回答：有限预算下，哪个状态应该被读、哪个执行路径值得走、收益如何被可靠归因。</p></div>
 <section><div class="wrap"><div class="callout"><strong>当前最值得押注：</strong>① Semantic ID 与 retrieval/ranking 共享表示；② long-history 从 request-time encoding 转向 state system；③ retrieval relevance 与 activation utility 解耦；④ time/geo/freshness 等结构约束用独立 axis；⑤ model / memory / Skill / feature / budget 统一控制；⑥ 用 counterfactual 与 attribution 判断真正增量。</div>
+
+
+<div class="paper"><div class="phase">Problem 00 · 全链路统一应该消灭 Cascade，还是只消灭重复表示？</div><h2>Separate Stage Models → Shared Backbone / State → Stage-specific Execution</h2>
+<div class="flow"><span>Independent Retrieval / Pre-rank / Rank</span><b>→</b><span>OneTrans</span><b>→</b><span>OneTrans-V2</span><b>→</b><span>Shared State + Specialist Executors</span></div>
+<p><b>核心矛盾：</b>召回、粗排、精排都在重复理解同一个用户，但候选规模、特征与 SLA 完全不同。完全分离浪费 representation / compute；完全同构执行又不符合工业约束。</p>
+<p><b>代表 Paper：</b><a href="daily/2026-09-26.html#onetrans">OneTrans-V2</a> 的答案是“共享 user sequence 与 backbone，不共享所有执行语义”；这使三阶段联合优化、fine→pre-rank 蒸馏与 user-context cache 成为可能，同时保留 candidate shrink。正交分支 <a href="daily/2026-09-26.html#xrec">X-Rec</a> 表明召回未必绑定 SID-AR，也可以生成 continuous ANN triggers。</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.9/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> OneTrans-V2 / X-Rec 未发现</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>精读路线：</b>DIN/双塔 cascade → HSTU / foundation ranker → OneTrans → OneTrans-V2 → X-Rec。</p><p><b>值得押注：</b>shared state contract、stage-aware expert routing、user-context cache、dynamic candidate budget、SID + continuous trigger hybrid。</p></div>
+<div class="paper"><div class="phase">Problem 00B · Recommendation Reasoning 如何获得可验证的 Credit？</div><h2>Generic CoT → Predictive-utility Selection → Ranking-aware RL → Span-level Retrieval Credit</h2>
+<div class="flow"><span>Reasoning SFT</span><b>→</b><span>Evo-Rec Best-of-N</span><b>→</b><span>NDCG-aware GRPO</span><b>→</b><span>Retrieval-grounded Span Credit</span></div>
+<p><b>核心矛盾：</b>最终 SID exact-match reward 太稀疏；reasoning 看起来合理，不代表真正提升 item ranking。</p>
+<p><b>代表 Paper：</b><a href="daily/2026-09-26.html#evorec">Evo-Rec</a> 先用 target likelihood 选择 reasoning，再用 NDCG ranking reward 优化；<a href="daily/2026-09-26.html#credit">Retrieval-Grounded Credit</a> 把 interest hypothesis 执行为 query，按 top-K 是否命中 target 给 span-level credit。</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.3/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>值得押注：</b>listwise business reward、counterfactual delete-span、multi-retriever verifier、reasoning hard-case router、online debias。</p></div>
 
 <div class="paper"><div class="phase">Problem 01 · 如何让召回与排序共享语义，但不牺牲工业执行弹性？</div><h2>Generative Retrieval / Semantic ID / Unified Rec</h2><div class="flow"><span>RQ-VAE / TIGER</span><b>→</b><span>Value-aware Generation</span><b>→</b><span>UniPolicy</span><b>→</b><span>UNIQUE</span><b>→</b><span>Versioned Address + Multi-executor</span></div>
 <p><b>核心矛盾：</b>retrieval 需要高吞吐与可枚举地址，ranking 需要 target-aware discrimination；强行合成一个 stage 会牺牲 SLA，完全分离又会造成 representation mismatch。</p>
@@ -17,25 +31,25 @@
 
 <div class="paper"><div class="phase">Problem 03 · 超长行为序列到底应该在线全算，还是变成用户状态系统？</div><h2>Long Sequence → Multi-timescale State → External Memory</h2><div class="flow"><span>DIN/Transformer History</span><b>→</b><span>Long-context Encoder</span><b>→</b><span>MuSeR State</span><b>→</b><span>PaMER State-aware Memory</span></div>
 <p><b>核心矛盾：</b>长期偏好有价值，但 request-time 重算全部 history 昂贵；过度压缩又会丢掉后续突然需要的旧证据。</p>
-<p><b>代表 Paper：</b><a href="daily/2026-09-23.html#muser">MuSeR</a> 将 10⁴–10⁵ 行为压成异步维护的多兴趣 state；<a href="daily/2026-09-25.html#pamer">PaMER</a> 进一步从 pre-action hidden state 决定何时压缩与召回。</p>
+<p><b>代表 Paper：</b><a href="daily/2026-09-23.html#muser">MuSeR</a> 将 10⁴–10⁵ 行为压成异步维护的多兴趣 state；<a href="daily/2026-09-26.html#pamer">PaMER</a> 进一步从 pre-action hidden state 决定何时压缩与召回。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.3/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未完整确认</span> · <span><b>是否有线上 A/B</b> MuSeR 有；PaMER 无</span> · <span><b>阅读优先级</b> S+</span></div>
 <p><b>精读路线：</b>DIN/DIEN → long-sequence Transformer → MuSeR → PaMER。</p><p><b>值得押注：</b>Recent State + Long-term Memory、state TTL、drift detection、learned recall gate、memory/KV 联合调度。</p></div>
 
 <div class="paper"><div class="phase">Problem 04 · 一个 embedding 能同时承担语义、时间、新鲜度与库存约束吗？</div><h2>Semantic Retrieval → Constraint-specific Axes → Query-dependent Fusion</h2><div class="flow"><span>Single Dense Space</span><b>→</b><span>Hybrid Sparse+Dense</span><b>→</b><span>TEMPS Temporal Axis</span><b>→</b><span>Multi-axis Constraint Router</span></div>
 <p><b>核心矛盾：</b>主题相似通常近似对称，而时间包含、价格区间、地理与库存约束具有不同结构；全部压进一个 cosine space 容易互相干扰。</p>
-<p><b>代表 Paper：</b><a href="daily/2026-09-25.html#temps">TEMPS</a> 冻结 semantic retriever，增加 Gaussian temporal embedding + directional inclusion score；TS-Retriever R@1 19.92→25.39。</p>
+<p><b>代表 Paper：</b><a href="daily/2026-09-26.html#temps">TEMPS</a> 冻结 semantic retriever，增加 Gaussian temporal embedding + directional inclusion score；TS-Retriever R@1 19.92→25.39。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
 <p><b>精读路线：</b>BM25+dense hybrid → temporal retrieval → TEMPS → multi-axis retrieval。</p><p><b>值得押注：</b>constraint detection、axis gating、score calibration、geo/freshness/trust/inventory branches、与 Semantic ID 的组合。</p></div>
 
 <div class="paper"><div class="phase">Problem 05 · 检索到了以后，什么时候真的值得加载？</div><h2>Retrieval → Activation → Memory / Skill / Model Unified Control</h2><div class="flow"><span>Always Load</span><b>→</b><span>Retrieve Relevant</span><b>→</b><span>PaMER State Gate</span><b>→</b><span>SkillApt Utility Gate</span><b>→</b><span>Value-aware Router</span></div>
 <p><b>核心矛盾：</b>相关性只说明“可能有用”，不能说明边际收益高于 token / latency / GPU 成本。</p>
-<p><b>代表 Paper：</b><a href="daily/2026-09-25.html#skillapt">SkillApt</a> 基于 WITH/WITHOUT Skill 的反事实执行证据决定 LOAD/ABSTAIN；相同准确率下 activation 100%→31.5%，token -74.3%。</p>
+<p><b>代表 Paper：</b><a href="daily/2026-09-26.html#skillapt">SkillApt</a> 基于 WITH/WITHOUT Skill 的反事实执行证据决定 LOAD/ABSTAIN；相同准确率下 activation 100%→31.5%，token -74.3%。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.7/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
 <p><b>精读路线：</b>retrieval confidence → memory gate → SkillApt → feature/model activation。</p><p><b>值得押注：</b>marginal utility estimator、counterfactual activation labels、cross-model transferable gate、online bandit / RL。</p></div>
 
 <div class="paper"><div class="phase">Problem 06 · 推理 / 重排的 test-time compute 应该如何分配？</div><h2>Repeated Sampling → Search Policy → Cost-aware Reasoning</h2><div class="flow"><span>Best-of-N</span><b>→</b><span>Verifier</span><b>→</b><span>Learned Search Policy</span><b>→</b><span>Budgeted Controller</span></div>
 <p><b>核心矛盾：</b>多采样能提高成功率但浪费 token；更复杂 planner 又未必超过强 retrieval / rerank baseline。</p>
-<p><b>代表推进：</b><a href="daily/2026-09-24.html#searchpolicy">Beyond Repeated Sampling</a> 让小模型先生成搜索概念；<a href="daily/2026-09-25.html#planner">Context Planning Negative Result</a> 则要求所有 controller 做 budget-matched strong baseline。</p>
+<p><b>代表推进：</b><a href="daily/2026-09-24.html#searchpolicy">Beyond Repeated Sampling</a> 让小模型先生成搜索概念；<a href="daily/2026-09-26.html#planner">Context Planning Negative Result</a> 则要求所有 controller 做 budget-matched strong baseline。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 部分未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
 <p><b>精读路线：</b>Best-of-N → verifier → learned search policy → negative-result calibration。</p><p><b>值得押注：</b>cost-aware early exit、source/model/depth joint routing、value-of-information、uncertainty-triggered reasoning。</p></div>
 
@@ -47,13 +61,13 @@
 
 <div class="paper"><div class="phase">Problem 08 · 如何知道线上提升到底是谁创造的？</div><h2>Offline Proxy → Counterfactual Observability → Trajectory / Attribution Diagnostics</h2>
 <p><b>核心矛盾：</b>raw engagement 混合曝光偏差、内容质量、stage interaction 与策略变化；aggregate metric 又掩盖 cold-start、missing-feature 与长序列失败。</p>
-<p><b>代表推进：</b>Netflix Counterfactual Observability 用历史 A/B 校准离线增量；Spotify 做 feature-present/missing slice；<a href="daily/2026-09-25.html#xai">Sequential Rec XAI Benchmark</a> 则提醒 raw attention 并不等同于真实行为贡献。</p>
+<p><b>代表推进：</b>Netflix Counterfactual Observability 用历史 A/B 校准离线增量；Spotify 做 feature-present/missing slice；<a href="daily/2026-09-26.html#xai">Sequential Rec XAI Benchmark</a> 则提醒 raw attention 并不等同于真实行为贡献。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 方法部分公开</span> · <span><b>是否有线上 A/B</b> Netflix 有历史实验验证</span> · <span><b>阅读优先级</b> A+</span></div>
 <p><b>值得押注：</b>candidate provenance、stage attribution、propensity logging、faithful sequence attribution、trajectory failure taxonomy。</p></div>
 
 <div class="paper"><div class="phase">Problem 09 · 多档模型越来越多，Router 应该优化什么？</div><h2>Capability Routing → Cost-aware Routing → Business-value Routing</h2><div class="flow"><span>Fallback Rule</span><b>→</b><span>Difficulty Router</span><b>→</b><span>GPT-6 Cost Frontier</span><b>→</b><span>Value / Dollar / Risk Policy</span></div>
 <p><b>核心矛盾：</b>“难题用大模型、简单题用小模型”没有显式优化业务价值、失败风险、latency 与 cache reuse。</p>
-<p><b>代表进展：</b><a href="daily/2026-09-25.html#gpt6">GPT-6 Sol/Luna</a> 继续降低中低档模型价格并保持较强 Agent/Coding 能力，使多层模型组合的 ROI 更高。</p>
+<p><b>代表进展：</b><a href="daily/2026-09-26.html#gpt6">GPT-6 Sol/Luna</a> 继续降低中低档模型价格并保持较强 Agent/Coding 能力，使多层模型组合的 ROI 更高。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 否</span> · <span><b>是否有线上 A/B</b> 已上线 API，非论文式 A/B</span> · <span><b>阅读优先级</b> S+</span></div>
 <p><b>精读路线：</b>static fallback → learned model router → SLO-aware routing → cost-aware portfolio → unified execution controller。</p><p><b>值得押注：</b>business value / dollar、risk calibration、cascade fallback、cache-aware routing、online contextual bandit。</p></div>
 
@@ -66,4 +80,4 @@
 <li><b>Serving：</b>H-Spec → Flash-dLLM → DQ / HySparse2。</li>
 <li><b>Measurement：</b>Netflix Counterfactual Observability → Sequential Rec XAI。</li>
 </ol></div>
-</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Paper Map updated 2026-09-25</div></footer></body></html>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Paper Map updated 2026-09-26</div></footer></body></html>

@@ -1,21 +1,22 @@
 <!doctype html><html lang="zh-CN"><head><title>AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="聚焦 LLM、推荐系统、搜索/召回/排序/重排、生成式推荐、Agent、RAG、推理与训练优化的每日研究简报与长期技术地图。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="#latest"><b>最新进展</b></a><a href="year.html">年度综述</a><a href="paper-map.html">Paper Map</a><a href="pipeline-map.html">推荐链路</a><a href="#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 更新至 2026.09.25</span><h1>把论文串成技术演进，把实验结果翻译成工程判断</h1><p class="lead">聚焦 LLM、推荐系统、搜索 / 召回 / 排序 / 重排、生成式推荐、Agent、RAG、推理与训练优化。每日只保留真正值得投入时间的进展，并持续维护年度演进、Paper Map 与推荐链路。</p></div>
-<section id="latest"><div class="wrap"><div class="callout"><strong>今日核心判断：</strong><b>execution policy 正进一步收敛为 conditional execution controller。</b> PaMER 学习何时压缩与恢复长期上下文，SkillApt 学习“检索到 Skill 后是否值得真正加载”，TEMPS 把时间约束从 semantic embedding 中拆成独立检索轴，GPT-6 Sol/Luna 则继续扩大多层模型的成本—能力前沿。对推荐 / 搜索最直接的映射是：<b>source / feature / memory / model / candidate budget / reasoning depth / halt</b> 都应成为 value-aware policy 的动作，而不是固定规则。</div>
+<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 更新至 2026.09.26</span><h1>把论文串成技术演进，把实验结果翻译成工程判断</h1><p class="lead">聚焦 LLM、推荐系统、搜索 / 召回 / 排序 / 重排、生成式推荐、Agent、RAG、推理与训练优化。每日只保留真正值得投入时间的进展，并持续维护年度演进、Paper Map 与推荐链路。</p></div>
+<section id="latest"><div class="wrap"><div class="callout"><strong>今日核心判断：</strong><b>推荐系统的“统一”正在从 one-stage model 转向 shared backbone/state + stage-specific execution。</b> OneTrans-V2 用一个 Transformer 贯穿召回/粗排/精排，线上 GMV +9.74%、同硬件 QPS 3.2×；X-Rec 则证明生成式召回不必绑定 Semantic ID，可在连续 embedding 空间生成 ANN trigger，吞吐较 SID-AR 3.46×。同时 AgentX-Model、Evo-Rec 与 retrieval-grounded credit 把算法研发、reasoning utility 和中间 credit 都变成可测量的闭环。</div>
 <h2>今日结论 / 最值得看</h2><table class="table"><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>核心价值</th></tr></thead><tbody>
-<tr><td>S+</td><td><a href="daily/2026-09-25.html#gpt6">GPT-6 Sol / Luna</a></td><td>Model Routing / Agent</td><td>更强能力继续下沉到低成本层；API 对应档价格约 -50%</td></tr>
-<tr><td>S+</td><td><a href="daily/2026-09-25.html#pamer">PaMER / PaMER+</a></td><td>Agent Memory</td><td>pre-action hidden state 预测 memory need；token -71.7%，Avg 69.9→71.6</td></tr>
-<tr><td>S</td><td><a href="daily/2026-09-25.html#temps">TEMPS</a></td><td>Temporal Retrieval / RAG</td><td>时间作为独立 retrieval axis；R@1 19.92→25.39</td></tr>
-<tr><td>S</td><td><a href="daily/2026-09-25.html#skillapt">SkillApt</a></td><td>Agent Skill Routing</td><td>retrieval 与 activation 解耦；同准确率下 token -74.3%</td></tr>
-<tr><td>A+</td><td><a href="daily/2026-09-25.html#xai">Sequential Rec XAI Benchmark</a></td><td>Sequential Rec</td><td>GradientSHAP / Integrated Gradients 更 faithful；raw attention 长序列退化</td></tr>
-<tr><td>A+</td><td><a href="daily/2026-09-25.html#planner">Context Planning Negative Result</a></td><td>RAG / Rerank</td><td>18k budget：strong hybrid 36.18% &gt; planner 34.19%</td></tr>
-<tr><td>A</td><td><a href="daily/2026-09-25.html#dgd">DGD</a></td><td>Rec Dynamics</td><td>群体行为 + feedback dynamics；Retail MAE 6.88→4.71</td></tr>
-</tbody></table><p><a class="button" href="daily/2026-09-25.html">阅读 2026-09-25 完整日报 →</a></p>
+<tr><td>S+</td><td><a href="daily/2026-09-26.html#onetrans">OneTrans-V2</a></td><td>Full-stack Generative Rec</td><td>统一 retrieval/pre-rank/fine-rank；GMV +9.74%，QPS 3.2×</td></tr>
+<tr><td>S+</td><td><a href="daily/2026-09-26.html#xrec">X-Rec</a></td><td>Generative Retrieval</td><td>continuous flow + ANN；SID-AR 吞吐 3.46×，线上 +4.1484%</td></tr>
+<tr><td>S+</td><td><a href="daily/2026-09-26.html#agentx">AgentX-Model</a></td><td>Agentic Rec Research</td><td>长周期自主模型研究；560/636 实验超过业务 AUC baseline</td></tr>
+<tr><td>S</td><td><a href="daily/2026-09-26.html#evorec">Evo-Rec</a></td><td>Reasoning for Rec</td><td>ranking-aware reasoning RL；Games NDCG@10 +32.5% rel.</td></tr>
+<tr><td>S</td><td><a href="daily/2026-09-26.html#credit">Retrieval-Grounded Credit</a></td><td>Credit Assignment</td><td>interest hypothesis 逐 span 可验证奖励</td></tr>
+<tr><td>A+</td><td><a href="daily/2026-09-26.html#cross">Cross-Task Relationships</a></td><td>Multi-task Ranking</td><td>YouTube 三大 surface 显式学习任务关系</td></tr>
+<tr><td>A+</td><td><a href="daily/2026-09-26.html#psp">Privileged Self-Practice</a></td><td>Agent RL</td><td>把 privileged info 从 loss 移回 sampler</td></tr>
+</tbody></table><p><a class="button" href="daily/2026-09-26.html">阅读 2026-09-26 完整日报 →</a></p>
 <div class="section-title"><h2>长期研究入口</h2><p>年度演进、研究问题与推荐链路三张地图同步维护</p></div><div class="grid">
-<div class="paper"><h3><a href="year.html">年度综述</a></h3><p>从 Generative Retrieval / Semantic ID / Foundation Ranker 到 Serving / Model Routing，新增 Conditional Execution Control 与 Constraint-aware Retrieval。</p></div>
-<div class="paper"><h3><a href="paper-map.html">Paper Map</a></h3><p>按核心矛盾组织：共享语义、行为证据、长期状态、执行控制、时序约束、归因与系统效率。</p></div>
-<div class="paper"><h3><a href="pipeline-map.html">推荐链路</a></h3><p>按召回 / 粗排 / 精排 / 重排与混排 / 跨阶段统一定位论文与工程机会。</p></div></div></div></section>
+<div class="paper"><h3><a href="year.html">年度综述</a></h3><p>新增 Full-stack Generative Rec 主线：Separate Cascade → Shared Backbone/State → Stage-specific Execution，并加入 continuous generative retrieval 分支。</p></div>
+<div class="paper"><h3><a href="paper-map.html">Paper Map</a></h3><p>新增“统一全链路但不牺牲阶段 SLA”与“Reasoning 如何获得可验证 Credit”两组核心矛盾。</p></div>
+<div class="paper"><h3><a href="pipeline-map.html">推荐链路</a></h3><p>召回加入 X-Rec；跨阶段统一加入 OneTrans-V2 与 AgentX-Model，强调共享 state、专业 executor、可验证 measurement。</p></div></div></div></section>
 <section id="archive"><div class="wrap"><h2>每日归档</h2><div class="paper">
+<p><a href="daily/2026-09-26.html"><b>2026-09-26</b></a> · OneTrans-V2 / X-Rec / AgentX-Model / Evo-Rec / Retrieval-Grounded Credit / Cross-Task Relationships / Privileged Self-Practice</p>
 <p><a href="daily/2026-09-25.html"><b>2026-09-25</b></a> · GPT-6 Sol/Luna / PaMER / TEMPS / SkillApt / Sequential Rec XAI / Context Planning Negative Result / DGD</p>
 <p><a href="daily/2026-09-24.html"><b>2026-09-24</b></a> · Spotify Robust Fusion / Flash-dLLM / HySparse2 / Disaggregated Quantization / On-Policy Distillation / Learned Search Policy / Agensh / Precision Stability</p>
 <p><a href="daily/2026-09-23.html"><b>2026-09-23</b></a> · Connected Content Retriever / UNIQUE / MuSeR / Inherit4Rec / Answer-Oriented Context / H-Spec / Netflix Observability / Expert Coactivation</p>
@@ -35,4 +36,4 @@
 <p><a href="daily/2026-09-09.html"><b>2026-09-09</b></a> · CUDA Rust / HiCache MLA Dedup / NVFP4 KV / MoE Router Precision / shift_labels</p>
 <p><a href="daily/2026-09-08.html"><b>2026-09-08</b></a> · SAM-D2Q / IGPO / PTDG / AtomRec / Embedding Surgery</p>
 <p><a href="daily/2026-09-07.html"><b>2026-09-07</b></a> · Sparse Attention Runtime / Cache-aware Routing / TGR / ReST</p>
-</div></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Last updated 2026-09-25</div></footer></body></html>
+</div></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Last updated 2026-09-26</div></footer></body></html>

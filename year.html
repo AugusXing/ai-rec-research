@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><title>年度综述｜AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="AI × 推荐算法过去一年技术演进：Generative Retrieval、Semantic ID、Scaling/Serving、Foundation Model、RL/Preference Alignment、Reasoning/Re-ranking、Full-stack Generative Rec、Agentic Search/Context Ranking、Model Routing。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="index.html#latest">最新进展</a><a href="year.html"><b>年度综述</b></a><a href="paper-map.html">Paper Map</a><a href="pipeline-map.html">推荐链路</a><a href="index.html#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">Rolling 12-Month Review · 更新至 2026.09.25</span><h1>过去一年真正的主线：从“统一模型”走向“共享状态 + 专家执行路径 + 条件化控制器”</h1><p class="lead">推荐 / 搜索与 LLM 系统正在形成共同架构：<b>representation、state、objective、measurement 越来越共享，execution path 却越来越专业化</b>。Semantic ID 让对象可生成；Generative Retrieval 把业务价值前移；Foundation Model 统一表征；Reasoning / Re-ranking 优化集合与证据；Agentic Search 主动获取信息；Serving 按 KV、precision、prefill/decode 拆分；Model Routing 则继续升级为 memory / Skill / model / budget 的统一 activation policy。</p></div>
+<main><div class="wrap hero"><span class="kicker">Rolling 12-Month Review · 更新至 2026.09.26</span><h1>过去一年真正的主线：从“统一模型”走向“共享状态 + 专家执行路径 + 条件化控制器”</h1><p class="lead">推荐 / 搜索与 LLM 系统正在形成共同架构：<b>representation、state、objective、measurement 越来越共享，execution path 却越来越专业化</b>。Semantic ID 让对象可生成；Generative Retrieval 把业务价值前移；Foundation Model 统一表征；Reasoning / Re-ranking 优化集合与证据；Agentic Search 主动获取信息；Serving 按 KV、precision、prefill/decode 拆分；Model Routing 则继续升级为 memory / Skill / model / budget 的统一 activation policy。</p></div>
 <section><div class="wrap"><div class="callout"><strong>年度总判断：</strong>下一代工业 AI / 推荐系统更像 <b>Shared Representation + Multi-timescale State + Specialist Executors + Conditional Controller + Counterfactual Measurement + Architecture-aware Runtime</b>。Controller 的 action 已从“选哪个模型”扩展到 {retrieval source, candidate budget, feature regime, context view, memory recall, Skill activation, reasoning depth, precision, KV owner, hardware cell, halt}。9/25 的 PaMER、SkillApt、TEMPS 与 GPT-6 Sol/Luna 让这条主线更加清晰：<b>可用不等于值得激活，相关不等于值得付费。</b></div>
 
 <div class="paper"><div class="phase">主线 01 · Generative Retrieval</div><h2>Semantic ID → Value-aware Generation → Shared Retrieval / Ranking Representation</h2>
@@ -41,7 +41,7 @@
 <div class="paper"><div class="phase">主线 06 · Reasoning / Re-ranking</div><h2>Pointwise Score → List/Set Utility → Learned Search Policy → Budgeted Reasoning</h2>
 <p><b>上一阶段解决了什么：</b>listwise / setwise 方法把多样性、覆盖、约束与候选间相互作用放进最终排序。</p>
 <p><b>留下什么问题：</b>reasoning rerank 很贵，复杂 planner 未必优于强 retrieval baseline，且最终收益难以做 stage attribution。</p>
-<p><b>关键推进：</b><a href="daily/2026-09-24.html#searchpolicy">Beyond Repeated Sampling</a> 训练小 search policy 先选思路；9/25 的 <a href="daily/2026-09-25.html#planner">Context Planning Negative Result</a> 则提醒 controller 必须在 budget-matched strong baseline 上创造真实增量。</p>
+<p><b>关键推进：</b><a href="daily/2026-09-24.html#searchpolicy">Beyond Repeated Sampling</a> 训练小 search policy 先选思路；9/25 的 <a href="daily/2026-09-26.html#planner">Context Planning Negative Result</a> 则提醒 controller 必须在 budget-matched strong baseline 上创造真实增量。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 部分</span> · <span><b>是否有线上 A/B</b> 较少</span> · <span><b>阅读优先级</b> S</span></div>
 <p><b>下一步：</b>marginal slate utility、cost-aware early exit、verifier、evidence sufficiency 与 online budget allocation。</p></div>
 
@@ -55,21 +55,29 @@
 <div class="paper"><div class="phase">主线 08 · Agentic Search / Context Ranking</div><h2>Retrieve Documents → Construct Evidence → Memory / Skill Activation → Interactive Search</h2>
 <p><b>上一阶段解决了什么：</b>RAG 将检索接到生成器；Answer-oriented Context Construction 把 relevance 推进到 support / trust / organization。</p>
 <p><b>留下什么问题：</b>检索到的 context/Skill 不一定值得加载；长程 Agent 历史会不断膨胀；时间等结构约束在纯 semantic embedding 中容易丢失。</p>
-<p><b>关键推进：</b><a href="daily/2026-09-25.html#pamer">PaMER</a> 学习何时压缩/恢复 memory；<a href="daily/2026-09-25.html#skillapt">SkillApt</a> 将 Skill retrieval 与 activation 解耦；<a href="daily/2026-09-25.html#temps">TEMPS</a> 将 temporal compatibility 作为独立 retrieval axis。</p>
+<p><b>关键推进：</b><a href="daily/2026-09-26.html#pamer">PaMER</a> 学习何时压缩/恢复 memory；<a href="daily/2026-09-26.html#skillapt">SkillApt</a> 将 Skill retrieval 与 activation 解耦；<a href="daily/2026-09-26.html#temps">TEMPS</a> 将 temporal compatibility 作为独立 retrieval axis。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 部分未确认</span> · <span><b>是否有线上 A/B</b> 暂少</span> · <span><b>阅读优先级</b> S+</span></div>
 <p><b>下一步：</b>memory / Skill / evidence 统一 utility gate、temporal/geo/trust 多轴检索、interactive clarification 与 answer reward 的闭环。</p></div>
 
 <div class="paper"><div class="phase">主线 09 · Model Routing</div><h2>Fallback Rules → Learned Routing → Cost-aware Routing → Conditional Execution Control</h2>
 <p><b>上一阶段解决了什么：</b>router 已能按 query 难度、SLO 或硬件负载选择不同模型和 serving cell。</p>
 <p><b>留下什么问题：</b>只按“难/易”路由没有显式连接业务价值、token 成本、失败风险、cache reuse 与 downstream reward。</p>
-<p><b>关键推进：</b><a href="daily/2026-09-25.html#gpt6">GPT-6 Sol/Luna</a> 继续压低不同能力档位成本，使多层 model portfolio 更有价值；PaMER / SkillApt 又把 routing action 扩展到 memory 与 Skill activation。</p>
+<p><b>关键推进：</b><a href="daily/2026-09-26.html#gpt6">GPT-6 Sol/Luna</a> 继续压低不同能力档位成本，使多层 model portfolio 更有价值；PaMER / SkillApt 又把 routing action 扩展到 memory 与 Skill activation。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.3/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 依具体模型</span> · <span><b>是否有线上 A/B</b> 工业系统通常有，公开细节有限</span> · <span><b>阅读优先级</b> S+</span></div>
 <p><b>下一步：</b>统一 controller 输出 source、feature、memory、Skill、model、precision、budget、halt；目标函数从 accuracy 变为 <b>business value / dollar / latency / risk</b>。</p></div>
 
-<div class="paper"><div class="phase">2026.09.25 新增交叉主线 · Constraint-aware Retrieval</div><h2>One Semantic Space → Semantic Backbone + Constraint-specific Axes</h2>
+<div class="paper"><div class="phase">2026.09.26 新增交叉主线 · Constraint-aware Retrieval</div><h2>One Semantic Space → Semantic Backbone + Constraint-specific Axes</h2>
 <p><b>上一阶段解决了什么：</b>dense / hybrid retrieval 已能很好建模主题相关性。</p><p><b>留下什么问题：</b>时间、地理、新鲜度、价格、库存、可信度具有不同的几何与非对称关系，强行塞进单一 cosine space 会互相干扰。</p>
 <p><b>关键推进：</b>TEMPS 用独立 Gaussian temporal embedding + directional inclusion score，在冻结 semantic retriever 的前提下提升 retrieval 与 RAG。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
 <p><b>下一步：</b>query-dependent axis routing、multi-axis score calibration、multi-constraint ANN，以及 constraint branch 与 Semantic ID / generative retrieval 的统一候选账本。</p></div>
 
-</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Rolling Review updated 2026-09-25</div></footer></body></html>
+
+<div class="paper"><div class="phase">2026.09.26 新增主线 · Full-stack Generative Rec / Representation Choice</div><h2>Separate Cascade → Shared Backbone & State → Stage-specific Executors → Verifiable Reasoning</h2>
+<p><b>上一阶段解决了什么：</b>Semantic ID、Foundation Ranker 与 unified retrieval/ranking 已证明多个 stage 可以共享对象语言和大模型表示；PaMER / SkillApt 又把 memory、feature、model activation 推向统一 controller。</p>
+<p><b>留下什么问题：</b>“统一模型”如果意味着每个 stage 都跑相同计算，会破坏召回、粗排、精排各自的 latency 与 candidate-scale 约束；SID-AR 又承受量化误差和串行解码成本；reasoning-enhanced rec 缺少可靠 credit。</p>
+<p><b>关键推进：</b><a href="daily/2026-09-26.html#onetrans">OneTrans-V2</a> 共享 Transformer / user context，却保留 stage-specific feature 与 execution；线上 GMV +9.74%、同硬件 QPS 3.2×。<a href="daily/2026-09-26.html#xrec">X-Rec</a> 打开 continuous generative retrieval 分支：flow matching 直接生成 ANN trigger，较 SID-AR 吞吐 3.46×并已有 TikTok A/B。<a href="daily/2026-09-26.html#evorec">Evo-Rec</a> 与 <a href="daily/2026-09-26.html#credit">Retrieval-Grounded Credit</a> 则把 reasoning 的 ranking utility 与 span-level verifiability 纳入训练。</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.9/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 部分：Evo-Rec / Credit 开源；OneTrans-V2 / X-Rec 未发现</span> · <span><b>是否有线上 A/B</b> 是：OneTrans-V2 / X-Rec</span> · <span><b>阅读优先级</b> S+</span></div>
+<p><b>下一篇关键工作如何推进：</b>shared user-state contract、stage-aware MoE、SID + continuous trigger hybrid recall、ranking-aware / span-verifiable reward，以及将 shared backbone 与 controller / serving scheduler 联合设计。</p></div>
+
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Rolling Review updated 2026-09-26</div></footer></body></html>

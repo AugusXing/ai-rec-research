@@ -1,0 +1,107 @@
+<!doctype html><html lang="zh-CN"><head><title>2026.09.26｜AI × 推荐算法技术日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-09-26 AI 与推荐算法技术日报：OneTrans-V2、X-Rec、AgentX-Model、Evo-Rec、Retrieval-Grounded Credit、YouTube Cross-Task Relationships、Privileged Self-Practice。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main><div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.26</span><h1>推荐系统正在同时重写模型边界、召回表示、推理奖励与研发流程</h1><p class="lead">检索窗口：<b>2026-09-25 10:00 → 2026-09-26 10:00（Asia/Shanghai）</b>。口径包含过去 24 小时进入 arXiv 当日公告流或发生版本更新、并在今天形成可验证技术信号的工作。本期筛出 7 条：<b>OneTrans-V2 把召回/粗排/精排统一到共享 Transformer，却保留阶段执行语义；X-Rec 用连续 embedding flow 打破 SID-AR 召回的串行瓶颈；AgentX-Model 把推荐模型研究本身变成长周期 Agent 闭环；Evo-Rec 与 Retrieval-Grounded Credit 则把推荐 reasoning 是否真的有用变成可度量、可归因、可优化的问题。</b></p></div>
+<section><div class="wrap">
+<div class="callout"><strong>今日核心结论：</strong>生成式推荐正在从“一个大模型替代所有阶段”转向 <b>Shared Representation / State + Stage-specific Execution + Generative Retrieval + Verifiable Credit + Autonomous Research Loop</b>。OneTrans-V2 尤其关键：统一 backbone 不等于取消召回→粗排→精排，而是共享用户上下文并按阶段保留不同 candidate feature、计算路径与 SLA。</div>
+
+<div class="section-title"><h2>今日最值得看</h2><p>7 条 · 工业证据与推荐 / 搜索相关度优先</p></div><div class="grid">
+<div class="card"><span class="badge">S+ · Full-stack Generative Rec</span><h3>OneTrans-V2</h3><p>一个 Transformer 统一 retrieval / pre-rank / fine-rank；线上 GMV +9.74%，同硬件 serving QPS 3.2×。</p></div>
+<div class="card"><span class="badge">S+ · Generative Retrieval</span><h3>X-Rec</h3><p>连续 item embedding 空间 flow matching + ANN trigger；较 SID-AR 吞吐 3.46×，TikTok 垂类 engagement 累计 +4.1484%。</p></div>
+<div class="card"><span class="badge">S+ · Agentic Rec Research</span><h3>AgentX-Model</h3><p>Research Agent + Model Agent 长周期研究循环；560/636 个模型实验超过业务 AUC baseline，并进入多场景线上 A/B。</p></div>
+<div class="card"><span class="badge">S · Reasoning for Rec</span><h3>Evo-Rec</h3><p>按预测效用筛 reasoning，再用 NDCG-aware RL 优化；Games Recall@5 0.0710→0.0847，NDCG@10 0.0563→0.0746。</p></div>
+<div class="card"><span class="badge">S · Credit Assignment</span><h3>Retrieval-Grounded Credit</h3><p>把 reasoning 拆成可执行的 interest hypotheses，逐 span 验证能否召回目标，解决 exact-match SID reward 稀疏问题。</p></div>
+<div class="card"><span class="badge">A+ · Multi-task Ranking</span><h3>Cross-Task Relationships</h3><p>YouTube 在 Notifications、Homepage、Watch Next 显式学习 task relationship，验证 accuracy 与满意度收益。</p></div>
+<div class="card"><span class="badge">A+ · Agent Post-training</span><h3>Privileged Self-Practice</h3><p>多轮 Agent 中 privileged-information distillation 可能制造“无证据的自信”；PSP 把 PI 从 loss 移回 sampler。</p></div></div>
+
+<div class="section-title"><h2>技术趋势</h2><p>今天最值得持续追踪的 5 条主线</p></div><div class="grid">
+<div class="card"><h3>1. 统一不等于消灭 Cascade</h3><p>OneTrans-V2 共享 backbone / user context，但 retrieval、pre-rank、fine-rank 保留不同 candidate feature 与执行方式。工业最优解更可能是“表示统一、执行分层”。</p></div>
+<div class="card"><h3>2. Generative Retrieval 分成离散与连续两条路线</h3><p>Semantic ID 把 item 变成生成地址；X-Rec 直接生成 continuous embedding trigger。未来要比较 quantization error、decoding latency、index compatibility 与增量更新。</p></div>
+<div class="card"><h3>3. Reasoning 必须对 Ranking Utility 负责</h3><p>Evo-Rec 用 target likelihood 筛 reasoning，再用 NDCG reward；“更长 CoT”不是目标，“更好的 downstream ranking”才是。</p></div>
+<div class="card"><h3>4. Credit Assignment 走向可验证中间状态</h3><p>Retrieval-Grounded Credit 把兴趣假设变成真实 query，使中间 span 获得局部 credit；该范式可迁移到 search、rerank 与 Agent tool plan。</p></div>
+<div class="card"><h3>5. RecSys 研发流程开始 Agent 化</h3><p>AgentX-Model 把论文、历史实验、诊断、下一轮假设与线上反馈放进持续 research lineage，自动化对象从“写代码”升级成“研究决策”。</p></div></div>
+
+<div class="section-title"><h2>论文 / 进展优先级</h2><p>Research Impact Score：范式变化 25% / 工业证据 20% / 技术创新 20% / 推荐搜索相关度 15% / 后续空间 10% / 开放复现 10%</p></div>
+<table class="table"><thead><tr><th>#</th><th>工作</th><th>方向</th><th>Impact</th><th>最强证据</th><th>优先级</th></tr></thead><tbody>
+<tr><td>1</td><td><a href="#onetrans"><b>OneTrans-V2</b></a></td><td>Full-stack Generative Rec</td><td>9.9</td><td>GMV +9.74%；QPS 3.2×</td><td>S+</td></tr>
+<tr><td>2</td><td><a href="#xrec"><b>X-Rec</b></a></td><td>Continuous Generative Retrieval</td><td>9.8</td><td>SID-AR 吞吐 3.46×；线上 +4.1484%</td><td>S+</td></tr>
+<tr><td>3</td><td><a href="#agentx"><b>AgentX-Model</b></a></td><td>Agentic Rec Research</td><td>9.7</td><td>560/636 实验高于业务 AUC baseline</td><td>S+</td></tr>
+<tr><td>4</td><td><a href="#evorec"><b>Evo-Rec</b></a></td><td>Reasoning for Rec</td><td>9.3</td><td>Games NDCG@10 +32.5% rel.</td><td>S</td></tr>
+<tr><td>5</td><td><a href="#credit"><b>Retrieval-Grounded Credit</b></a></td><td>Credit Assignment</td><td>9.2</td><td>span-level verifiable reward</td><td>S</td></tr>
+<tr><td>6</td><td><a href="#cross"><b>Cross-Task Relationships</b></a></td><td>Multi-task Ranking</td><td>9.0</td><td>YouTube 三大 surface 生产验证</td><td>A+</td></tr>
+<tr><td>7</td><td><a href="#psp"><b>Privileged Self-Practice</b></a></td><td>Agent RL</td><td>8.8</td><td>AppWorld / SWE-bench 多模型优于 GRPO</td><td>A+</td></tr>
+</tbody></table>
+
+<div class="paper" id="onetrans"><div class="phase">Deep Dive 01 · Full-stack Generative Recommendation</div><h2>OneTrans-V2：全链路统一不是删掉阶段，而是共享表示、共享状态、保留阶段语义</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.9/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<h3>背景 / 业务动机</h3><p>经典推荐 cascade 的结构性浪费，是 retrieval、pre-rank、fine-rank 分别维护用户编码、模型参数、训练目标和 serving stack；同一段长行为会被重复编码，阶段间 representation 与 supervision 也无法充分共享。</p>
+<h3>现有问题</h3><p>简单把三阶段塞进同构大模型又不现实：召回面对百万级 catalog，粗排面对数万候选并受极窄 SLA 约束，精排候选少但特征更重。统一不能以牺牲 stage-specific execution 为代价。</p>
+<h3>技术方案与关键模块</h3><p><b>Shared User Context：</b>用户行为序列只编码一次。<b>Stage-specific Candidate Features：</b>各阶段仍读取适配特征。<b>Joint Training + In-model KD：</b>三阶段联合训练，并让 fine-rank 向 pre-rank 蒸馏。<b>Sparse MoE + μP：</b>扩容量、控制 active compute。<b>DCGR：</b>先生成表示业务交互意图的 decision prefix，再条件生成 item SID，把多条召回渠道收敛到一个 generative process。<b>SNT：</b>围绕 lifelong sequence 组织样本，摊销 history encoding。</p>
+<h3>训练方法</h3><p>训练原子从独立 request 向 sequence-native 迁移，使同一用户历史可跨 exposure 复用；joint objective 让 retrieval 表示得到 downstream supervision，fine-rank 知识通过 distillation 传给 pre-rank。论文报告 SNT 在相同硬件下训练速度约提升 4.4×。</p>
+<h3>推理 / Serving</h3><p>线上仍是 retrieval → pre-rank → fine-rank，但共享 user context cache。Retrieval 使用 DCGR + beam search；pre/fine-rank 非自回归打分。Serving 还做 decision-prefix 枚举、两阶段 top-k、kernel fusion 与 FlashAttention 风格优化。核心是：<b>架构统一，但 SLA、候选收缩和回滚边界仍然存在。</b></p>
+<h3>实验 / 离线指标</h3><p>论文以已部署 cascade 约 275 GFLOPs/request 为参照。OneTrans-V2_S 约 239 GFLOPs 已超过各阶段 baseline；更大 V2_L 在 retrieval HR、pre-rank 与 fine-rank UAUC 上继续提升，说明收益跨越全链路。</p>
+<h3>线上 A/B / 效率收益</h3><p>完整部署报告 <b>GMV +9.74%</b>；同硬件 serving stack 达到被替换 cascade 的 <b>3.2× QPS</b>。这是目前“全链路统一推荐”最强的工业证据之一。</p>
+<h3>优劣势 / 适用场景 / 局限</h3><p>相对独立 cascade，它减少重复编码、统一 representation、允许跨阶段蒸馏；相对完全端到端单阶段生成，它保留 SLA 与回滚能力。适合长序列昂贵、多阶段重复度高的大规模平台。局限是闭源、训练/serving 耦合更强，共享 backbone 的故障域、版本治理、梯度冲突和 catalog 增量仍复杂。</p>
+<h3>未来方向 / 工程与职业启发</h3><p>下一步值得押注 stage-aware MoE、shared state TTL/versioning、dynamic candidate budget、SID 与 continuous trigger 混合召回。推荐工程师需要从“只负责精排模型”扩展到 <b>shared backbone、user-state cache、generative retrieval、stage-specific serving、GPU/QPS accounting</b>。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.28589">原始 Paper</a>；② 官方项目页 / 技术博客：未发现独立页面；③ 官方代码 / 模型 / 数据：未发现公开仓库；④ 中文 / 高质量第三方解读：暂未找到可靠中文精读，建议直接读原文。</p></div>
+
+<div class="paper" id="xrec"><div class="phase">Deep Dive 02 · Generative Retrieval / Continuous Embedding</div><h2>X-Rec：不生成 Semantic ID，直接生成 ANN 检索空间里的连续 trigger</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.8/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未发现官方代码</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<h3>背景 / 现有问题</h3><p>传统 U2I 将用户压成一个或少数 deterministic vectors，难表达多兴趣；SID-AR 能学习多峰分布，但量化会带来误差，自回归 token 解码又限制吞吐。</p>
+<h3>技术方案</h3><p><b>Anchor Conditioning</b> 先确定粗语义区域，再做细粒度连续生成；<b>Riemannian Flow Matching</b> 让生成轨迹匹配单位超球面的 item embedding 几何；<b>Late-interaction Diffusion Transformer</b> 只重复最后一层 velocity estimation，使 history encoding / KV 可复用。</p>
+<h3>训练方法</h3><p>先大规模预训练、再 SFT，利用用户历史作为 context、目标 item embedding 作为 flow 终点。论文消融显示去掉预训练后 recall 大幅下降，说明连续生成式召回同样高度依赖行为先验。</p>
+<h3>推理 / Serving</h3><p>在线生成多个 embedding triggers，每个 trigger 直接查询现有 ANN index。固定候选预算下，多 trigger × 少邻居通常优于单 trigger × 多邻居，说明覆盖不同兴趣模式比单点深挖更重要。</p>
+<h3>实验 / 线上 A/B / 效率</h3><p>Streaming benchmark 上，X-Rec 匹配 SID-AR retrieval quality，同时推理吞吐达到 SID-AR 的 <b>3.46×</b>。作为 TikTok 某垂类的新 retrieval source，两次连续上线带来垂类 engagement 累计 <b>+4.1484%</b>，general engagement 累计 <b>+0.0111%</b>。</p>
+<h3>优劣势 / 局限 / 未来方向</h3><p>相对 U2I，多峰分布更强；相对 SID-AR，无离散量化、可复用 ANN、吞吐更高，但 flow 仍有多步迭代与数值稳定问题。下一步重点是 SID + continuous trigger hybrid、query-aware trigger count、few-step flow、embedding/index 同步与在线 budget routing。</p>
+<h3>工程与职业启发</h3><p>召回工程师需要同时掌握 generative modeling、metric geometry、ANN、multi-interest modeling 与 GPU inference；“生成式召回”未来很可能并非单一 SID 范式。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.29180">原始 Paper</a>；② 官方项目页 / 技术博客：未发现；③ 官方代码 / 模型 / 数据：未发现公开仓库；④ 暂未找到可靠中文精读，可辅助查看 <a href="https://arxiv-troller.com/paper/3313158/">arXiv Troller 条目</a>。</p></div>
+
+<div class="paper" id="agentx"><div class="phase">Deep Dive 03 · Agentic Research / Industrial Recommender</div><h2>AgentX-Model：Agent 接管的不是“写一次代码”，而是推荐算法研发的长期实验决策链</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.7/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未发现本工作官方代码</span> · <span><b>是否有线上 A/B</b> 是</span> · <span><b>阅读优先级</b> S+</span></div>
+<h3>背景 / 业务动机</h3><p>推荐研发真正的瓶颈是多轮循环：读论文与历史实验 → 提假设 → 改实现 → 跑离线 → 解释失败 → 继续 follow-up → 决定是否 A/B。单轮 coding agent 只覆盖中间一段，无法累积研究状态。</p>
+<h3>技术方案与关键模块</h3><p><b>Research Agent</b> 从论文、实验与业务上下文形成 proposal 并 review；<b>Model Agent</b> 在 sandbox 中多轮实验，返回代码、指标和 unresolved questions。下一步行动被归纳成 <b>Reproduce / Follow-up / Composition / Diagnose</b>，其中 Diagnose 专门为失败与业务反馈收集修复证据。</p>
+<h3>训练 / 推理 / Serving</h3><p>核心学习对象是 research lineage：hypothesis、代码、测量、失败与后续问题。它不是在线推荐 serving，而是研发控制平面，因此工程重点是 sandbox isolation、实验依赖、结果回传与 offline/online metric 接口。</p>
+<h3>实验 / A/B / 效率</h3><p>生产评估中，<b>636</b> 个完成的 model-changing experiments 有 <b>560</b> 个 AUC 高于业务 baseline。最新 5 个线上 A/B 报告包括获客效率约 +10–15%、目标人群广告消耗约 +15–20%、watch time +0.3–0.8%；其中 watch-time 模型约少 10% FLOPs 与参数。</p>
+<h3>优劣势 / 局限</h3><p>相对 AutoML，action space 不只是超参，还包括复现、组合、诊断和模型代码；相对 coding agent，它能跨实验继续研究。最大风险是 proxy misalignment：若 sandbox / offline metric 不能代表线上价值，Agent 会更快地优化错误目标。</p>
+<h3>未来方向 / 工程与职业启发</h3><p>重点看 research-budget allocation、因果诊断、失败归因、online feedback delay 与 stopping criterion。算法工程师的壁垒将更多转向 <b>定义研究空间、构造可靠评价、设计 sandbox、读懂 lineage、识别 proxy 偏差</b>。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.30001">原始 Paper</a>；② 官方项目页 / 博客：未发现；③ 官方代码：未发现本工作公开仓库；④ 暂无可靠中文精读，可参考 <a href="https://paperz.arrangedbits.com/papers/d58da0dc-7202-463e-9890-81b7373d3a21">Paperz 全文索引</a>。</p></div>
+
+<div class="paper" id="evorec"><div class="phase">Deep Dive 04 · Reasoning-enhanced Generative Recommendation</div><h2>Evo-Rec：推荐 reasoning 的目标不是“像解释”，而是把目标 item 推到更高排名</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.3/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<h3>背景 / 现有问题</h3><p>Reasoning-enhanced generative rec 常默认“先总结用户兴趣再生成 SID”更好，但错误 reasoning 会误导后续解码。普通 SFT 无法区分有用和无用 CoT，binary outcome reward 又过粗。</p>
+<h3>技术方案 / 训练</h3><p><b>Stage 1</b> 做 SID–language / behavior alignment；<b>Stage 2</b> 对同一 history 采样多条 reasoning，按其相对 history-only 对 ground-truth SID likelihood 的增益选 Best-of-N 做 SFT；<b>Stage 3</b> 对 self-generated reasoning 执行 trie-constrained catalog beam search，用 ground-truth item 的 NDCG / rank 构造 reward，再以 GRPO 优化 reasoning policy。</p>
+<h3>推理 / Serving</h3><p>在线 reasoning 后做 trie-constrained beam search，保证 SID 落在合法 catalog。生产上应配合 hard-case routing 或只在高价值流量启用，避免所有请求都支付 reasoning token 成本。</p>
+<h3>实验 / 离线指标</h3><p>Amazon Games 上相对 strongest baseline：<b>Recall@5 0.0710→0.0847（+19.3% relative）</b>，<b>NDCG@10 0.0563→0.0746（+32.5% relative）</b>。NDCG 增益更大，符合直接优化 ranking position 的设计。</p>
+<h3>线上 / 效率 / 局限</h3><p>无线上 A/B。论文观察到 RL 后 reasoning 更短但效果更强，说明有效信息密度比链长度重要。主要局限是公开 Amazon offline benchmark 与较小 catalog；还需真实 latency / cost 与 exposure bias 校准。</p>
+<h3>未来方向 / 工程启发</h3><p>值得研究 reasoning router、listwise business reward、counterfactual utility 与 online debias。生成式推荐工程师应重点掌握 <b>reward design、constrained decoding、ranking metric as RL signal、trajectory selection</b>。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.29973">原始 Paper</a>；② 官方项目页：未单独发现；③ <a href="https://github.com/mengdanzhu/evo-rec">官方代码仓库</a>；④ 暂未找到可靠中文精读，可参考 <a href="https://paperz.arrangedbits.com/papers/61053c30-d5f5-4310-838f-251b4293d7c6">Paperz 全文索引</a>。</p></div>
+
+<div class="paper" id="credit"><div class="phase">Deep Dive 05 · Verifiable Credit Assignment</div><h2>From Interests to Semantic IDs：把兴趣推理变成可执行 query，给 reasoning span 单独发奖励</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<h3>背景 / 问题</h3><p>Exact-match SID reward 在大 catalog 中太稀疏：整个 rollout group 都 miss 时 advantage 为 0；即使最终 reward 相同，不同 reasoning trace 的质量也无法区分。</p>
+<h3>技术方案 / 训练</h3><p>把 trace 拆成 <b>history summary → interest hypotheses → final SID</b>。冻结 retriever，把每个 interest hypothesis 真正执行成 catalog query；query top-K 命中 target，就只给对应 hypothesis span 正向 retrieval advantage，且 retrieval channel 不更新 final SID span。</p>
+<h3>推理 / Serving</h3><p>额外 query 主要发生在训练时；线上可保留训练后的 reasoning policy 与 SID decoder，而不必执行全部 attribution query，因此方法更像“训练时 verifier”。</p>
+<h3>实验 / 指标</h3><p>三个 Amazon Reviews 数据集上均报告稳定改进。Video Games oracle 分析进一步显示：若从生成兴趣中选到 target-relevant query，再条件生成 SID，Recall 与 ranking 还有明显空间。</p>
+<h3>优劣势 / 局限</h3><p>相对 exact-match RL，它更密、更局部、更可解释；相对额外 reward model，它直接复用冻结 retriever，工程更简单。但 verifier 偏差会被写入 policy，top-K hit 本身仍是粗粒度奖励。</p>
+<h3>未来方向 / 工程启发</h3><p>下一步可以做 graded retrieval reward、multi-retriever consensus、counterfactual delete-span 与 online click/conversion causal credit。通用原则是：<b>不要只奖励最终答案，把中间决策变成可执行、可验证的小任务。</b></p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.29983">原始 Paper</a>；② 官方项目页：未单独发现；③ <a href="https://github.com/YuFan-Microsoft/Retrieval-Grounded-Credit-Assignment-for-Generative-Recommendation">官方代码仓库</a>；④ 暂无可靠中文精读，可参考 <a href="https://paperz.arrangedbits.com/papers/e91ab7b9-1608-47a1-945f-34abca7fc938">Paperz 全文索引</a>。</p></div>
+
+<div class="paper" id="cross"><div class="phase">Watch 06 · Multi-task Ranking / YouTube</div><h2>Learned Cross-Task Relationships：多任务推荐开始显式学习任务关系</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否</span> · <span><b>是否有线上 A/B</b> 有生产实验 / 满意度验证</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>技术方案：</b>不直接建模高维完整 joint label distribution，而通过 targeted pairwise task relationships 近似任务标签联合分布，以较可控成本实现 transfer learning。Google 在 YouTube Notifications、Homepage、Watch Next 三类生产推荐 surface 验证 accuracy 与 satisfied user engagement 改善。</p>
+<p><b>局限与启发：</b>公开摘要尚未给出完整线上增量与 serving cost，但它明确提示 CTR、CVR、watch time、满意度等目标不能只依赖共享底座隐式协同；显式 task-relation head 可能是下一轮多任务建模机会。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.28776">Paper</a>；② <a href="https://research.google/pubs/learned-task-relationships-in-multi-task-models/">Google Research 官方页面</a>；③ 官方代码 / 数据：未发现；④ 中文精读：暂未找到可靠来源。</p></div>
+
+<div class="paper" id="psp"><div class="phase">Watch 07 · Agent RL / Post-training</div><h2>Privileged Self-Practice：老师知道更多，不代表应该把老师的 token 监督直接蒸馏给学生</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未确认</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p><b>核心：</b>多轮 Agent 的 on-policy self-distillation 若 teacher 看到 student 推理时不可见的 privileged information，会教出“无证据的自信”。PSP 把 PI 从 loss 移到 sampler：失败任务由 analyzer 写短 instruction，带 instruction 重新采样，再用不变的 GRPO objective 学习。</p>
+<p><b>结果：</b>AppWorld 与 SWE-bench Verified、三个 student model 上稳定超过 plain GRPO，最高报告 AppWorld task-goal completion +65%、SWE-bench resolved rate +61%。对推荐自动实验 Agent 的启发是：专家知识更适合改变练习分布，而不是让 student 模仿拥有不可见信息的 teacher logits。</p>
+<p><b>资源：</b>① <a href="https://arxiv.org/abs/2609.29051">Paper</a>；② 官方项目页 / 技术博客：未发现；③ 官方代码：未确认；④ 中文精读：暂未找到可靠来源。</p></div>
+
+<div class="paper"><div class="phase">今日工程行动</div><h2>对推荐 / 搜索算法工程最有价值的 5 件事</h2><ol>
+<li>第一优先级精读 OneTrans-V2，重点看 shared context、stage-specific execution、SNT 与 serving co-design。</li>
+<li>在自己的召回链路做 SID vs continuous trigger 的对照：Recall、diversity、latency、index update、cold item、成本一起看。</li>
+<li>生成式推荐 RL 不要停在 exact-match；至少引入 ranking-aware reward。</li>
+<li>把中间 reasoning 变成 query / tool action / candidate set，让训练信号可验证。</li>
+<li>开始建设 hypothesis → code diff → offline → A/B → diagnosis 的实验 lineage，为未来 Agent 化研发准备状态。</li>
+</ol></div>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Daily brief updated 2026-09-26</div></footer></body></html>
