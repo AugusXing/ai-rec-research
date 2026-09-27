@@ -1,1 +1,91 @@
-<!doctype html><html lang="zh-CN"><head><title>2026.09.27｜AI × 推荐算法技术日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"></head><body><header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header><main><div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.27</span><h1>Routing / Serving 的工程正确性正在变成算法能力</h1><p class="lead">检索窗口：2026-09-26 10:28 → 2026-09-27 10:28（Asia/Shanghai）。arXiv 周末没有新的日常公告批次，因此今天严格按过去24小时筛选官方 GitHub 的高价值工程进展；另补读两篇刚进入公告流的工业论文，但不计入24小时新增。</p></div><section><div class="wrap"><div class="callout"><strong>今日核心结论：</strong>下一代 controller 不只是选择模型，而要联合管理 Quality、Cost、Continuity、Determinism、Cache State、Precision 与 Hardware Compatibility。</div><div class="paper"><h2>今日最值得看</h2><p>1. vLLM Semantic Router：cost-aware calibration。2. vLLM：batch invariance。3. TensorRT-LLM：speculative decoding seed reproducibility。4. SGLang：component-aware LMCache。5. Semantic Router：task continuity。6. SGLang：ROCm MXFP8 backend。7. vLLM Kimi-K3：SiTUv2 precision selection。</p></div><p><a class="button" href="../index.html">返回首页</a></p></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Daily updated 2026-09-27</div></footer></body></html>
+<!doctype html><html lang="zh-CN"><head><title>2026.09.27｜AI × 推荐算法技术日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="过去24小时 AI 与推荐算法：cost-aware model routing、batch invariance、speculative decoding reproducibility、component-aware KV cache、hardware-aware MoE；周末补读 SEEK 与 ScalarLens。"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main><div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.09.27</span><h1>周末没有新 arXiv 批次，但 Routing / Serving 的工程正确性正在变成算法能力</h1><p class="lead">检索窗口：<b>2026-09-26 10:28 → 2026-09-27 10:28（Asia/Shanghai）</b>。arXiv 周末无新的日常公告批次，因此严格 24 小时内筛出的 7 条有效增量主要来自官方 GitHub：多模型路由开始显式优化 accuracy × cost；vLLM / TensorRT-LLM 同时暴露 determinism 的 runtime 边界；SGLang 则继续把 cache 与 MoE execution 做成 component-aware、hardware-aware。文末另设两篇 Weekend Deep Dive（SEEK、ScalarLens），明确不计入 24 小时新增。</p></div>
+<section><div class="wrap"><div class="callout"><strong>今日核心结论：</strong>下一代 controller 不只是“选哪个模型”，而要联合管理 <b>Quality、Cost、Continuity、Determinism、Cache State、Precision、Hardware Compatibility</b>。模型层收益如果没有这些 runtime contract，很容易在线上被吞掉。</div>
+
+<div class="section-title"><h2>今日最值得看</h2><p>严格过去 24 小时 · 7 条</p></div><div class="grid">
+<div class="card"><span class="badge">S+ · Model Routing</span><h3>Semantic Router · Cost-aware Calibration</h3><p>λ-scan：score = accuracy − λ × normalized cost；在质量损失容忍度内寻找最大成本下降，并生成 routing config。</p></div>
+<div class="card"><span class="badge">S · Serving Correctness</span><h3>vLLM · Batch Invariance</h3><p>batch invariance 下禁用 sequence parallelism / async TP，因为 reduce-scatter 顺序随 batch 改变，会破坏确定性。</p></div>
+<div class="card"><span class="badge">S · Spec Decode</span><h3>TensorRT-LLM · Seed Reproducibility</h3><p>recycled slot 的新 seeded request 重置 RNG counter，使结果不再依赖 slot history；batch composition 仍是边界。</p></div>
+<div class="card"><span class="badge">S · KV / Memory Cache</span><h3>SGLang · Component-aware LMCache</h3><p>从单一 SWA cursor 升级到 component-level eviction cursor，并支持 per-cache tree core backend。</p></div>
+<div class="card"><span class="badge">S · Router Observability</span><h3>Semantic Router · Task Continuity</h3><p>新增 task 内 model-switch、decision-change、switched/unswitched accuracy 等指标。</p></div>
+<div class="card"><span class="badge">A+ · Hardware-aware MoE</span><h3>SGLang · ROCm MXFP8</h3><p>ROCm + MXFP8 显式 Triton backend 不再错误回落到 CUDA/FlashInfer 路径。</p></div>
+<div class="card"><span class="badge">A+ · Low-bit MoE</span><h3>vLLM · Kimi-K3 SiTUv2</h3><p>ROCm/AITER 的 SiTUv2 从开关细化为 a4w4 / a8w4 / a16w4 三种 activation mode。</p></div></div>
+
+<div class="section-title"><h2>技术趋势</h2><p>今天最值得持续追踪的 5 条主线</p></div><div class="grid">
+<div class="card"><h3>Router → Utility Optimizer</h3><p>不再只预测“哪个模型更准”，而是显式优化质量约束下的成本、latency 与流量分配。</p></div>
+<div class="card"><h3>Determinism → Serving Contract</h3><p>seed、batch、通信归约、slot lifecycle 都可能改变输出；可复现性需要独立 mode 与测试。</p></div>
+<div class="card"><h3>Cache → Component State System</h3><p>SWA、Mamba、外部 KV、不同 backend 并存后，每个 component 都需要自己的 cursor/version。</p></div>
+<div class="card"><h3>Precision × Backend × Hardware</h3><p>MXFP8 / A4W4 / A8W4 与 Triton / AITER / FlashInfer 的可用性必须联合建模。</p></div>
+<div class="card"><h3>周末策略：补工业精读</h3><p>没有新 arXiv 批次时，不凑论文数量；补读 Kuaishou SEEK 与 CTR 数值表示 ScalarLens。</p></div></div>
+
+<div class="section-title"><h2>过去 24 小时进展优先级</h2><p>Research Impact Score：范式变化 25% / 工业证据 20% / 技术创新 20% / 推荐搜索相关度 15% / 后续空间 10% / 开放复现 10%</p></div>
+<table class="table"><thead><tr><th>#</th><th>进展</th><th>Impact</th><th>方向</th><th>优先级</th></tr></thead><tbody>
+<tr><td>1</td><td><a href="#router-cost">Cost-aware Model Eval</a></td><td>9.4</td><td>Model Routing</td><td>S+</td></tr>
+<tr><td>2</td><td><a href="#batch">vLLM Batch Invariance</a></td><td>9.1</td><td>Serving / Repro</td><td>S</td></tr>
+<tr><td>3</td><td><a href="#trt">TRT-LLM Spec Decode Repro</a></td><td>9.0</td><td>Spec Decode</td><td>S</td></tr>
+<tr><td>4</td><td><a href="#cache">SGLang LMCache Components</a></td><td>8.9</td><td>KV / Memory</td><td>S</td></tr>
+<tr><td>5</td><td><a href="#continuity">Router Task Continuity</a></td><td>8.8</td><td>Observability</td><td>S</td></tr>
+<tr><td>6</td><td><a href="#mxfp8">SGLang ROCm MXFP8</a></td><td>8.6</td><td>Hardware-aware Serving</td><td>A+</td></tr>
+<tr><td>7</td><td><a href="#situv2">vLLM SiTUv2 Precision</a></td><td>8.5</td><td>Low-bit MoE</td><td>A+</td></tr>
+</tbody></table>
+
+<div class="paper" id="router-cost"><div class="phase">Engineering Deep Dive 01 · Model Routing</div><h2>Semantic Router：把多模型评测升级成 cost-aware policy calibration</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.4/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S+</span></div>
+<h3>背景 / 现有问题</h3><p>多模型系统若只优化 accuracy，会不断把流量推向更贵模型；只按 difficulty/confidence 路由又没有成本边界。推荐里的召回源、feature group、ranker depth、reasoning depth 也存在同一矛盾。</p>
+<h3>技术方案</h3><p>新工具对每个 task bucket / model 统计 accuracy 与 cost，计算 <b>score = acc − λ × normalized cost</b> 并扫描 λ；在相对 λ=0 的 accuracy drop 不超过容忍度（默认 3pp）时选择成本下降最大的点。输出 mean cost/task 与各模型流量 share，并可生成 routing config；同时加入 evaluation-quality check 与 reasoning-mode eval。</p>
+<h3>训练 / Serving / 实验</h3><p>这不是重训基座模型，而是 post-hoc policy calibration。复杂 frontier 搜索放在线下，线上只执行轻量 config。本次合入没有统一 benchmark 数字，示例成本下降不能当正式结论；价值在于把 <b>质量损失、成本、流量份额</b> 纳入同一评测合同。</p>
+<h3>优劣势 / 局限 / 未来方向</h3><p>比 static fallback 更能表达 ROI，比纯 difficulty router 更接近生产目标。当前仍是静态 λ 与离线 bucket，尚未纳入 cache hit、queue、P99、业务价值和 switch cost。下一步应做 request-dependent shadow price、contextual bandit / constrained RL。</p>
+<h3>工程启发</h3><p>推荐 / 搜索 controller 可统一输出 <b>source、K、feature、model、precision、reasoning depth、halt</b>，目标从 AUC/NDCG 扩展到 value / cost / latency / risk。</p>
+<h3>资源</h3><p>① Paper：无独立论文；② <a href="https://github.com/vllm-project/semantic-router/commit/6c8e17bedb32af7be2b059fdf55d53af37177591">官方 commit #4007</a>；③ <a href="https://github.com/vllm-project/semantic-router">官方代码仓库</a>；④ 暂无可靠中文专项精读。</p></div>
+
+<div class="paper" id="batch"><div class="phase">Engineering Deep Dive 02 · Determinism</div><h2>vLLM Batch Invariance：通信优化会进入“同输入是否可复现”的语义</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.1/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p><b>问题：</b>sequence parallel / async TP 会把 all-reduce + RMSNorm 改成 reduce-scatter，而浮点归约顺序随 batch 改变，误差会被 autoregressive decoding 放大。<b>方案：</b>batch invariance 模式暂时禁用 SP / async TP，并补 TP regression test。<b>Serving：</b>这是 correctness-first contract，没有公开统一吞吐损失；生产应同时 benchmark reproducibility 与 P99/QPS。<b>工程启发：</b>A/B 回放、蒸馏、生成式推荐与 RL reward reproduction 都需要记录 determinism mode。</p>
+<h3>资源</h3><p>① Paper：无；② <a href="https://github.com/vllm-project/vllm/commit/0c87a197b856a25670cc711456533e5ef9f94d9f">官方 commit #56377</a>；③ <a href="https://github.com/vllm-project/vllm">官方仓库</a>；④ 暂无可靠中文专项解读。</p></div>
+
+<div class="paper" id="trt"><div class="phase">Engineering Deep Dive 03 · Speculative Decoding</div><h2>TensorRT-LLM：seed 可复现还不够，slot lifecycle 也必须进入 RNG 状态管理</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p>过去 recycled slot 会保留旧 RNG counter，新 seeded request 因而依赖 slot history。修复新增 <b>slot → request_id owner</b>：新请求接管 slot 时 counter 归零，使同 seed 不再依赖历史请求。代码仍明确说明 batch composition 可能改变 per-row subsequence，因此真正的 stochastic contract 包含 seed、slot、batch row、speculation schedule 与 cache state。</p>
+<h3>资源</h3><p>① Paper：无；② <a href="https://github.com/NVIDIA/TensorRT-LLM/commit/b88149e535265b52e8ddb1339e35710e10b7ecf8">官方 commit #19601</a>；③ <a href="https://github.com/NVIDIA/TensorRT-LLM">官方仓库</a>；④ 暂无可靠中文专项解读。</p></div>
+
+<div class="paper" id="cache"><div class="phase">Engineering Deep Dive 04 · KV / Memory State</div><h2>SGLang LMCache：多组件 cache 需要各自的 cursor / backend</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p>统一 prefix cache 同时承载 SWA、Mamba state、外部 LMCache 等组件后，单一 evicted sequence length 容易造成状态错位。本次改为 <b>component_evicted_seqlens</b>，新增 AUXILIARY_SWA，并允许每个 cache 指定 tree core backend。没有速度数字，重点是状态一致性。对推荐的类比是：长期兴趣、session、memory、生成 state 也应拥有独立 version / cursor / TTL。</p>
+<h3>资源</h3><p>① Paper：无；② <a href="https://github.com/sgl-project/sglang/commit/fc9e1c8d296216ff1e216dfbe7286ef392448d28">官方 commit #41328</a>；③ <a href="https://github.com/sgl-project/sglang">官方仓库</a>；④ 暂无可靠中文专项解读。</p></div>
+
+<div class="paper" id="continuity"><div class="phase">Engineering Signal 05 · Router Observability</div><h2>Task Continuity：单请求最优不等于 trajectory 最优</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<p>sr-bench 新增 multi-request task 的 switched_tasks、switched/unswitched accuracy、model_switches、mean/max switches、decision_changed_tasks。频繁切模型会破坏 cache locality、风格一致性与成本可预测性；下一步应把 switch cost 写进 routing objective。推荐系统也可约束同 session 内召回源、ranker 路径或 feature regime 的频繁切换。</p>
+<p><b>资源：</b><a href="https://github.com/vllm-project/semantic-router/commit/923554c3aff34dd77d65d3bd91829723ae99dc80">官方 commit #4239</a> · <a href="https://github.com/vllm-project/semantic-router">官方仓库</a>；无独立论文 / 暂无中文专项精读。</p></div>
+
+<div class="paper" id="mxfp8"><div class="phase">Engineering Signal 06 · Hardware-aware MoE</div><h2>SGLang ROCm MXFP8：precision 与 backend 必须联合决策</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.6/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★☆☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p>ROCm + MXFP8 现在尊重显式 Triton 选择，不再误回落到依赖 CUDA/FlashInfer 的路径。生产 controller 应把 quantization、hardware architecture、kernel backend、MoE layout 放进同一兼容矩阵。资源：<a href="https://github.com/sgl-project/sglang/commit/425a1f8f247d0cc17f2a3f3c2dba6c0bdf936552">官方 commit #41377</a>。</p></div>
+
+<div class="paper" id="situv2"><div class="phase">Engineering Signal 07 · Low-bit MoE</div><h2>vLLM Kimi-K3 SiTUv2：a4w4 / a8w4 / a16w4 成为显式 activation mode</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.5/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★☆☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 是</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> A+</span></div>
+<p>ROCm/AITER SiTUv2 由布尔开关细化为三档 activation precision，并清理冲突 override。长期方向是 request / phase / hardware-aware precision routing。资源：<a href="https://github.com/vllm-project/vllm/commit/3137ff07739f0cd19e06119506c6432a4a7e77ad">官方 commit #58201</a>。</p></div>
+
+<div class="section-title"><h2>Weekend Deep Dive · 延续精读</h2><p>以下两篇不计入过去 24 小时新增。</p></div>
+<div class="paper" id="seek"><div class="phase">Paper Deep Dive 01 · Industrial Search Evaluation</div><h2>SEEK：把评估规则从模型参数拆成可路由、可演进的 Skill Bank</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.6/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未检索到官方仓库</span> · <span><b>是否有线上 A/B</b> 否（已生产部署并有 24k 在线样本评测）</span> · <span><b>阅读优先级</b> S+</span></div>
+<h3>背景 / 现有问题</h3><p>工业搜索需要 page-level evaluator 作为训练与诊断监督。通用 LLM judge 把所有规则塞进 prompt 会产生 criterion interference；把规则 post-train 进参数，又会把每次规则更新绑定到昂贵重训。</p>
+<h3>技术方案与训练</h3><p><b>Skill Bank</b> 外部化 evaluation criteria；<b>Skill Router</b> 为 query–list pair 只选相关 Skill；<b>Listwise Evaluator</b> 判断整页质量并输出 relevance / quality / diversity / authority / heterogeneous attribution；<b>Evolution Controller</b> 从生产错误中抽取 recurring knowledge gap，局部修订 guidance，并用 replay gate 防止伤害旧流量。训练先用 human label + teacher 生成 routing label 与 evidence-grounded trajectory 做 SFT，再用 DAPO 联合 task correctness、skill diagnosis 与 conflict penalty。</p>
+<h3>实验 / 离线指标</h3><p>Qwen3-8B 为 evaluator backbone。相对同 backbone SFT+GRPO，三分类 Macro-F1 <b>0.6418 → 0.6555</b>；binary accuracy <b>0.7520</b>。五维 attribution recall：0.8621 / 0.8102 / 0.6210 / 0.5240 / 0.4305。All Skills 的 accuracy 0.691、Attr.F1 0.664、平均 12 skills；Dynamic Routing 达 <b>0.752 / 0.743 / 3.4 skills</b>；Oracle Routing 0.768 / 0.758 / 3.1 skills。</p>
+<h3>生产评测 / Serving / 成本</h3><p>训练使用 H800，生产 inference 部署于 L20 cluster。系统已部署 Kuaishou；24,000 个线上 query–list pairs 上，外包人工 review 36.5h、accuracy 0.783；SEEK 为 <b>0.9h、40.6× speedup、accuracy 0.842</b>。这不是流量 A/B，因此 A/B 字段标记为否。</p>
+<h3>优劣势 / 局限 / 未来方向</h3><p>优势是规则可增量、context 更短、attribution 更强；代价是维护 Skill ontology、teacher data 与 replay set。尚缺长期 skill-bank 膨胀、规则冲突治理与跨 vertical 迁移。值得押注 skill utility calibration、hierarchical routing、counterfactual attribution 与 active learning。</p>
+<h3>工程启发</h3><p>最重要的范式是 <b>knowledge externalization + conditional activation + replay-gated evolution</b>。复杂业务规则、重排约束、feature policy 都可能从硬编码逻辑变成可检索/可激活 Skill。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.29803">原始 Paper</a>；② 官方项目/博客：未发现；③ 官方代码/模型/数据：GitHub 精确检索未发现官方仓库；④ 暂无可靠中文精读，补充阅读：<a href="https://paperz.arrangedbits.com/papers/b5ff9994-a577-4a0b-b63d-d065000f630e">Paperz 全文索引</a>、<a href="https://therevision.co/articles/kuaishou-deploys-ai-evaluator-to-grade-its-own-search-results">The Revision 简析</a>。</p></div>
+
+<div class="paper" id="scalarlens"><div class="phase">Paper Deep Dive 02 · CTR / Ranking Representation</div><h2>ScalarLens：数值特征的“稳定坐标”与“上下文响应”应解耦</h2>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★☆</span> · <span><b>创新性</b> ★★★★★</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 否 / 未检索到官方仓库</span> · <span><b>是否有线上 A/B</b> 否</span> · <span><b>阅读优先级</b> S</span></div>
+<h3>背景 / 问题</h3><p>价格、时长、频次等数值通常被固定 normalization / embedding 表示，但同一个数在不同 user/item/context 下可能有相反点击含义。论文在 Criteo 观察到：去除 additive main effect 后，同 numerical interval 的 residual click evidence 仍会随上下文改变符号。</p>
+<h3>技术方案 / 训练 / Serving</h3><p><b>Monotone Local Mesh</b> 只由 focal scalar 构造稳定 coordinate；<b>Bounded Low-rank Dynamics</b> 根据 context 生成响应变化，而不移动 coordinate。它作为 numerical representation layer 插入现有 CTR backbone，沿用 CTR objective 端到端训练；推理无需依赖外部 normalization 统计同步，但会增加 contextual low-rank branch。</p>
+<h3>实验</h3><p>主评测 <b>1,539 runs</b>，覆盖 19 种表示、3 个数据集、9 个 backbone、3 个 seed。原始数值尺度下 27 个 dataset×backbone setting 中 <b>25 个第一、2 个第二</b>；统一标准化重跑后仍显著优于 DEER、DAES、NaryDis。matched ablation 表明 scale correction、额外局部容量、generic conditioning 都不能复现完整收益。</p>
+<h3>线上 / 效率 / 局限</h3><p>未披露线上 A/B 与 latency/FLOPs，因此工业成熟度暂定四星。需要继续验证超高 QPS 下的 transform overhead、outlier/missing feature、online drift 以及与 sequence foundation ranker / MoE 的联合效果。</p>
+<h3>工程启发 / 未来方向</h3><p>输入表示的 inductive bias 仍可能比“更大 backbone”更有效。值得继续研究 contextual numerical token、monotonic constraint、uncertainty-aware response、feature-wise low-rank sharing 与 online calibration。</p>
+<h3>资源</h3><p>① <a href="https://arxiv.org/abs/2609.29182">原始 Paper</a>；② 官方项目/博客：未发现；③ 官方代码/模型/数据：GitHub 精确检索未发现官方仓库；④ 暂无可靠中文精读，可参考 <a href="https://arxiv.deeppaper.ai/papers/2609.29182v1">DeepPaper</a> 与 <a href="https://arxiv-troller.com/paper/3313160/">arXiv Troller</a>。</p></div>
+
+<div class="paper"><div class="phase">Today → Long-term Map</div><h2>今天写入长期地图的变化</h2><p><b>Model Routing：</b>Fallback → Difficulty Routing → Cost-aware Calibration → Continuity-aware Routing → Business-value / Dollar / Risk Policy。<br><b>Scaling / Serving：</b>Kernel / Quantization → Cache Ownership → Determinism Contract → Hardware-aware Precision / Backend Controller。<br><b>推荐跨阶段：</b>共享 representation/state 后，controller 还要管理 source、feature、model、precision、cache、determinism 与统一 cost/provenance 日志。</p></div>
+<p><a class="button" href="../index.html">返回首页</a></p></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Daily updated 2026-09-27</div></footer></body></html>

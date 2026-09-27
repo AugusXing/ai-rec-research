@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><title>Paper Map｜AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="AI、推荐、搜索、RAG 与 Agent 技术树：按研究问题组织论文承接关系、核心矛盾、成熟度、代表 Paper、精读路线和值得押注的问题。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="index.html#latest">最新进展</a><a href="year.html">年度综述</a><a href="paper-map.html"><b>Paper Map</b></a><a href="pipeline-map.html">推荐链路</a><a href="index.html#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">Research Problem Map · 更新至 2026.09.26</span><h1>不按论文年份堆列表，而按“核心矛盾 → 承接关系 → 下一步问题”组织</h1><p class="lead">技术树中心已经从单模型能力转向 <b>Shared State → Specialist Executor → Conditional Controller → Counterfactual / Trajectory Measurement</b>。生成式召回、LLM 排序、Agentic Search、Long-context Serving 和 Model Routing 表面不同，本质都在回答：有限预算下，哪个状态应该被读、哪个执行路径值得走、收益如何被可靠归因。</p></div>
+<main><div class="wrap hero"><span class="kicker">Research Problem Map · 更新至 2026.09.27</span><h1>不按论文年份堆列表，而按“核心矛盾 → 承接关系 → 下一步问题”组织</h1><p class="lead">技术树中心已经从单模型能力转向 <b>Shared State → Specialist Executor → Conditional Controller → Counterfactual / Trajectory Measurement</b>。生成式召回、LLM 排序、Agentic Search、Long-context Serving 和 Model Routing 表面不同，本质都在回答：有限预算下，哪个状态应该被读、哪个执行路径值得走、收益如何被可靠归因。</p></div>
 <section><div class="wrap"><div class="callout"><strong>当前最值得押注：</strong>① Semantic ID 与 retrieval/ranking 共享表示；② long-history 从 request-time encoding 转向 state system；③ retrieval relevance 与 activation utility 解耦；④ time/geo/freshness 等结构约束用独立 axis；⑤ model / memory / Skill / feature / budget 统一控制；⑥ 用 counterfactual 与 attribution 判断真正增量。</div>
 
 
@@ -65,7 +65,7 @@
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 方法部分公开</span> · <span><b>是否有线上 A/B</b> Netflix 有历史实验验证</span> · <span><b>阅读优先级</b> A+</span></div>
 <p><b>值得押注：</b>candidate provenance、stage attribution、propensity logging、faithful sequence attribution、trajectory failure taxonomy。</p></div>
 
-<div class="paper"><div class="phase">Problem 09 · 多档模型越来越多，Router 应该优化什么？</div><h2>Capability Routing → Cost-aware Routing → Business-value Routing</h2><div class="flow"><span>Fallback Rule</span><b>→</b><span>Difficulty Router</span><b>→</b><span>GPT-6 Cost Frontier</span><b>→</b><span>Value / Dollar / Risk Policy</span></div>
+<div class="callout"><strong>9/27 Paper Map 增量：</strong>Router 的核心矛盾从“选强/弱模型”推进到“质量—成本—连续性”三目标；同时新增一条排序表示问题：数值特征应区分稳定 value coordinate 与 context-dependent response，而不是只有一个固定 embedding。</div><div class="paper"><div class="phase">Problem 09 · 多档模型越来越多，Router 应该优化什么？</div><h2>Capability Routing → Cost-aware Routing → Business-value Routing</h2><div class="flow"><span>Fallback Rule</span><b>→</b><span>Difficulty Router</span><b>→</b><span>GPT-6 Cost Frontier</span><b>→</b><span>Value / Dollar / Risk Policy</span></div>
 <p><b>核心矛盾：</b>“难题用大模型、简单题用小模型”没有显式优化业务价值、失败风险、latency 与 cache reuse。</p>
 <p><b>代表进展：</b><a href="daily/2026-09-26.html#gpt6">GPT-6 Sol/Luna</a> 继续降低中低档模型价格并保持较强 Agent/Coding 能力，使多层模型组合的 ROI 更高。</p>
 <div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★★★</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 否</span> · <span><b>是否有线上 A/B</b> 已上线 API，非论文式 A/B</span> · <span><b>阅读优先级</b> S+</span></div>
@@ -80,4 +80,4 @@
 <li><b>Serving：</b>H-Spec → Flash-dLLM → DQ / HySparse2。</li>
 <li><b>Measurement：</b>Netflix Counterfactual Observability → Sequential Rec XAI。</li>
 </ol></div>
-</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Paper Map updated 2026-09-26</div></footer></body></html>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Paper Map updated 2026-09-27</div></footer></body></html>
