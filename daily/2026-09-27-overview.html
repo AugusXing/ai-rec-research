@@ -1,0 +1,13 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="../style.css"></head><body><div class="wrap">
+<div class="section-title"><h2>今日最值得看</h2><p>严格过去24小时 · 7条官方开源增量</p></div><div class="grid">
+<div class="card"><span class="badge">S+ · Model Routing</span><h3>Cost-aware Calibration</h3><p>Semantic Router 用 λ-scan 在 accuracy 容忍度内寻找最大成本下降，并生成 routing config。</p></div>
+<div class="card"><span class="badge">S · Determinism</span><h3>vLLM Batch Invariance</h3><p>SP / async TP 的 reduce-scatter 顺序随 batch 变化，因此在确定性模式下被禁用。</p></div>
+<div class="card"><span class="badge">S · Spec Decode</span><h3>TensorRT-LLM Reproducibility</h3><p>recycled slot 的 seeded request 重置 RNG counter，使结果不再依赖 slot history。</p></div>
+<div class="card"><span class="badge">S · KV Cache</span><h3>SGLang LMCache</h3><p>单一 eviction cursor 升级为 component-level cursor，并支持 per-cache backend。</p></div>
+<div class="card"><span class="badge">S · Observability</span><h3>Router Task Continuity</h3><p>新增 task 内 model-switch、decision-change、switched/unswitched accuracy。</p></div>
+<div class="card"><span class="badge">A+ · MoE</span><h3>ROCm MXFP8 Backend</h3><p>SGLang 尊重显式 Triton backend，避免错误回落到 CUDA/FlashInfer 路径。</p></div>
+<div class="card"><span class="badge">A+ · Low-bit MoE</span><h3>Kimi-K3 SiTUv2</h3><p>vLLM/AITER 把 activation precision 细化为 a4w4 / a8w4 / a16w4。</p></div></div>
+<div class="section-title"><h2>技术趋势</h2><p>从模型指标走向 runtime contract</p></div>
+<p><b>Router → Utility Optimizer：</b>质量、成本、流量份额进入同一个 policy calibration。 <b>Determinism → Serving Contract：</b>seed、batch、通信归约、slot lifecycle 都会影响复现。 <b>Cache → Component State System：</b>SWA、Mamba、外部 KV 各自需要 cursor/version。 <b>Precision × Backend × Hardware：</b>低比特策略必须与 kernel 可用性联合决策。</p>
+<table class="table"><thead><tr><th>#</th><th>进展</th><th>Impact</th><th>优先级</th></tr></thead><tbody><tr><td>1</td><td>Cost-aware Model Eval</td><td>9.4</td><td>S+</td></tr><tr><td>2</td><td>vLLM Batch Invariance</td><td>9.1</td><td>S</td></tr><tr><td>3</td><td>TRT-LLM Spec Decode Repro</td><td>9.0</td><td>S</td></tr><tr><td>4</td><td>SGLang LMCache Components</td><td>8.9</td><td>S</td></tr><tr><td>5</td><td>Router Task Continuity</td><td>8.8</td><td>S</td></tr><tr><td>6</td><td>SGLang ROCm MXFP8</td><td>8.6</td><td>A+</td></tr><tr><td>7</td><td>vLLM SiTUv2 Precision</td><td>8.5</td><td>A+</td></tr></tbody></table>
+</div></body></html>
