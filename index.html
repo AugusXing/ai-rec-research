@@ -1,19 +1,29 @@
 <!doctype html><html lang="zh-CN"><head><title>AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="聚焦 LLM、推荐系统、搜索/召回/排序/重排、生成式推荐、Agent、RAG、推理与训练优化的每日研究简报与长期技术地图。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="#latest"><b>最新进展</b></a><a href="year.html">年度综述</a><a href="paper-map.html">Paper Map</a><a href="pipeline-map.html">推荐链路</a><a href="#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 更新至 2026.09.27</span><h1>把论文串成技术演进，把实验结果翻译成工程判断</h1><p class="lead">聚焦 LLM、推荐系统、搜索 / 召回 / 排序 / 重排、生成式推荐、Agent、RAG、推理与训练优化。每日只保留真正值得投入时间的进展，并持续维护年度演进、Paper Map 与推荐链路。</p></div>
-<section id="latest"><div class="wrap"><div class="callout"><strong>今日核心判断：</strong><b>Routing & Serving 的工程正确性正在变成算法能力。</b> 下一代 controller 不只是选择模型，还要联合管理 Quality、Cost、Continuity、Determinism、Cache State、Precision 与 Hardware Compatibility；router、batch invariance、speculative decoding 可复现性、component-aware cache 和低比特后端正在一起进入统一系统视角。</div>
+<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 更新至 2026.10.07</span><h1>把论文串成技术演进，把实验结果翻译成工程判断</h1><p class="lead">聚焦 LLM、推荐系统、搜索 / 召回 / 排序 / 重排、生成式推荐、Agent、RAG、推理与训练优化。每日只保留真正值得投入时间的进展，并持续维护年度演进、Paper Map 与推荐链路。</p></div>
+<section id="latest"><div class="wrap"><div class="callout"><strong>今日核心判断：</strong><b>过去十天最清晰的主线不是“又多了一个大模型”，而是 serving / retrieval 正进入状态化、低比特、可验证的系统阶段。</b> Late-interaction scoring 进入 Triton runtime，RAG 开始关注 retriever upgrade 的 negative flip；KV cache 同时向 NVFP4/4-bit、分层 offload、tier-level metrics 演进；speculative decoding 则从单纯加速转向 dynamic-K、block verification、per-request acceptance 与 recurrent-state correctness。</div>
 <h2>今日结论 / 最值得看</h2><table class="table"><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>核心价值</th></tr></thead><tbody>
-<tr><td>S+</td><td><a href="daily/2026-09-27.html#router-cost">vLLM Semantic Router</a></td><td>Model Routing</td><td>从 accuracy routing 走向 quality-constrained cost optimization</td></tr>
-<tr><td>S</td><td><a href="daily/2026-09-27.html">vLLM Batch Invariance</a></td><td>Serving Correctness</td><td>并行批处理路径下的输出一致性成为 serving contract</td></tr>
-<tr><td>S</td><td><a href="daily/2026-09-27.html">TensorRT-LLM Spec Decode Reproducibility</a></td><td>Inference</td><td>speculative decoding 的随机性与 seed 管理进入生产可复现性</td></tr>
-<tr><td>A+</td><td><a href="daily/2026-09-27.html">SGLang Component-aware LMCache</a></td><td>KV / Memory</td><td>不同 attention / memory 组件独立管理 cache cursor 与状态</td></tr>
-<tr><td>A+</td><td><a href="daily/2026-09-27.html">ROCm MXFP8 / SiTUv2</a></td><td>Precision × Hardware</td><td>低比特策略开始与 kernel/backend 联合决策</td></tr>
-</tbody></table><p><a class="button" href="daily/2026-09-27.html">阅读 2026-09-27 完整日报 →</a></p>
+<tr><td>S+</td><td><a href="daily/2026-10-05.html#i1">RAGFlip</a></td><td>Retriever Evaluation</td><td>把 retriever 升级的 query-level negative flip 变成发布指标</td></tr>
+<tr><td>S+</td><td><a href="daily/2026-10-04.html#i1">CARET</a></td><td>RAG / Test-time Scaling</td><td>用约 1.45× token compute 获得显著代码补全增益</td></tr>
+<tr><td>S</td><td><a href="daily/2026-10-01.html#i2">flash-maxsim</a></td><td>Late Interaction</td><td>ColBERT-style scoring 进入高性能 Triton runtime</td></tr>
+<tr><td>S</td><td><a href="daily/2026-10-06.html#i1">UltraQuant 4-bit KV</a></td><td>KV Quantization</td><td>长上下文状态成本继续向 4-bit 收敛</td></tr>
+<tr><td>S</td><td><a href="daily/2026-10-07.html#i3">KV Offload Pool-and-index API</a></td><td>KV Offload</td><td>分层 KV 从 ad-hoc copy 走向统一状态管理接口</td></tr>
+</tbody></table><p><a class="button" href="daily/2026-10-07.html">阅读 2026-10-07 完整日报 →</a></p>
 <div class="section-title"><h2>长期研究入口</h2><p>年度演进、研究问题与推荐链路三张地图同步维护</p></div><div class="grid">
 <div class="paper"><h3><a href="year.html">年度综述</a></h3><p>新增 Full-stack Generative Rec 主线：Separate Cascade → Shared Backbone/State → Stage-specific Execution，并加入 continuous generative retrieval 分支。</p></div>
 <div class="paper"><h3><a href="paper-map.html">Paper Map</a></h3><p>新增“统一全链路但不牺牲阶段 SLA”与“Reasoning 如何获得可验证 Credit”两组核心矛盾。</p></div>
 <div class="paper"><h3><a href="pipeline-map.html">推荐链路</a></h3><p>召回加入 X-Rec；跨阶段统一加入 OneTrans-V2 与 AgentX-Model，强调共享 state、专业 executor、可验证 measurement。</p></div></div></div></section>
 <section id="archive"><div class="wrap"><h2>每日归档</h2><div class="paper">
+<p><a href="daily/2026-10-07.html"><b>2026-10-07</b></a></p>
+<p><a href="daily/2026-10-06.html"><b>2026-10-06</b></a></p>
+<p><a href="daily/2026-10-05.html"><b>2026-10-05</b></a></p>
+<p><a href="daily/2026-10-04.html"><b>2026-10-04</b></a></p>
+<p><a href="daily/2026-10-03.html"><b>2026-10-03</b></a></p>
+<p><a href="daily/2026-10-02.html"><b>2026-10-02</b></a></p>
+<p><a href="daily/2026-10-01.html"><b>2026-10-01</b></a></p>
+<p><a href="daily/2026-09-30.html"><b>2026-09-30</b></a></p>
+<p><a href="daily/2026-09-29.html"><b>2026-09-29</b></a></p>
+<p><a href="daily/2026-09-28.html"><b>2026-09-28</b></a></p>
 <p><a href="daily/2026-09-27.html"><b>2026-09-27</b></a></p>
 <p><a href="daily/2026-09-26.html"><b>2026-09-26</b></a></p>
 <p><a href="daily/2026-09-25.html"><b>2026-09-25</b></a></p>
@@ -61,4 +71,4 @@
 <p><a href="daily/2026-08-14.html"><b>2026-08-14</b></a></p>
 <p><a href="daily/2026-08-13.html"><b>2026-08-13</b></a></p>
 <p><a href="daily/2026-08-12.html"><b>2026-08-12</b></a></p>
-</div></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Last updated 2026-09-27</div></footer></body></html>
+</div></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Last updated 2026-10-07</div></footer></body></html>
