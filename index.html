@@ -1,19 +1,13 @@
 <!doctype html><html lang="zh-CN"><head><title>AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="聚焦 LLM、推荐系统、搜索/召回/排序/重排、生成式推荐、Agent、RAG、推理与训练优化的每日研究简报与长期技术地图。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="#latest"><b>最新进展</b></a><a href="year.html">年度综述</a><a href="paper-map.html">Paper Map</a><a href="pipeline-map.html">推荐链路</a><a href="#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 更新至 2026.10.07</span><h1>把论文串成技术演进，把实验结果翻译成工程判断</h1><p class="lead">聚焦 LLM、推荐系统、搜索 / 召回 / 排序 / 重排、生成式推荐、Agent、RAG、推理与训练优化。每日只保留真正值得投入时间的进展，并持续维护年度演进、Paper Map 与推荐链路。</p></div>
-<section id="latest"><div class="wrap"><div class="callout"><strong>今日核心判断：</strong><b>过去十天最清晰的主线不是“又多了一个大模型”，而是 serving / retrieval 正进入状态化、低比特、可验证的系统阶段。</b> Late-interaction scoring 进入 Triton runtime，RAG 开始关注 retriever upgrade 的 negative flip；KV cache 同时向 NVFP4/4-bit、分层 offload、tier-level metrics 演进；speculative decoding 则从单纯加速转向 dynamic-K、block verification、per-request acceptance 与 recurrent-state correctness。</div>
-<h2>今日结论 / 最值得看</h2><table class="table"><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>核心价值</th></tr></thead><tbody>
-<tr><td>S+</td><td><a href="daily/2026-10-05.html#i1">RAGFlip</a></td><td>Retriever Evaluation</td><td>把 retriever 升级的 query-level negative flip 变成发布指标</td></tr>
-<tr><td>S+</td><td><a href="daily/2026-10-04.html#i1">CARET</a></td><td>RAG / Test-time Scaling</td><td>用约 1.45× token compute 获得显著代码补全增益</td></tr>
-<tr><td>S</td><td><a href="daily/2026-10-01.html#i2">flash-maxsim</a></td><td>Late Interaction</td><td>ColBERT-style scoring 进入高性能 Triton runtime</td></tr>
-<tr><td>S</td><td><a href="daily/2026-10-06.html#i1">UltraQuant 4-bit KV</a></td><td>KV Quantization</td><td>长上下文状态成本继续向 4-bit 收敛</td></tr>
-<tr><td>S</td><td><a href="daily/2026-10-07.html#i3">KV Offload Pool-and-index API</a></td><td>KV Offload</td><td>分层 KV 从 ad-hoc copy 走向统一状态管理接口</td></tr>
-</tbody></table><p><a class="button" href="daily/2026-10-07.html">阅读 2026-10-07 完整日报 →</a></p>
+<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 更新至 2026.10.08</span><h1>把论文串成技术演进，把实验结果翻译成工程判断</h1><p class="lead">聚焦 LLM、推荐系统、搜索 / 召回 / 排序 / 重排、生成式推荐、Agent、RAG、推理与训练优化。每日只保留真正值得投入时间的进展，并持续维护年度演进、Paper Map 与推荐链路。</p></div>
+<section id="latest"><div class="wrap"><div class="callout"><strong>10/08 核心判断：</strong>推荐与检索的增益越来越取决于候选集合、训练监督和评估口径是否一致。今天最值得优先验证的是漏召正例的组间竞争、硬负例的标签缺失，以及模型升级后被平均分掩盖的退化。</div><h2>今日结论 / 最值得看</h2><div style="overflow-x:auto"><table class="table"><thead><tr><th>优先级</th><th>工作</th><th>方向</th><th>核心价值</th></tr></thead><tbody><tr><td>S</td><td><a href="daily/2026-10-08.html#missed-targets">Training with Missed Targets</a></td><td>生成式推荐 / 重排训练</td><td>训练候选补全会引入额外概率竞争；应对固定召回池单独验证。</td></tr><tr><td>S</td><td><a href="daily/2026-10-08.html#two-level-softmax">S-2LS / SD-2LS</a></td><td>召回 / Softmax 采样</td><td>两级采样的簇级权重有系统偏差；S-2LS 与 SD-2LS 提供不同成本的修正。</td></tr><tr><td>S</td><td><a href="daily/2026-10-08.html#vlm-teacher">VLM Teacher Signals</a></td><td>多模态检索 / 蒸馏</td><td>教师判断候选的收益高于只丰富正例；关键是处理不完整标注。</td></tr><tr><td>S</td><td><a href="daily/2026-10-08.html#experience-index">ExperienceIndex</a></td><td>Agent 记忆 / 检索</td><td>用单对象经验和对象对关系减少共享语料上的重复搜索。</td></tr><tr><td>A+</td><td><a href="daily/2026-10-08.html#quantize-drift">Quantize by Drift</a></td><td>Embedding / 量化</td><td>输出漂移可作粗粒度敏感性信号，精细比特分配仍需下游验证。</td></tr><tr><td>A+</td><td><a href="daily/2026-10-08.html#document-structure">Document Structure Ablation</a></td><td>RAG / 分块与召回</td><td>真实标题路径带来小幅可重复改善；朴素层级检索可能损伤首阶段召回。</td></tr><tr><td>S</td><td><a href="daily/2026-10-08.html#judge-evolution">Judge Backbone Evolution</a></td><td>检索评估 / LLM Judge</td><td>总体评分改善可能掩盖原先正确样本退化，评估器本身也需版本治理。</td></tr></tbody></table></div><p><a class="button" href="daily/2026-10-08.html">阅读 2026-10-08 完整日报 →</a></p>
 <div class="section-title"><h2>长期研究入口</h2><p>年度演进、研究问题与推荐链路三张地图同步维护</p></div><div class="grid">
-<div class="paper"><h3><a href="year.html">年度综述</a></h3><p>新增 Full-stack Generative Rec 主线：Separate Cascade → Shared Backbone/State → Stage-specific Execution，并加入 continuous generative retrieval 分支。</p></div>
-<div class="paper"><h3><a href="paper-map.html">Paper Map</a></h3><p>新增“统一全链路但不牺牲阶段 SLA”与“Reasoning 如何获得可验证 Credit”两组核心矛盾。</p></div>
-<div class="paper"><h3><a href="pipeline-map.html">推荐链路</a></h3><p>召回加入 X-Rec；跨阶段统一加入 OneTrans-V2 与 AgentX-Model，强调共享 state、专业 executor、可验证 measurement。</p></div></div></div></section>
+<div class="paper"><h3><a href="year.html">年度综述</a></h3><p>10/08 新增候选与监督一致性主线，连接生成式推荐、教师信号和评估器版本治理。</p></div>
+<div class="paper"><h3><a href="paper-map.html">Paper Map</a></h3><p>10/08 新增四组问题：候选分布、缺失标签、代理指标与证据记忆；保留原有技术树。</p></div>
+<div class="paper"><h3><a href="pipeline-map.html">推荐链路</a></h3><p>10/08 将七篇工作映射到召回、重排和跨阶段评估，并注明粗排与精排仍需迁移验证。</p></div></div></div></section>
 <section id="archive"><div class="wrap"><h2>每日归档</h2><div class="paper">
+<p><a href="daily/2026-10-08.html"><b>2026-10-08</b></a> · 候选、监督与评估一致性 · 7 篇</p>
 <p><a href="daily/2026-10-07.html"><b>2026-10-07</b></a></p>
 <p><a href="daily/2026-10-06.html"><b>2026-10-06</b></a></p>
 <p><a href="daily/2026-10-05.html"><b>2026-10-05</b></a></p>
@@ -71,4 +65,4 @@
 <p><a href="daily/2026-08-14.html"><b>2026-08-14</b></a></p>
 <p><a href="daily/2026-08-13.html"><b>2026-08-13</b></a></p>
 <p><a href="daily/2026-08-12.html"><b>2026-08-12</b></a></p>
-</div></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Last updated 2026-10-07</div></footer></body></html>
+</div></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Last updated 2026-10-08</div></footer></body></html>

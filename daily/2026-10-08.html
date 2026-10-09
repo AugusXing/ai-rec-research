@@ -1,0 +1,74 @@
+<!doctype html><html lang="zh-CN"><head><title>2026-10-08｜AI × 推荐算法技术日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css"><meta name="description" content="2026-10-08 AI 与推荐算法技术日报"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main><div class="wrap hero"><span class="kicker">Daily Research Brief · 2026-10-08</span><h1>从候选到裁判：把推荐与检索的收益归因做实</h1><p class="lead">本期精选 7 篇论文，覆盖生成式推荐、采样、视觉检索、Agent 记忆、量化与评估。按 <a href="https://arxiv.org/list/cs.IR/recent">arXiv cs.IR 的 2026-10-08 公告批次</a>（含交叉分类）归档；各文 v1 实际提交于 10/06–10/07，日期分列。2026-10-09 补编，仅使用截至 10/08 已公开的 v1 内容。</p></div>
+<section id="overview"><div class="wrap"><div class="callout"><strong>今日核心判断：</strong>推荐与检索的增益越来越取决于候选集合、训练监督和评估口径是否一致。今天最值得优先验证的是漏召正例的组间竞争、硬负例的标签缺失，以及模型升级后被平均分掩盖的退化。</div>
+<div class="section-title"><h2>今日概览 / 阅读顺序</h2><p>7 条 · 先看证据，再看工程迁移</p></div>
+<div style="overflow-x:auto"><table class="table"><thead><tr><th>#</th><th>工作</th><th>方向</th><th>核心价值</th><th>Impact / 优先级</th></tr></thead><tbody><tr><td>1</td><td><a href="#missed-targets"><b>Training with Missed Targets</b></a></td><td>生成式推荐 / 重排训练</td><td>训练候选补全会引入额外概率竞争；应对固定召回池单独验证。</td><td>9.2 / S</td></tr>
+<tr><td>2</td><td><a href="#two-level-softmax"><b>S-2LS / SD-2LS</b></a></td><td>召回 / Softmax 采样</td><td>两级采样的簇级权重有系统偏差；S-2LS 与 SD-2LS 提供不同成本的修正。</td><td>9.0 / S</td></tr>
+<tr><td>3</td><td><a href="#vlm-teacher"><b>VLM Teacher Signals</b></a></td><td>多模态检索 / 蒸馏</td><td>教师判断候选的收益高于只丰富正例；关键是处理不完整标注。</td><td>9.1 / S</td></tr>
+<tr><td>4</td><td><a href="#experience-index"><b>ExperienceIndex</b></a></td><td>Agent 记忆 / 检索</td><td>用单对象经验和对象对关系减少共享语料上的重复搜索。</td><td>8.9 / S</td></tr>
+<tr><td>5</td><td><a href="#quantize-drift"><b>Quantize by Drift</b></a></td><td>Embedding / 量化</td><td>输出漂移可作粗粒度敏感性信号，精细比特分配仍需下游验证。</td><td>8.6 / A+</td></tr>
+<tr><td>6</td><td><a href="#document-structure"><b>Document Structure Ablation</b></a></td><td>RAG / 分块与召回</td><td>真实标题路径带来小幅可重复改善；朴素层级检索可能损伤首阶段召回。</td><td>8.5 / A+</td></tr>
+<tr><td>7</td><td><a href="#judge-evolution"><b>Judge Backbone Evolution</b></a></td><td>检索评估 / LLM Judge</td><td>总体评分改善可能掩盖原先正确样本退化，评估器本身也需版本治理。</td><td>8.8 / S</td></tr></tbody></table></div>
+<p class="note">评分和星级是本站编辑判断，不是论文实验结果。Research Impact 沿用站点维度：范式变化 25%、工业证据 20%、技术创新 20%、推荐搜索相关度 15%、后续空间 10%、开放复现 10%。S 表示优先精读，A+ 表示按业务需要跟进；本期未见公开线上 A/B 报告。</p>
+<div class="grid"><div class="card"><h3>推荐训练先读 01 → 02 → 03</h3><p>检查补正例、采样和教师监督改变了哪些概率与标签，再安排消融实验。</p></div><div class="card"><h3>Agent / RAG 先读 04 → 06</h3><p>分别评估经验复用与文档结构，完整证据和首阶段覆盖应进入评估。</p></div><div class="card"><h3>系统验收看 05 → 07</h3><p>量化代理与 judge 平均分都需要强基线和逐样本回归检查。</p></div></div>
+</div></section><section id="deep-dives"><div class="wrap"><div class="section-title"><h2>重点深读</h2><p>每篇均含 7 个固定字段与资源区</p></div>
+<article style="scroll-margin-top:84px" class="paper" id="missed-targets"><div class="phase">Deep Dive 01 · 生成式推荐 / 重排训练</div>
+<h2>Training with Missed Targets：补回漏召目标时，分开监督与概率竞争</h2>
+<p class="meta">Training with Missed Targets in Generative Recommendation: Separating Supervision from Probability Competition<br>Xuesi Wang、Yangbin Shi、Xiaolin Zheng · v1 提交 2026-10-07（UTC） · 10/08 公告收录</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.2/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是：作者在 arXiv 附件提供复现代码</span> · <span><b>是否有线上 A/B</b> 未见公开报告</span> · <span><b>阅读优先级</b> S</span></div>
+<h3>背景与方法</h3><p>召回漏掉的正例只在训练时补入，会改变重排器的学习问题。论文匹配已召回目标的权重，比较 WN（仅原候选）、Cond（两组分别归一化）、Full（共同 softmax），拆开新增监督与组间竞争。推理仍只排序原候选。 <a href="https://arxiv.org/html/2610.10124v1">[原文]</a></p>
+<h3>实验与边界</h3><p>Amazon Video Games 四组预设比较中，移除竞争的 FT-NDCG 相对改善为 7.8%–22.2%；按训练运行计算的区间有一组仍包含零。结果属于固定生成器后的重排，不代表召回率或线上点击率提升。 <a href="https://arxiv.org/html/2610.10124v1">[原文]</a></p>
+<h3>工程判断与下一步</h3><p>建议先固定生成器、候选池和目标权重，复现三种损失；用完整目标集计分，并保留零命中用户。是否补正例应由开发集决定，不能直接把训练候选扩充成线上候选。后续可检查多路召回配额变化是否改变结论。 <span class="meta">（本站分析）</span></p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2610.10124v1">原始 Paper / 版本记录</a> · <a href="https://arxiv.org/html/2610.10124v1">HTML 全文</a> · <a href="https://arxiv.org/pdf/2610.10124v1">PDF</a></li><li>作者复现代码、环境与切分清单位于 <a href="https://arxiv.org/abs/2610.10124v1#anc">arXiv Ancillary files</a>；独立项目页未确认。</li><li class="missing">中文精读：本期未收录经核验的独立中文解读，建议直接阅读以上一手材料。</li></ul></div></article>
+<article style="scroll-margin-top:84px" class="paper" id="two-level-softmax"><div class="phase">Deep Dive 02 · 召回 / Softmax 采样</div>
+<h2>S-2LS / SD-2LS：聚类采样要校正簇大小与簇内离散程度</h2>
+<p class="meta">Two-Level Softmax Sampling Done Right: Correcting Bias from Size Imbalance and Dispersion<br>Walid Bendada、Guillaume Salha-Galvan · v1 提交 2026-10-07（UTC） · 10/08 公告收录</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.0/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是：作者仓库</span> · <span><b>是否有线上 A/B</b> 未见公开报告</span> · <span><b>阅读优先级</b> S</span></div>
+<h3>背景与方法</h3><p>先选簇再选 item 的 2LS 会忽略簇大小和簇内相似度离散程度。S-2LS 在簇级 logit 加 log|C|；SD-2LS 再加温度归一化相似度方差的一半，簇内 softmax 保持原样。 <a href="https://arxiv.org/html/2610.10483v1">[原文]</a></p>
+<h3>实验与边界</h3><p>论文在五个数据集比较采样分布与延迟。S-2LS 的耗时接近原方法；SD-2LS 要计算协方差二次型，实测在较高维数据上的耗时为基线的 1.2–1.8 倍，低维最高约 3 倍。分布更接近 exact softmax 不等于推荐业务指标必然更好。 <a href="https://arxiv.org/html/2610.10483v1">[原文]</a></p>
+<h3>工程判断与下一步</h3><p>适合检查已有聚类召回或负采样器。建议先对照真实 softmax 测分布偏差，再比较延迟、长尾覆盖和训练效果；高维场景优先验证大小校正的收益，再决定是否支付方差校正成本。 <span class="meta">（本站分析）</span></p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2610.10483v1">原始 Paper / 版本记录</a> · <a href="https://arxiv.org/html/2610.10483v1">HTML 全文</a> · <a href="https://arxiv.org/pdf/2610.10483v1">PDF</a></li><li><a href="https://github.com/bendadaw/neurips-2ls">作者代码与实验仓库</a>；arXiv 标注 NeurIPS 2026；独立项目页未确认。</li><li class="missing">中文精读：本期未收录经核验的独立中文解读，建议直接阅读以上一手材料。</li></ul></div></article>
+<article style="scroll-margin-top:84px" class="paper" id="vlm-teacher"><div class="phase">Deep Dive 03 · 多模态检索 / 蒸馏</div>
+<h2>VLM Teacher Signals：把教师预算用在识别假负例上</h2>
+<p class="meta">What Transfers from a VLM Teacher? Comparing Supervision Signals for Visual Document Retrieval<br>Saba Sturua、Han Xiao · v1 提交 2026-10-06（UTC） · 10/08 公告收录</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 9.1/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是：代码、数据与适配器</span> · <span><b>是否有线上 A/B</b> 未见公开报告</span> · <span><b>阅读优先级</b> S</span></div>
+<h3>背景与方法</h3><p>视觉文档检索常只有一个标注正页，其余挖出的候选却未必不相关。论文固定学生、训练数据和优化器，比较教师筛负例、分数蒸馏、描述对齐与注意力监督。 <a href="https://arxiv.org/html/2610.09177v1">[原文]</a></p>
+<h3>实验与边界</h3><p>ViDoRe v2 nDCG@5 从 55.2 升至 62.6 / 63.0；在相同候选池和训练算力下，相对最强无教师规则，教师判断的独立增益为 v2 +4.1、v3 +1.7 分。人工审计中，前四个挖掘候选约有两个实际相关。结论局限于该学生和页级检索，不能据此否定区域定位监督。 <a href="https://arxiv.org/html/2610.09177v1">[原文]</a></p>
+<h3>工程判断与下一步</h3><p>推荐硬负例也可能包含未曝光或未标注的正例。迁移时应先做分层人工抽检，再对比过滤、重标和软分数监督；保持候选数量及算力一致，才能分清收益来自教师还是更多训练样本。 <span class="meta">（本站分析）</span></p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2610.09177v1">原始 Paper / 版本记录</a> · <a href="https://arxiv.org/html/2610.09177v1">HTML 全文</a> · <a href="https://arxiv.org/pdf/2610.09177v1">PDF</a></li><li><a href="https://github.com/elastic/vdr-teacher-signals">作者代码、330 万条教师判断、人工审计与适配器入口</a>；独立项目页未确认。</li><li class="missing">中文精读：本期未收录经核验的独立中文解读，建议直接阅读以上一手材料。</li></ul></div></article>
+<article style="scroll-margin-top:84px" class="paper" id="experience-index"><div class="phase">Deep Dive 04 · Agent 记忆 / 检索</div>
+<h2>ExperienceIndex：让 Agent 记住文档贡献与对象关系</h2>
+<p class="meta">ExperienceIndex: Artifact-Grounded Memory<br>Peter Baile Chen 等（MIT、McKinsey、Oracle AI / UPenn、AI2） · v1 提交 2026-10-07（UTC） · 10/08 公告收录</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.9/10</span> · <span><b>工业成熟度</b> ★★☆☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 未确认可用官方仓库</span> · <span><b>是否有线上 A/B</b> 未见公开报告</span> · <span><b>阅读优先级</b> S</span></div>
+<h3>背景与方法</h3><p>Agent 在共享语料上反复解题时，通用经验未必能定位完整证据。ExperienceIndex 从历史轨迹提取单对象的任务贡献、片段，以及对象对的关系；按任务或已检索对象 ID 找回经验，并补入关联材料。 <a href="https://arxiv.org/html/2610.10091v1">[原文]</a></p>
+<h3>实验与边界</h3><p>作者报告不同配置下答案质量最高提升 11.0 分，在线美元成本最高下降 50.5%；两者是各设置的最大值，不是统一平均值。建索引的成本另计。论文还测试共享表语料上的跨任务迁移，未提供推荐线上 A/B。 <a href="https://arxiv.org/html/2610.10091v1">[原文]</a></p>
+<h3>工程判断与下一步</h3><p>可用于研究助手、知识检索及共享目录的经验复用。建议给对象 ID 加内容版本和失效策略，并用时间切分评估新任务，计入记忆抽取、存储和维护成本。对推荐用户状态的迁移仍是待验证假设。 <span class="meta">（本站分析）</span></p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2610.10091v1">原始 Paper / 版本记录</a> · <a href="https://arxiv.org/html/2610.10091v1">HTML 全文</a> · <a href="https://arxiv.org/pdf/2610.10091v1">PDF</a></li><li>原文含算法、提示词及评估细节；独立官方项目页、可用代码仓库未确认。</li><li class="missing">中文精读：本期未收录经核验的独立中文解读，建议直接阅读以上一手材料。</li></ul></div></article>
+<article style="scroll-margin-top:84px" class="paper" id="quantize-drift"><div class="phase">Deep Dive 05 · Embedding / 量化</div>
+<h2>Quantize by Drift：无标签量化代理有用，但尚未赢过强均匀基线</h2>
+<p class="meta">Quantize by Drift: Label-Free Mixed-Precision Post-Training Quantization for Text Embedders<br>Hyojung Han、Jongmin Kim、Seung-Hun Jeon · v1 提交 2026-10-06（UTC） · 10/08 公告收录</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.6/10</span> · <span><b>工业成熟度</b> ★★☆☆☆</span> · <span><b>创新性</b> ★★★★☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 论文称已发布；独立入口未确认</span> · <span><b>是否有线上 A/B</b> 未见公开报告</span> · <span><b>阅读优先级</b> A+</span></div>
+<h3>背景与方法</h3><p>缺少相关性标签时，逐模块量化并测最终 embedding 漂移，用作敏感性信号，在实际打包字节预算内分配精度。五个开发模型的配置级漂移与检索质量排序相关，宏平均 Spearman 为 0.911。 <a href="https://arxiv.org/html/2610.09227v1">[原文]</a></p>
+<h3>实验与边界</h3><p>三个冻结后才启用的确认模型，在主预算下都低于同预算均匀精度，差值为 −0.99、−0.85、−1.01 个 NDCG@10 分。相关性强没有转化为普遍更好的分配；不能把结果写成混合精度全面胜出。 <a href="https://arxiv.org/html/2610.09227v1">[原文]</a></p>
+<h3>工程判断与下一步</h3><p>适合作为无标签筛选信号，最终仍要与均匀精度比较。建议同时报告绝对检索质量、全精度保留率、实际字节、编码延迟和索引重建成本；进一步研究强均匀基线附近的小范围预算调整。 <span class="meta">（本站分析）</span></p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2610.09227v1">原始 Paper / 版本记录</a> · <a href="https://arxiv.org/html/2610.09227v1">HTML 全文</a> · <a href="https://arxiv.org/pdf/2610.09227v1">PDF</a></li><li>原文附预算、确认集及审计表；论文提及 released code，本次未确认独立官方代码入口，不标为已核验开源。</li><li class="missing">中文精读：本期未收录经核验的独立中文解读，建议直接阅读以上一手材料。</li></ul></div></article>
+<article style="scroll-margin-top:84px" class="paper" id="document-structure"><div class="phase">Deep Dive 06 · RAG / 分块与召回</div>
+<h2>Document Structure Ablation：结构收益要与随机前缀扰动区分</h2>
+<p class="meta">Does Document Structure Help Dense Retrieval? A Placebo-Controlled Ablation of Four Mechanisms Across Two Corpora<br>Andrey Kuehlkamp、Priscila Correa Saboia Moreira、Samuel Rund · v1 提交 2026-10-07（UTC） · 10/08 公告收录</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.5/10</span> · <span><b>工业成熟度</b> ★★☆☆☆</span> · <span><b>创新性</b> ★★★☆☆</span> · <span><b>与你方向的相关度</b> ★★★★☆</span> · <span><b>是否官方开源</b> 计划发布，未确认已发布</span> · <span><b>是否有线上 A/B</b> 未见公开报告</span> · <span><b>阅读优先级</b> A+</span></div>
+<h3>背景与方法</h3><p>论文在 Wikipedia 与 QASPER 对照结构分块、上下文前缀、标题路径和层级检索；匹配块大小，并加入跨文档打乱标题路径的安慰剂，隔离“结构语义”和“加了文本”的影响。 <a href="https://arxiv.org/html/2610.10170v1">[原文]</a></p>
+<h3>实验与边界</h3><p>结构分块加真实标题路径，相比上下文化固定窗口的 cov-nDCG@10 增量为 +0.022 / +0.012；朴素两阶段层级检索反而 −0.033 / −0.015。效果量较小，且是检索指标，不能外推为答案质量提升。 <a href="https://arxiv.org/html/2610.10170v1">[原文]</a></p>
+<h3>工程判断与下一步</h3><p>可先在现有 RAG 管线做等长块、真标题和乱序标题三组实验；层级召回同时监测章节覆盖，避免下游重排再强也救不回上游漏掉的证据。 <span class="meta">（本站分析）</span></p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2610.10170v1">原始 Paper / 版本记录</a> · <a href="https://arxiv.org/html/2610.10170v1">HTML 全文</a> · <a href="https://arxiv.org/pdf/2610.10170v1">PDF</a></li><li>作者声明将发布代码、配置和逐查询结果；当前未确认官方仓库或独立项目页。</li><li class="missing">中文精读：本期未收录经核验的独立中文解读，建议直接阅读以上一手材料。</li></ul></div></article>
+<article style="scroll-margin-top:84px" class="paper" id="judge-evolution"><div class="phase">Deep Dive 07 · 检索评估 / LLM Judge</div>
+<h2>Judge Backbone Evolution：裁判模型升级也需要逐样本回归检查</h2>
+<p class="meta">The Impact of Backbone Evolution on LLM-Based Relevance Assessments<br>Chuting Yu、Guido Zuccon、Teerapong Leelanupab · v1 提交 2026-10-07（UTC） · 10/08 公告收录</p>
+<div class="stats"><span><b>Research Impact Score / 研究价值</b> 8.8/10</span> · <span><b>工业成熟度</b> ★★★☆☆</span> · <span><b>创新性</b> ★★★☆☆</span> · <span><b>与你方向的相关度</b> ★★★★★</span> · <span><b>是否官方开源</b> 是：作者代码与实验结果仓库</span> · <span><b>是否有线上 A/B</b> 未见公开报告</span> · <span><b>阅读优先级</b> S</span></div>
+<h3>背景与方法</h3><p>保持 UMBRELA / EXAM 提示方式固定，比较 Gemini、GPT、Qwen、Llama 的连续版本；EXAM 在同一模型家族内还固定评分问题。评估同时检查与人工标注的一致性及逐样本退化。 <a href="https://arxiv.org/html/2610.09820v1">[原文]</a></p>
+<h3>实验与边界</h3><p>在 TREC DL 2019 / 2020 上，没有证据表明新版本始终更好；平均指标相近或提高，也可能丢失旧版本的正确判断。研究是特定提示与数据下的相关性评估，不是通用模型能力排名。 <a href="https://arxiv.org/html/2610.09820v1">[原文]</a></p>
+<h3>工程判断与下一步</h3><p>建议将 judge 版本、提示词、rubric 和人工锚点集一起冻结；升级时生成逐样本迁移矩阵，复核退化样本。与此前 RAGFlip 的思路相连，评估器变化也可能改变检索方案的选型结论。 <span class="meta">（本站分析）</span></p>
+<div class="resources"><h3>资源</h3><ul><li><a href="https://arxiv.org/abs/2610.09820v1">原始 Paper / 版本记录</a> · <a href="https://arxiv.org/html/2610.09820v1">HTML 全文</a> · <a href="https://arxiv.org/pdf/2610.09820v1">PDF</a></li><li><a href="https://github.com/ielab/judge-backbone-evolution">论文给出的作者代码与实验结果入口</a>（已核对 README 与复现内容）；独立项目页未确认。</li><li class="missing">中文精读：本期未收录经核验的独立中文解读，建议直接阅读以上一手材料。</li></ul></div></article>
+<div class="callout"><strong>下一步实验：</strong>先选与业务最接近的一条，用固定候选池、固定预算和固定评估器做对照；本期报告中的离线增益、成本最大降幅与线上业务收益不可混用。</div>
+<p><a class="button" href="2026-10-07.html">← 上一期：10/07</a> · <a href="../index.html">返回首页</a> · <a href="../year.html#update-2026-10-08">年度演进</a> · <a href="../paper-map.html#update-2026-10-08">研究问题</a> · <a href="../pipeline-map.html#update-2026-10-08">推荐链路</a></p>
+</div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · 日报 2026-10-08 · 补编 2026-10-09 · 一手来源 / v1 快照</div></footer></body></html>
