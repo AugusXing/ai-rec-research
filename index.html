@@ -1,23 +1,15 @@
 <!doctype html><html lang="zh-CN"><head><title>AI × 推荐算法研究站</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><meta name="description" content="聚焦 LLM、推荐系统、搜索/召回/排序/重排、生成式推荐、Agent、RAG、推理与训练优化的每日研究简报与长期技术地图。"></head><body>
 <header><div class="wrap nav"><div class="brand"><a href="index.html">AI × 推荐算法研究站</a></div><nav><a href="#latest"><b>最新进展</b></a><a href="year.html">年度综述</a><a href="paper-map.html">Paper Map</a><a href="pipeline-map.html">推荐链路</a><a href="#archive">每日归档</a></nav></div></header>
-<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 更新至 2026.10.29</span><h1>把论文串成技术演进，把实验结果翻译成工程判断</h1><p class="lead">聚焦 LLM、推荐系统、搜索 / 召回 / 排序 / 重排、生成式推荐、Agent、RAG、推理与训练优化。每日只保留真正值得投入时间的进展，并持续维护年度演进、Paper Map 与推荐链路。</p></div>
-<section id="latest"><div class="wrap"><div class="callout"><b>10/29 核心结论：</b>工业生成式推荐正在将 <b>多意图商品生成、多目标 Token-level 蒸馏、隐空间候选修分</b> 转化为可验证的业务收益。拍立淘2.0、Refiner 与 KL-MOPD 都提供了线上 A/B；REGER 与 LinkedIn Scoring 为评价列表 Generator/Reward 对齐提供下一步方法。</div>
-<h2>今日结论 / 最值得看</h2>
-<div style="overflow-x:auto"><table class="table"><thead><tr><th>优先级</th><th>Paper</th><th>方向</th><th>核心价值 / 证据</th></tr></thead><tbody>
-<tr><td><b>S+</b></td><td><a href="daily/2026-10-29.html#p-2610-36958">PailitaoMMSearch2.0</a></td><td>多模态生成式检索 / 全链路</td><td>淘天拍立淘约 14 天 A/B：商品详情 PV +17.90%、订单 +27.04%、GMV +8.94%；同款 / 编辑 / 搭配统一生成。</td></tr>
-<tr><td><b>S+</b></td><td><a href="daily/2026-10-29.html#p-2610-36890">Refiner</a></td><td>精排与重排 / Latent Reasoning</td><td>连续隐空间 residual 修改候选打分，CTR +0.75%、GMV +0.46% 线上 A/B，避免文本 CoT 的 decode 成本。</td></tr>
-<tr><td><b>S+</b></td><td><a href="daily/2026-10-29.html#p-2610-36973">KL-MOPD</a></td><td>RL / 多目标生成式推荐</td><td>SID 各位置按教师与学生差距加权，多目标蒸馏线上广告收入 +1.63%、GMV +2.20%。</td></tr>
-<tr><td><b>S+</b></td><td><a href="daily/2026-10-29.html#p-2610-37228">AutoRSE</a></td><td>推荐系统 Agent / 研究自动化</td><td>Agent 做工程实验效率显著，但创新研究仍更依赖人类提供正确假设；建议建设评价算法离线实验沙箱。</td></tr>
-<tr><td><b>S+</b></td><td><a href="daily/2026-10-29.html#p-2610-36383">LinkedIn Semantic Scoring</a></td><td>LLM Serving / Candidate Scoring</td><td>Prefill-only + 跨候选 masked MIS：生产 Serving 吞吐 1.9×，不是成交 A/B。</td></tr>
-<tr><td><b>S</b></td><td><a href="daily/2026-10-29.html#p-2610-37584">REGER</a></td><td>Semantic ID / Teacher Distillation</td><td>将判别式偏好投影到合法 SID prefix；可与 KL-MOPD 形成逐位教师监督的组合实验。</td></tr>
-</tbody></table></div>
-<p><a class="button" href="daily/2026-10-29.html">阅读 2026-10-29 完整日报 · 10 篇 →</a></p>
-<p class="note">本期 10 篇深读，观察以 10/28 arXiv 官方新列表为主；有些 v1 于 10/26—10/27 提交，不误报首发时间。生产 A/B、生产吞吐和离线基准严格区分。</p>
-<div class="section-title"><h2>长期研究入口</h2><p>年度综述、Paper Map 与推荐链路同步迭代</p></div><div class="grid">
-<div class="paper"><h3><a href="year.html">年度综述</a></h3><p>新增生成式检索从 SID 地址到多意图交易闭环、偏好教师逐 token 对齐与 Residual Ranking 演进。</p></div>
-<div class="paper"><h3><a href="paper-map.html">Paper Map</a></h3><p>按业务 Reward → token 分解 → 训练动作 → 推理修正组织精读路线，区分线上可证据与公开数据。</p></div>
-<div class="paper"><h3><a href="pipeline-map.html">推荐链路</a></h3><p>召回、粗排、精排、重排与混排、跨阶段统一；细化标签打分、图索引和 Agent 实验工具链落点。</p></div></div></div></section>
-<section id="archive"><div class="wrap"><h2>每日归档</h2><p class="note">79 期 · 2026-08-12 至 2026-10-29 · 以仓库 daily/ 文件为事实源，按日期倒序完整展示</p><div class="paper">
+<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 更新至 2026.10.30</span><h1>把论文串成技术演进，把实验结果翻译成工程判断</h1><p class="lead">聚焦 LLM、推荐系统、搜索 / 召回 / 排序 / 重排、生成式推荐、Agent、RAG、推理与训练优化。每日只保留真正值得投入时间的进展，并持续维护年度演进、Paper Map 与推荐链路。</p></div>
+<section id="latest"><div class="wrap"><div class="callout"><b>10/30 核心结论：</b>当前最值得押注的推荐/搜索瓶颈是<b>互补候选、完整证据交付与事实极性校准</b>。MAGE 发现相似性孤岛；LESSRec 按 SID 粒度路由历史；QESChunker / Tessera 分别修复索引和读取端的证据断裂；CoverageBench-Negate 暴露 dense 的否定判别弱点。</div><h2>今日结论 / 最值得看</h2><div style="overflow-x:auto"><table class="table"><thead><tr><th>优先级</th><th>Paper</th><th>方向</th><th>核心价值 / 证据</th></tr></thead><tbody><tr><td><b>S+</b></td><td><a href="daily/2026-10-30.html#p-2610-37409">MAGE</a></td><td>多模态推荐 / 互补召回</td><td>只建“语义相似邻居”容易漏掉互补商品；把协同行为中跨语义岛的残差显式写入多模态图表示。</td></tr>
+<tr><td><b>S+</b></td><td><a href="daily/2026-10-30.html#p-2610-37286">LESSRec</a></td><td>Semantic ID / 生成式召回</td><td>SID 解码某一级时，无关层级的历史 token 可能是噪声；用层级匹配的历史 + item 全局语义双路读取。</td></tr>
+<tr><td><b>S</b></td><td><a href="daily/2026-10-30.html#p-2610-37280">PDG-F</a></td><td>Agentic Search / 偏好约束</td><td>“想要 A，但必须满足 B，且优先 C”不是平铺关键词；把依赖关系先结构化再检索可避免约束错配。</td></tr>
+<tr><td><b>S+</b></td><td><a href="daily/2026-10-30.html#p-2610-37231">TaskBridge</a></td><td>商品搜索 / Query Reformulation</td><td>从“活动意图”到“商品词汇”的 lexical gap，可以通过目录锚定和多候选改写显著减少。</td></tr>
+<tr><td><b>S+</b></td><td><a href="daily/2026-10-30.html#p-2610-37080">Tessera</a></td><td>RAG / 证据交付</td><td>检索命中并不等于答案所需证据真正抵达 Reader；把碎片补齐标题、表头、章节路径，再同预算装箱。</td></tr>
+<tr><td><b>S+</b></td><td><a href="daily/2026-10-30.html#p-2610-36557">QESChunker</a></td><td>RAG / Chunking / 检索</td><td>Chunk 不必按字数/标点拍脑袋；用问题–证据监督直接优化静态索引中的完整证据覆盖。</td></tr>
+<tr><td><b>S</b></td><td><a href="daily/2026-10-30.html#p-2610-37162">CoverageBench-Negate</a></td><td>检索评测 / 矛盾与否定</td><td>Dense Retriever 可能理解语义主题却忽略“没 / 不 / 不能”；利用最小否定编辑构造可衡量的检索反事实压力测试。</td></tr></tbody></table></div><p><a class="button" href="daily/2026-10-30.html">阅读 2026-10-30 完整日报 · 9 篇 →</a></p><p class="note">本期为最新可核验官方论文的增补精读（arXiv 10/28 新稿列表、v1 10/26–27），非宣称过去24小时新首发；九篇目前均无可核验随机业务线上 A/B。</p><div class="section-title"><h2>长期研究入口</h2><p>年度综述、Paper Map 与推荐链路同步迭代</p></div><div class="grid"><div class="paper"><h3><a href="year.html">年度综述</a></h3><p>补上多模态语义相似→互补关系、SID 历史分层、RAG 建索引→证据交付的演进。</p></div><div class="paper"><h3><a href="paper-map.html">Paper Map</a></h3><p>按研究问题加入否定反事实检索、偏好依赖图与跨天向量稳定性，明确离线证据边界。</p></div><div class="paper"><h3><a href="pipeline-map.html">推荐链路</a></h3><p>新增五阶段映射：互补召回、query 改写、TRIP 精排、证据重排、跨天版本契约。</p></div></div></div></section>
+<section id="archive"><div class="wrap"><h2>每日归档</h2><p class="note">80 期 · 2026-08-12 至 2026-10-30 · 以仓库 daily/ 文件为事实源，按日期倒序完整展示</p><div class="paper">
+<p><a href="daily/2026-10-30.html"><b>2026-10-30</b></a> · MAGE、LESSRec、PDG-F、Tessera、QESChunker、否定敏感检索与跨日 Embedding · 9 篇</p>
 <p><a href="daily/2026-10-29.html"><b>2026-10-29</b></a> · 淘天拍立淘2.0 多意图生成、Refiner 隐空间重排、KL-MOPD 多目标蒸馏、Agent 与高效 Serving · 10 篇</p>
 <p><a href="daily/2026-10-28.html"><b>2026-10-28</b></a> · 生成式召回工业 A/B、单轨 List 蒸馏与上下文重排：PinGER、SLIDE、Octen、ACARe 等 · 8 篇</p>
 <p><a href="daily/2026-10-27.html"><b>2026-10-27</b></a> · 层级交易价值、SID 可控生成与高效检索重排：HGE、Deco、TCBSA、MICE-P 等 · 9 篇</p>
@@ -96,4 +88,4 @@
 <p><a href="daily/2026-08-15.html"><b>2026-08-15</b></a></p>
 <p><a href="daily/2026-08-14.html"><b>2026-08-14</b></a></p>
 <p><a href="daily/2026-08-13.html"><b>2026-08-13</b></a></p>
-<p><a href="daily/2026-08-12.html"><b>2026-08-12</b></a></p></div></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Last updated 2026-10-29</div></footer></body></html>
+<p><a href="daily/2026-08-12.html"><b>2026-08-12</b></a></p></div></div></section></main><footer><div class="wrap">AI × 推荐算法研究站 · Last updated 2026-10-30</div></footer></body></html>
