@@ -1,0 +1,283 @@
+<!doctype html><html lang="zh-CN"><head><title>2026-11-03｜AI × 推荐算法研究日报</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="MILES-Rec BrowseFlow Agentic Search RAGFlow ProSearch Fidelity Synopses 深度研究简报，固定七字段与原始来源。"><link rel="stylesheet" href="../style.css"></head><body>
+<header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html">首页</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main><div class="wrap hero"><span class="kicker">Daily Research Brief · 2026.11.03 · 北京时间 10:00</span><h1>从 List Reward 到行为模拟：让推荐决策更可控、可解释、可核验</h1><p class="lead">今日精选 9 项高相关研究，优先直接对接推荐/搜索的奖励设计、生成式重排、Agent 检索、ANN Serving 成本。先看结论和优先级，再逐篇进入论文精读笔记。</p></div>
+<section id="overview"><div class="wrap"><div class="callout"><b>今日核心结论：</b>今日最值得精读：高德 MILES-Rec 把用户隐式意图拆为可排序的多 Query List，并用两级 Advantage 训练互补覆盖；淘宝 BrowseFlow 用离散 Flow Matching 学习稀疏点击的分布；Metacognitive Search 将工具检索的过程 Reward 定义为可靠性增益；RAGFlow、ProSearch、Fidelity Synopses 分别揭示上下文成本、联合约束与向量检索资源分配问题。今日 9 项均无可确认推荐业务线上随机 A/B。</div><div class="grid">
+<div class="paper"><h3>🔥 最值得读</h3><p><a href="#p-2610-41319">MILES-Rec</a>：列表覆盖匹配+双层信用分配，与你的商品评价 List Generator / Reward 方向高度直接相关。</p></div>
+<div class="paper"><h3>📈 技术趋势</h3><p>主线从单点准确率转向“列表/集合完整性 + 可校准 Reward + 查询级计算预算”：意图是 Query List，行为是轨迹分布，RAG 是可治理证据，召回是风险受控的动态执行计划。</p></div>
+<div class="paper"><h3>⚖️ 证据等级</h3><p>主要是来自真实日志或公开 benchmark 的离线结果；没有已核验的真实推荐业务线上随机 A/B，不能宣称带来成交增量。</p></div>
+</div><h2>今日论文阅读优先级</h2><div style="overflow-x:auto"><table class="table"><thead><tr><th>优先级</th><th>论文</th><th>技术方向</th><th>Research Impact</th><th>一句话研究判断</th></tr></thead><tbody><tr><td>S+ ①</td><td><a href="#p-2610-41319">MILES-Rec</a></td><td>Generative Rec / 意图生成 / List-level RL</td><td><b>8.5/10</b></td><td>从行为历史生成的不该是一条笼统的意图，而是一组按业务效用排序、彼此互补的 Query；训练要同时约束列表覆盖和单 Query 质量。</td></tr>
+<tr><td>S+ ②</td><td><a href="#p-2610-41374">BrowseFlow</a></td><td>用户模拟 / Flow Matching / 生成式推荐评测</td><td><b>8.4/10</b></td><td>同一 List 不会产生唯一点击序列；对策略学习而言“响应分布”与稀疏关键事件，比预测每一步滚屏更有价值。</td></tr>
+<tr><td>S+ ③</td><td><a href="#p-2610-41738">Metacognitive Search</a></td><td>Agentic Search / Process Reward / GRPO</td><td><b>8.2/10</b></td><td>检索价值来自“动作前后的可靠性增益”，不是最终答案正确就奖励所有工具调用；把 Reward 从 Outcome 拆为 State Reliability 与 Action Utility。</td></tr>
+<tr><td>S+ ④</td><td><a href="#p-2610-41172">Context as Infrastructure</a></td><td>RAG / 知识编译 / Context Serving</td><td><b>9.0/10</b></td><td>强搜索 Harness 已解决相当多准确率问题；继续造索引未必增准确率，真正值得改的是“模型消费了什么上下文、成本多少”。</td></tr>
+<tr><td>S+ ⑤</td><td><a href="#p-2610-41396">ProSearch</a></td><td>搜索 / 多条件匹配 / 精排与重排</td><td><b>9.0/10</b></td><td>复杂 Query 的根本错误不在于找不到单个关键词，而在于所有约束必须被“同一候选事实”同时满足。跨段拆分的 Query Decomposition 可能损害关联。</td></tr>
+<tr><td>S ⑥</td><td><a href="#p-2610-41407">Fidelity Synopses</a></td><td>召回 / ANN / Serving 预算路由</td><td><b>8.6/10</b></td><td>固定高召回 ANN 配置是在用最难的 Query 给所有 Query 付费；性能选择应变成一次轻量 Query-aware 的可靠性预算分配。</td></tr>
+<tr><td>S ⑦</td><td><a href="#p-2610-40658">CEU</a></td><td>推荐治理 / 反事实解释 / 排序后处理</td><td><b>8.3/10</b></td><td>服务方没有模型参数权限时，仍可在 score-level 让用户过期行为不再主导推荐，但不应把结果层修正误称为真正从参数中删除训练数据。</td></tr>
+<tr><td>S ⑧</td><td><a href="#p-2610-41905">Multi-Tool Completeness</a></td><td>Agent / 多工具检索 / 集合召回</td><td><b>8.2/10</b></td><td>多个工具缺任何一个时，topK 的单工具召回再好也可能完全无法完成任务；集合完整率应替代只看平均相似度的局部思维。</td></tr>
+<tr><td>S ⑨</td><td><a href="#p-2610-40726">Li²SAO</a></td><td>RL / 异步训练 / Advantage Bootstrapping</td><td><b>8.6/10</b></td><td>长尾的 Agent rollout 使成组 GRPO 同步等待低效；但直接换单样本 Actor-Critic 会遭遇不可靠的冷启动 Critic，分阶段优势估计是关键。</td></tr></tbody></table></div>
+<p class="note"><b>时间与证据口径：</b>观察窗口：2026-11-02 10:00—2026-11-03 10:00（北京时间）。arXiv cs.IR/cs.CL 页面在 11/02 的新列表收录了多数本文成果，但这些论文的 arXiv 首稿日多为 10/29—10/30 UTC，CEU 更早（08/27）。所以本期定位为“过去 24 小时可见的重要研究进展与集中精读”，明确区分首稿、分类新列表、离线实验与真实线上 A/B。论文里出现的 online / near-line / production logs 不自动等于随机线上实验。</p>
+<div class="paper"><h3>推荐评价 List 的可执行研究路线</h3>
+<p><b>P0 | Reward &amp; 数据：</b>参照 MILES-Rec 构造曝光评价 List 的完整覆盖、单评价贡献及冗余惩罚；用真实满意度/成交做校准，避免只靠生成式教师评分。<b>P1 | User Simulator：</b>参照 BrowseFlow 用滚屏深度和稀疏关键行为生成对照数据，先做 shadow 测试而非直接上线训练 policy。<b>P2 | Retrieval &amp; Serving：</b>ProSearch 的联合条件匹配 + Fidelity Synopses 的受限动态 ANN 路由。<b>P3 | Agent：</b>只对可靠性不足的购物问答增加额外证据检索，采用冷启动稳定的 GRPO/actor-critic 训练。</p>
+<p><b>最小实验矩阵：</b>固定候选、相同训练预算，对比 单一 List Reward、单 item Reward、List+Item 双层 Advantage；按 Query 意图、负面证据和列表长度拆分离线 Recall / 条件满足率 / Reward 校准；最终由可归因小流量 A/B 验证成交、满意度、P99 与成本。</p></div></div></section>
+<section id="deep-reads"><div class="wrap"><div class="section-title"><h2>9 项重点论文 · 深度精读</h2><p>逐篇保留固定七字段、训练 Loss、Serving、实验、工程启发与资源区</p></div><article class="paper" id="p-2610-41319"><div class="phase">Generative Rec / 意图生成 / List-level RL · S+ ① · arXiv 首稿以 abs 页日期为准</div>
+<h2>MILES-Rec <small>· Uncovering Implicit Intents from Mobility Behaviors for Cross-Domain POI Recommendation</small></h2><div class="callout"><b>核心研究判断：</b>从行为历史生成的不该是一条笼统的意图，而是一组按业务效用排序、彼此互补的 Query；训练要同时约束列表覆盖和单 Query 质量。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>8.5/10 <small>（范式 9.2、工业 7.1、创新 9.4、相关 10、研究空间 9.5、复现 4.8，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>高德真实行为日志 + 200 万 POI 离线检索评测；近线缓存部署在开发中，未报告线上随机实验</td></tr>
+<tr><th>创新性</th><td>多意图优先级 Query List + 一对一服务覆盖匹配 + 全局/局部两级 Advantage 的 GRPO</td></tr>
+<tr><th>与你方向的相关度</th><td>极高（评价 Generator、List Reward、互补证据和用户满意度目标）</td></tr>
+<tr><th>是否官方开源</th><td>未核验论文官方完整实现和 MILES-Bench 数据开放</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；真实生产日志用于离线研究 ≠ 线上 A/B</td></tr>
+<tr><th>阅读优先级</th><td>S+ ①</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>地图导航/路线等高频行为是低显式标注的消费意图代理：到公园可能隐含亲子餐饮与停车，而直接预测下一个地理点不能表达跨域服务需求。对应商品评价场景，浏览商品与历史行为也可触发多属性证据需求。</p>
+<h3>现有方法的核心问题</h3><p>传统 Query 生成用静态文本监督，容易输出重复、无优先级的服务词；只用末端点击作一个序列级奖励会把信用分配平均到整个列表。服务领域稀疏反馈、同一位置多意图与用户选择偏差使离线监督存在歧义。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>SFT 阶段将 Profile+导航行为归纳为情境理解→需求扩展→Query 优先级；RL 使用后续实际消费行为构造 Query×服务组匹配矩阵，语义向量相似度与类别匹配联合打分；再按位置折扣做一对一最大权匹配，限制同一个服务被多个 Query 反复计分。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>核心 R_list=maxMatching(Σ s(query,service)/log2(rank+1))/M−λdup·重复−长度惩罚；另定义每条 Query 的局部相关性得分。组内归一化 A_list 和 A_local，仅将局部 Advantage 写到对应 Query token，全局 Advantage 施于全回答；dual-clipped GRPO + 参考 SFT 的 KL 约束。该信用分配比直接把成交标签均匀广播到每个位置更可解释，但仍可能受 Reward 代理误差影响。</p>
+<h3>推理与 Serving 数据流</h3><p>作者称正在开发异步的近线意图推断：导航/搜索事件触发后产出意图 Query 和向量并缓存，线上通过空间混合检索返回 POI。上线时要处理查询数量预算、Query 去重、缓存失效、地理可达性与召回/重排一致性；不能声称论文已完成实时部署。</p>
+<h3>实验设置、数据及基线</h3><p>MILES-Bench 来自大型地图平台；19,006 用户 SFT、3,000 用户 RL、500 验证，MapRec-Rich/Sparse 各 1,000 个用户；同一 200 万 POI 候选池，评估 Hit@50、Recall@50、NDCG@50、Service Intent Alignment 和 Semantic Demand Alignment。对照通用 LLM、GLoSS、Rec-R1、PIGEON 等，并跨 Qwen3.5 4B/9B/27B/122B-A10B。</p>
+<h3>离线指标与精读结论</h3><p>以 Qwen3.5-4B 的 Rich 设置为例，SFT→GRPO：Hit@50 1.50%→3.40%、SDA 34.97→51.37；Sparse 的 SDA 15.77→25.80。注意 Hit@50 绝对值仍低，不能把语义评分当作真实成交提升；某些 Sparse 大模型配置 Recall@50 不随 RL 单调改善。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；真实生产日志用于离线研究 ≠ 线上 A/B</p>
+<h3>效率、训练与 Serving 成本</h3><p>教师演示与 RL 需要昂贵的多轮采样及外部服务匹配，离线成本明显高于静态 Embedding；近线缓存可转移实时生成负担。必须追踪单次触发 token、Query 数、索引调用、缓存命中率、P99 与最终每次有效 POI 命中成本。</p>
+<h3>相较主流方法的优势与代价</h3><p>相较单意图检索多了 List 互补覆盖与可解释排序；相较只用 List Reward 更明确责任归属；相较交叉编码 End-to-end 推荐，Query 作为显式契约便于独立服务化。不过表达过度依赖文本匹配教师，离线日志不等于可干预数据。</p>
+<h3>适用场景与业务迁移</h3><p>商品评价：把用户意图拆为质量/尺码/物流/售后等 Query，按价值输出 Top-K 证据请求；用多个评价组覆盖不同决策关切，训练 Generator 降低重复观点、提高成交与满意度的联合 List Reward。</p>
+<h3>局限和尚未解决的问题</h3><p>未报告真实 A/B 与全平台因果提升；Query-服务匹配器偏差、流量倾斜和反事实曝光缺失待解决；如何在单个列表中安全处理强负面证据与长期后悔仍未回答。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>优先做 matched candidate 的 SFT vs 单 Reward GRPO vs 双层 Advantage 对照，分购买意图/评论长度/长尾类目查看覆盖、满意度与成交；用 IPS/DR 与小流量探索校准奖励。职业能力重心：多目标信用分配 + 训练/Serving 分离。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.41319" target="_blank" rel="noopener noreferrer">Uncovering Implicit Intents from Mobility Behaviors for Cross-Domain POI Recommendation · arXiv:2610.41319</a>；<a href="https://arxiv.org/html/2610.41319v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-10-29/30 UTC，2026-11-02 出现在 arXiv 当日分类新列表；不称为过去 24h 首次提交。）</p>
+<p>② <b>官方项目/技术博客：</b>未核验独立官方项目页或技术博客。</p>
+<p>③ <b>官方代码 / 模型 / 数据：</b>未核验官方完整代码开源；不虚构官方 GitHub。。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article>
+<article class="paper" id="p-2610-41374"><div class="phase">用户模拟 / Flow Matching / 生成式推荐评测 · S+ ② · arXiv 首稿以 abs 页日期为准</div>
+<h2>BrowseFlow <small>· Sparse Event Flow Matching for Generative User Simulation</small></h2><div class="callout"><b>核心研究判断：</b>同一 List 不会产生唯一点击序列；对策略学习而言“响应分布”与稀疏关键事件，比预测每一步滚屏更有价值。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>8.4/10 <small>（范式 9、工业 7.3、创新 9、相关 10、研究空间 9.2、复现 4.5，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>淘宝真实行为 TaobaoBrowse 数据集上的离线实验，未披露生产灰度</td></tr>
+<tr><th>创新性</th><td>先采样浏览范围，再对点击/点赞等稀疏事件使用离散流匹配的随机插入机制</td></tr>
+<tr><th>与你方向的相关度</th><td>极高（评价列表多轮交互、模拟策略评估和稀疏成交/满意度）</td></tr>
+<tr><th>是否官方开源</th><td>未核验作者官方代码与 TaobaoBrowse 完整可下载数据</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；用户模拟校准实验不是推荐系统线上 A/B</td></tr>
+<tr><th>阅读优先级</th><td>S+ ②</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>离线策略优化和推荐模拟常以单条轨迹或逐位置点击标签训练，难以生成同一曝光条件下的多种合理响应；滚屏/滑动样本远多于点击与收藏，导致高价值稀疏反馈被普通动作淹没。</p>
+<h3>现有方法的核心问题</h3><p>逐步自回归模拟将关键行为拆得过细，同时暴露长度偏差和错误累积；只拟合点击 AUC 的模型可能得到好局部排序，却无法还原整段会话的点击次数、发生位置、退出时间等分布。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>条件变量包含用户历史和待曝光列表；先用分类器模拟 browsing extent/终止深度，再将关键事件压缩为按位置有序的集合。以随机保留事件生成 partial path，让 Transformer 预测“事件总插入强度 λ 与具体插入动作 π”，通过连续流时间将空状态逐步恢复为完整事件集。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>L = −log p_η(extent|context) + [(1−s)λ_θ − R log λ_θ − Σ_missing log π_θ(insert)]，s∼U(0,1)；训练目标来自插入率向量的广义 KL/conditional rate matching，而非直接用 AUC 优化完整序列。验证选取 Energy Score 最低 checkpoint；样本一条真实轨迹可产生多个随机保留的部分状态。</p>
+<h3>推理与 Serving 数据流</h3><p>离线/沙箱环境多次采样响应：先采样浏览深度，再以 32 个离散流时间步逐步插入点击、点赞等事件，得到不同完整轨迹。真实线上 Serving 不应每次请求都运行多样本流过程；适合日常离线压力测试、候选策略的行为分布审计。</p>
+<h3>实验设置、数据及基线</h3><p>TaobaoBrowse 训练 100K/验证 10K/测试 20K（点击率 5.48%），KuaiRand-Like 和 AdSERP 两类辅助数据；对照 KuaiSim、RL4RS-DIEN、UserSim、UBM、DBN、CaseRec；Energy Score、事件计数 Wasserstein-1、PPL、SeqHit@1 和 AUC 同时报告。</p>
+<h3>离线指标与精读结论</h3><p>TaobaoBrowse ES=0.07264±0.00027、Count W1=0.0697±0.0051，明显优于基线 ES≈0.108—0.112、Count W1≥0.259；但 AUC 0.6126 低于 RL4RS-DIEN 的 0.6592，说明“分布生成更真”并不保证单点点击判别更准。AdSERP ES=0.14271、SeqHit@1=0.2216。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；用户模拟校准实验不是推荐系统线上 A/B</p>
+<h3>效率、训练与 Serving 成本</h3><p>128 维隐藏、历史/上下文/事件编码 Transformer 分别 2/2/4 层；训练 batch128，生成时间离散为 32 段；论文未给线上端到端 GPU-ms/P99、每万条模拟成本，评估时应计入多轨迹采样的计算放大倍数。</p>
+<h3>相较主流方法的优势与代价</h3><p>优于单步 Click Model 的轨迹多样性与稀疏事件匹配；但对于因果策略迁移，模拟器若只用旧政策曝光训练，会复制旧流量支持范围内的分布，超出支持集仍不可可信外推。</p>
+<h3>适用场景与业务迁移</h3><p>评价 List 排列仿真：输入曝光评价序列、用户属性与当前商品上下文，生成滚屏深度、展开差评、点有用和最后成交等事件，用于检查新重排策略的用户体验风险。</p>
+<h3>局限和尚未解决的问题</h3><p>Energy Score/计数校准不等于反事实无偏；历史曝光政策、重排位置分布、长期满意度和用户异质性尚须检验；TaobaoBrowse 的数据开放性未核验。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>与实际小流量随机列表实验联结做模拟校准，比较 simulator 对列表 Reward 方差、延迟成交和异质人群响应的预测可信区间；对评价模块先实现 response distribution shadow test。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.41374" target="_blank" rel="noopener noreferrer">Sparse Event Flow Matching for Generative User Simulation · arXiv:2610.41374</a>；<a href="https://arxiv.org/html/2610.41374v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-10-29/30 UTC，2026-11-02 出现在 arXiv 当日分类新列表；不称为过去 24h 首次提交。）</p>
+<p>② <b>官方项目/技术博客：</b>未核验独立官方项目页或技术博客。</p>
+<p>③ <b>官方代码 / 模型 / 数据：</b>未核验官方完整代码开源；不虚构官方 GitHub。。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article>
+<article class="paper" id="p-2610-41738"><div class="phase">Agentic Search / Process Reward / GRPO · S+ ③ · arXiv 首稿以 abs 页日期为准</div>
+<h2>Metacognitive Search <small>· Search When Needed, Proceed When Reliable: Metacognitive Reliability Supervision for Efficient Agentic Search</small></h2><div class="callout"><b>核心研究判断：</b>检索价值来自“动作前后的可靠性增益”，不是最终答案正确就奖励所有工具调用；把 Reward 从 Outcome 拆为 State Reliability 与 Action Utility。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>8.2/10 <small>（范式 9.1、工业 7、创新 9、相关 9.4、研究空间 9.5、复现 4，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>7 个 QA benchmark + 检索次数控制实验，尚无商业生产随机实验</td></tr>
+<tr><th>创新性</th><td>分别监督当前状态能否不检索推进，与一次检索提升了多少可靠度</td></tr>
+<tr><th>与你方向的相关度</th><td>高（Reward 质量、决策门控和自适应评论证据召回）</td></tr>
+<tr><th>是否官方开源</th><td>作者表示未来开源代码与 checkpoint，当前未核验可下载实现</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；论文只给离线 QA/检索次数</td></tr>
+<tr><th>阅读优先级</th><td>S+ ③</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>研究型 Agent/搜索重排在每一步都检索容易浪费 token 和延迟，但少检索会产生幻觉。末端答案对错包含检索命中、后续推理等混杂，无法清楚说明某次搜索是否有价值。</p>
+<h3>现有方法的核心问题</h3><p>仅用单条 trajectory 的终态 reward 将“本来能答对”和“工具让它答对”混在一起；不同模型/检索器的错误会掩盖局部决策可靠性。需要能对 stop/search 分别赋值、可比较的过程信号。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>训练期为每段局部结论建立可靠度探针：当前状态结论可靠性 r_before 决定是否应直接继续；检索执行后估计 r_after，差值构成 search-action score；对不搜索与搜索路径使用相应动作分数并按有效决策平均。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>GRPO 组相对奖励 R_total=(1−λ_f)R_answer + λ_f R_format + λ_p·mean_t S_t。若某条轨迹结论错误，仍可从正确搜索与错误无效检索得到过程信号；只在训练期执行局部可靠性 probe，推理时无需这些额外探针。</p>
+<h3>推理与 Serving 数据流</h3><p>在线策略自行生成 reasoning、可选 search query 和最终答复；可搭配固定检索器及预算门控（最大调用次数、token、P99）。关键线上校验是一次检索是否降低幻觉而非仅增加文档数。</p>
+<h3>实验设置、数据及基线</h3><p>Qwen2.5-7B 为主，在 NQ、TriviaQA、PopQA、HotpotQA、2Wiki、MuSiQue、Bamboogle 七个 QA 基准对比 R1-Searcher、Search-R1、β-GRPO、HiPRAG 等；分终态答案 CEM 与平均搜索调用次数验证。</p>
+<h3>离线指标与精读结论</h3><p>论文在七集加权平均 CEM=69.3，HiPRAG 67.2（+2.1 pct）；统一 7B 比较平均 1.64 次搜索/题，对 HiPRAG 复现 1.76 次（约−6.8%）；需区分作者复现配置与原论文公布性能。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；论文只给离线 QA/检索次数</p>
+<h3>效率、训练与 Serving 成本</h3><p>训练中多次可靠度估计与成组 rollout 增加 GPU 时间；在线不加 teacher probe，主节省来自更少检索及后续上下文。上线需用 end-to-end p95、平均搜索数、回答错误损失计算净收益。</p>
+<h3>相较主流方法的优势与代价</h3><p>比 Outcome-only 的 Search-R1 有更细的局部梯度，比规则式“先检索再答”可学 query-specific 搜索强度；但校准器与训练集错误可能在分布外诱导过度自信。</p>
+<h3>适用场景与业务迁移</h3><p>商品评价可把每条重要结论（尺码偏小、材质问题）是否已有足够证据看成状态可靠性；仅在证据不足且补充召回有增益时触发昂贵的评论检索/LLM Judge。</p>
+<h3>局限和尚未解决的问题</h3><p>暂无生产线上 A/B；过程可靠性是否对不同语言、用户意图和时效漂移校准未知。需要对稀疏低质评论建立 abstain、引用验证和反事实召回校准机制。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>设计“候选数固定 vs 自适应补召回”的 A/B，计算每一次额外属性证据的 list-value 增量，用用户满意度而非句子准确率校准 step reward。职业切入：Process Reward Design + tool-call budget。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.41738" target="_blank" rel="noopener noreferrer">Search When Needed, Proceed When Reliable: Metacognitive Reliability Supervision for Efficient Agentic Search · arXiv:2610.41738</a>；<a href="https://arxiv.org/html/2610.41738v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-10-29/30 UTC，2026-11-02 出现在 arXiv 当日分类新列表；不称为过去 24h 首次提交。）</p>
+<p>② <b>官方项目/技术博客：</b>未核验独立官方项目页或技术博客。</p>
+<p>③ <b>官方代码 / 模型 / 数据：</b>未核验官方完整代码开源；不虚构官方 GitHub。。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article>
+<article class="paper" id="p-2610-41172"><div class="phase">RAG / 知识编译 / Context Serving · S+ ④ · arXiv 首稿以 abs 页日期为准</div>
+<h2>Context as Infrastructure <small>· Knowledge Compilation for Retrieval in Agentic Systems with Harnesses</small></h2><div class="callout"><b>核心研究判断：</b>强搜索 Harness 已解决相当多准确率问题；继续造索引未必增准确率，真正值得改的是“模型消费了什么上下文、成本多少”。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>9.0/10 <small>（范式 9.1、工业 8.5、创新 8.7、相关 9.3、研究空间 9、复现 9.7，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>RAGFlow 开源项目配套实验；无可核验推荐业务线上 A/B</td></tr>
+<tr><th>创新性</th><td>从检索精度转为结构化知识供给、证据路径与决策门控，实测 token/延迟收益</td></tr>
+<tr><th>与你方向的相关度</th><td>高（评价证据、多跳真实可核验、Agent Serving）</td></tr>
+<tr><th>是否官方开源</th><td>是：论文明确指向作者参与的 infiniflow/ragflow；具体 benchmark 数据并非全部公开</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；文中效率测量不是随机在线实验</td></tr>
+<tr><th>阅读优先级</th><td>S+ ④</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>多轮 RAG Agent 往复 query/reformulate/read 导致同一段落重复进入提示词，占满 context、增加 prefill 与工具调用成本；结构化文档和知识编译可把离线生成的关键信息变为线上可读资产。</p>
+<h3>现有方法的核心问题</h3><p>将 GraphRAG 或分层导航简单当作“精度必升”没有证据；复杂结构可能在强 Agent 下退化。需要把准确率、查询 tokens、工具轮次、总延迟、治理成本解耦计量。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>五站式 Agent harness 控制 query、检索、证据选择、再检索和回答，知识编译侧构建目录树、带 claim-evidence 叶子的导航、entity graph、wiki、timeline 等。树上可直接复用足够可信的证据，否则 fallback 原始文本检索。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>不是新的单一推荐 CE/GRPO Loss；侧重知识摄取/编译、证据组织与是否可替代原文的门控。编译阶段可能调用 LLM 做事实抽取，必须保留原始出处与版本，避免生成摘要被当成原始证据。</p>
+<h3>推理与 Serving 数据流</h3><p>预先编译知识与引用证据；运行时根据 sufficiency gate 选走导航内容还是普通 BM25/grep，减少无效正文读入；若查不到充分证据可退回原始段落。每种替代需追踪延迟/上下文 token/答案引用可靠率。</p>
+<h3>实验设置、数据及基线</h3><p>论文报告 BM25/grep + MiniMax M3 harness 在 BrowseComp-Plus 85%、FRAMES 91%（作者自己的实验配置）；在 FRAMES 结构化工件没有显著精度提升，PageIndex 型 outline 大规模下反而降性能。</p>
+<h3>离线指标与精读结论</h3><p>claim-evidence 导航叶子在足够时少 91% query tokens，不足时多 1.9%，平均节省 38%；门控让测量延迟从 140 秒降至 30 秒。但 token savings 伴随部分检索轮次代价，不能外推成所有 RAG 场景 4.7 倍提速。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；文中效率测量不是随机在线实验</p>
+<h3>效率、训练与 Serving 成本</h3><p>离线编译/索引维护开销换取线上短上下文与减少 LLM 输入；主要变量为每次查询 token、编译更新频率、证据过期率、GPU prefill、存储空间和检索轮次。</p>
+<h3>相较主流方法的优势与代价</h3><p>比无状态全文 RAG 有组织/可追踪性；比一味 GraphRAG 能承认强基线条件下准确率无显著优势；风险是编译误写与过时证据污染，知识树为团队协作所需但不能自动替代强相关性模型。</p>
+<h3>适用场景与业务迁移</h3><p>评价系统将每个商品按属性/故障/场景编译 claim—evidence 索引，生成列表时快速覆盖“正反证据+时间”，并保留回溯到原评价的路径。</p>
+<h3>局限和尚未解决的问题</h3><p>部分提升只在作者自建 harness 下成立，跨语言、多版本动态评价与负面事实更新难度很高；服务质量不能只报告答案成功率和 token，仍需平台随机实验。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>构造“原始评论直接检索 vs 结构化证据树”消融，控制评价候选质量，评估事实一致率、差评覆盖、响应时间和真实列表成交满意度；将编译质量与查询时 Budget Router 联合优化。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.41172" target="_blank" rel="noopener noreferrer">Knowledge Compilation for Retrieval in Agentic Systems with Harnesses · arXiv:2610.41172</a>；<a href="https://arxiv.org/html/2610.41172v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-10-29/30 UTC，2026-11-02 出现在 arXiv 当日分类新列表；不称为过去 24h 首次提交。）</p>
+<p>② <b>官方项目/技术博客：</b><a href="https://github.com/infiniflow/ragflow" target="_blank" rel="noopener noreferrer">作者项目 / 官方项目入口</a></p>
+<p>③ <b>官方代码 / 模型 / 数据：</b><a href="https://github.com/infiniflow/ragflow" target="_blank" rel="noopener noreferrer">作者或论文指向的代码仓库</a>。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article>
+<article class="paper" id="p-2610-41396"><div class="phase">搜索 / 多条件匹配 / 精排与重排 · S+ ⑤ · arXiv 首稿以 abs 页日期为准</div>
+<h2>ProSearch <small>· Benchmarking Multi-Constraint Protocol Retrieval in Experimental Science</small></h2><div class="callout"><b>核心研究判断：</b>复杂 Query 的根本错误不在于找不到单个关键词，而在于所有约束必须被“同一候选事实”同时满足。跨段拆分的 Query Decomposition 可能损害关联。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>9.0/10 <small>（范式 9、工业 8.4、创新 8.4、相关 9.5、研究空间 9.2、复现 10，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>NeurIPS 2026 Evaluation &amp; Datasets，完整评测代码和数据可用；仍是离线评测</td></tr>
+<tr><th>创新性</th><td>强调 3–5 条绑定的数值/否定条件，诊断“每条命中但组合不成立”的误检</td></tr>
+<tr><th>与你方向的相关度</th><td>极高（复杂评价 Query、细粒度评论相关性、重排）</td></tr>
+<tr><th>是否官方开源</th><td>是：kg4sci/ProSearch 官方代码；Hugging Face 数据已公开，数据 viewer 当前有 schema 预览问题</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；没有商品评价或线上广告流量证据</td></tr>
+<tr><th>阅读优先级</th><td>S+ ⑤</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>科研协议查找、商品评价筛选都常含多条件：品牌/版本/尺寸/负面体验/数值区间/否定。单向量的语义相似可以命中相关话题，却没保证真正满足条件联合约束。</p>
+<h3>现有方法的核心问题</h3><p>传统检索的 qrels 过粗，易把“满足 A 的段落”与“满足 B 的另一段落”当成同一实验可用证据；拼接所有约束的假相关导致 nDCG 虚高。需要精确负例、约束绑定和分层审计。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>在真实科学文章方法段落抽取 60 个字段及依赖，自动构造 3–5 约束 Query，显式含数值阈值与否定，并生成近似但不满足某条件的 hard negatives；构造 6 学科、1515 Query 的证据核验评测集。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>这是 benchmark/评估方法，不提出新的端到端训练 Loss；可迁移训练设计为 Q–document × 每条约束的多标签 BCE/ordinal loss，并增加“同实验约束绑定”一致性；本文基准使用现成 dense retrievers + top100 reranker。</p>
+<h3>推理与 Serving 数据流</h3><p>用双塔/ANN 召回高覆盖 top100，交叉编码精排严格审查每个数值/否定条件和“相同对象”的联合满足；设置无法解析条件时的回退，控制长文档 token 和精排 P99。</p>
+<h3>实验设置、数据及基线</h3><p>19 个代表 retriever，6 类领域共 1515 条 Query，Qwen3-Embedding-8B、BGE、Rank-R1、ReasonRank、Qwen3-Reranker 等。除方法段落池外还测全正文池，比较 Query 改写、分解、难负例与不同检索级别。</p>
+<h3>离线指标与精读结论</h3><p>最强第一阶段 Qwen3-Embedding-8B 平均 nDCG@10=0.290，top100 后 Qwen3-Reranker=0.474；扩大到全文检索语料约 5.8 倍时该模型 nDCG 由 0.290 降到 0.206。研究强调剩余错误的核心是联合约束绑定。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；没有商品评价或线上广告流量证据</p>
+<h3>效率、训练与 Serving 成本</h3><p>额外 cross-encoder 和条件解析增加 CPU/GPU-ms；可以用轻量硬规则提前过滤数值冲突，昂贵 LLM 只用于高价值不确定 Query。看 nDCG、精排耗时与错漏负面评价率的 Pareto。</p>
+<h3>相较主流方法的优势与代价</h3><p>相比单纯硬负例训练，这里明确拆解数值/否定/同一对象绑定；但模板造句和 LLM 标签可能与真实用户检索有差距，须用真实客服/搜索 Query 验证迁移。</p>
+<h3>适用场景与业务迁移</h3><p>商品评价检索：用户问“洗衣机 60℃ 烘干后是否缩水且不漏水”，必须同一评价证据覆盖物品、工况与否定；也可先多路召回，再让列表覆盖彼此互补的真实约束。</p>
+<h3>局限和尚未解决的问题</h3><p>公开 HF 数据 viewer 当前报 schema 不一致，可能影响在线预览但原始文件可用于离线加载；自建标签和模板存在标注偏差。无用户满意度/成交线上验证。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>对评价问法构建 1000 条“同实体绑定/否定/范围/多属性”困难查询集，以 constraint recall、hard-neg false-positive、List coverage、成交满意度全链路衡量收益；研究分项约束损失。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.41396" target="_blank" rel="noopener noreferrer">Benchmarking Multi-Constraint Protocol Retrieval in Experimental Science · arXiv:2610.41396</a>；<a href="https://arxiv.org/html/2610.41396v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-10-29/30 UTC，2026-11-02 出现在 arXiv 当日分类新列表；不称为过去 24h 首次提交。）</p>
+<p>② <b>官方项目/技术博客：</b><a href="https://github.com/kg4sci/ProSearch" target="_blank" rel="noopener noreferrer">作者项目 / 官方项目入口</a></p>
+<p>③ <b>官方代码 / 模型 / 数据：</b><a href="https://github.com/kg4sci/ProSearch" target="_blank" rel="noopener noreferrer">作者或论文指向的代码仓库</a>；<a href="https://huggingface.co/datasets/kg4sci/ProSearch" target="_blank" rel="noopener noreferrer">官方数据集</a>。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article>
+<article class="paper" id="p-2610-41407"><div class="phase">召回 / ANN / Serving 预算路由 · S ⑥ · arXiv 首稿以 abs 页日期为准</div>
+<h2>Fidelity Synopses <small>· Pre-Execution Plan Selection for Approximate Vector Search</small></h2><div class="callout"><b>核心研究判断：</b>固定高召回 ANN 配置是在用最难的 Query 给所有 Query 付费；性能选择应变成一次轻量 Query-aware 的可靠性预算分配。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>8.6/10 <small>（范式 9、工业 8.2、创新 9.1、相关 9.6、研究空间 9.2、复现 5.2，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>5.8M LAION、4 Embedding 模型、16 组合索引离线性能评测；无线上 A/B</td></tr>
+<tr><th>创新性</th><td>索引执行前按 Query 所处向量区域估计不同索引参数的召回保真度，并动态选最便宜的达标方案</td></tr>
+<tr><th>与你方向的相关度</th><td>极高（评论向量召回高 QPS、P99 与成本约束）</td></tr>
+<tr><th>是否官方开源</th><td>未核验官方代码仓库；论文给方法和系统测量但不等于实现已开源</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；测量的是 ANN 离线运行成本与 recall fidelity</td></tr>
+<tr><th>阅读优先级</th><td>S ⑥</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>同一向量索引有不同 HNSW/IVF-PQ、search 参数及压缩配置，便宜配置对容易 Query 也能满足 topK Fidelity，固定最保守配置增加不必要计算。</p>
+<h3>现有方法的核心问题</h3><p>真正的 Fidelity 需 exact topK 才能知道；线上无法为每个 Query 做全库暴力搜索选索引。简单按 embedding 长度/范数路由也难预测不同索引的错误分布。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>离线采样 Query 算 exact topK，围绕 landmark 对 embedding 空间分桶；每个 cell×索引配置记录达成 Fidelity 阈值的概率；线上只做一次最近 landmark 查找，基于跨请求可容忍失败比例选择最便宜计划。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>不是可训练的推荐 Loss；核心为离线 Fidelity 经验频率的标定与预算优化。优化目标 min Σ成本，约束工作负载中达标率≥1−δ；漂移会让旧 synopsis 失校，须定期核验。</p>
+<h3>推理与 Serving 数据流</h3><p>多索引或单索引多配置并存；Query 到来时先定位 cell，依据服务等级目标与当前负载选配置，再执行 ANN。必须按 query 难度分桶测真实 Recall@K/P99、溢出回退和负载不均。</p>
+<h3>实验设置、数据及基线</h3><p>5.8M LAION，4 种 embedding、16 种模型×Query 方向；对照离线全量选择的静态部署、单索引计划与理想 oracle，报告保持同样允许 fidelity 失败比例下的相对执行成本。</p>
+<h3>离线指标与精读结论</h3><p>16 个设置都比满足相同约束的静态方案便宜，成本中位数 0.72×，landmark batch lookup 为 21–32µs/Query；并非所有情况成本可减半，且存在 cell 内 Query 差异导致的不可达下界。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；测量的是 ANN 离线运行成本与 recall fidelity</p>
+<h3>效率、训练与 Serving 成本</h3><p>索引副本/建库与离线 exact 搜索生成 synopsis 有不小一次性成本，论文还指出单 Query 对高维 embedding 的 naive landmark 扫描可能很慢；收益必须减去 synopsis 更新、显存占用与热数据 I/O。</p>
+<h3>相较主流方法的优势与代价</h3><p>相较固定 HNSW efSearch 更智能地调成本；但依赖 Query 分布平稳与索引配置族一致，失败预算允许一定比例低 fidelity，不适合零容忍检索任务。</p>
+<h3>适用场景与业务迁移</h3><p>评价召回按用户 Query 易难度动态分配 ANN ef / probe，难的否定/长尾商品保留高召回，简单 Query 降成本；应与评估器一致性、List Reward 损失预算联动。</p>
+<h3>局限和尚未解决的问题</h3><p>无线上全站 A/B 与真实商品评价场景数据；数据分布、索引更新和 embedding 漂移可能使离线置信度失效；质量下降可能集中在弱势用户群体。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>先以 shadow routing 验证分桶 recall 和置信区间，再小流量做 QPS、GPU-ms、P99、Recall@K 及最终 List conversion/satisfaction 的联合优化，建立难 Query 的强制回退机制。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.41407" target="_blank" rel="noopener noreferrer">Pre-Execution Plan Selection for Approximate Vector Search · arXiv:2610.41407</a>；<a href="https://arxiv.org/html/2610.41407v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-10-29/30 UTC，2026-11-02 出现在 arXiv 当日分类新列表；不称为过去 24h 首次提交。）</p>
+<p>② <b>官方项目/技术博客：</b>未核验独立官方项目页或技术博客。</p>
+<p>③ <b>官方代码 / 模型 / 数据：</b>未核验官方完整代码开源；不虚构官方 GitHub。。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article>
+<article class="paper" id="p-2610-40658"><div class="phase">推荐治理 / 反事实解释 / 排序后处理 · S ⑦ · arXiv 首稿以 abs 页日期为准</div>
+<h2>CEU <small>· Explain, Then Forget: Recommendation Unlearning under Asymmetric Access Constraint</small></h2><div class="callout"><b>核心研究判断：</b>服务方没有模型参数权限时，仍可在 score-level 让用户过期行为不再主导推荐，但不应把结果层修正误称为真正从参数中删除训练数据。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>8.3/10 <small>（范式 8.5、工业 6.3、创新 8.4、相关 9.4、研究空间 8.8、复现 9.5，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>ICDM 2025 论文的 arXiv 更新/新列表收录；三公开数据集离线实验</td></tr>
+<tr><th>创新性</th><td>黑盒服务端模型不改权重，通过因果解释定位遗忘交互并干预最终排序分数</td></tr>
+<tr><th>与你方向的相关度</th><td>高（样本质量治理、过期偏好、用户评论相关推荐）</td></tr>
+<tr><th>是否官方开源</th><td>是：作者项目 zhang-haichao/CEU</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；不能把离线 unlearning 与删除权利合规完全等同</td></tr>
+<tr><th>阅读优先级</th><td>S ⑦</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>MLaaS 下运营方通过 API 获取候选分数而无法重训模型。用户想撤回错误点击、删除长期偏好或纠正推荐历史时，参数编辑与完整重训不可行。</p>
+<h3>现有方法的核心问题</h3><p>现有 machine unlearning 需要访问模型权重或训练集；连续参数更新会积累误差。仅靠给忘记样本降权又难区分它对哪类候选的真实贡献。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>Causal Explanation-based Unlearning：先分析某待忘记交互对当前分数和候选排序的边际贡献，然后只对其影响到的候选做 score-level 扣除/校正；服务方无需获得模型内部梯度。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>核心是解释估计与分数干预，不提出新通用 Generator CE/GRPO Loss；评估应对照 full retraining 目标排序和 retention utility，同时监控遗忘请求次数与误差累积。</p>
+<h3>推理与 Serving 数据流</h3><p>在线服务在模型打分后、曝光前插入个人化分数修正模块，保留用户级操作日志、可撤销策略版本和必要的监管审计。但模型原参数仍存留信息，不具备严格训练数据擦除保证。</p>
+<h3>实验设置、数据及基线</h3><p>三公开数据集与重训基准比较遗忘程度、未遗忘推荐效用与计算时间；论文报告达到接近全量重训的遗忘效果和显著降成本，但本文研究站未核验具体统一百分比，不臆造数值。</p>
+<h3>离线指标与精读结论</h3><p>报告的结论是“接近 full retraining 的遗忘效果，同时保留 utility”，离线指标/数据集需按原文表格对照才能复用，不能转换为线上 CTR/订单效果。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；不能把离线 unlearning 与删除权利合规完全等同</p>
+<h3>效率、训练与 Serving 成本</h3><p>无需重新训练远端模型、修改 API 后处理即可迭代，但会增加对每个用户的因果贡献存储、解释计算和 Serving 查询分支；须在多个请求叠加的情形下审计一致性。</p>
+<h3>相较主流方法的优势与代价</h3><p>相较 SISA/重训实际部署更容易、快速；但它是输出层干预，不是模型参数层可验证的 unlearning，API 返回原始分数仍可能泄漏敏感偏好。</p>
+<h3>适用场景与业务迁移</h3><p>评价推荐去噪：用户纠正一次误点击或长期已改变的关注属性后，将对应行为的非期望影响从候选评价分数中移除，持续监测满意度与撤销成功率。</p>
+<h3>局限和尚未解决的问题</h3><p>论文最早 arXiv 提交为 2026-08-27，不能当成 11/02 首次发表；本次仅因 arXiv cs.IR 新列表出现而作为相关研究补充。真实 GDPR 删除义务需要独立合规评估，论文未提供法律保证。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>对评价列表研究“疑似噪声曝光干预 vs 多次遗忘对模型校准的累积影响”，在用户隔离、审计可回滚条件下验证，而不是直接用未验证的后处理方式满足数据删除请求。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.40658" target="_blank" rel="noopener noreferrer">Explain, Then Forget: Recommendation Unlearning under Asymmetric Access Constraint · arXiv:2610.40658</a>；<a href="https://arxiv.org/html/2610.40658v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-08-27，非 11/02 首发。）</p>
+<p>② <b>官方项目/技术博客：</b><a href="https://github.com/zhang-haichao/CEU" target="_blank" rel="noopener noreferrer">作者项目 / 官方项目入口</a></p>
+<p>③ <b>官方代码 / 模型 / 数据：</b><a href="https://github.com/zhang-haichao/CEU" target="_blank" rel="noopener noreferrer">作者或论文指向的代码仓库</a>。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article>
+<article class="paper" id="p-2610-41905"><div class="phase">Agent / 多工具检索 / 集合召回 · S ⑧ · arXiv 首稿以 abs 页日期为准</div>
+<h2>Multi-Tool Completeness <small>· Completeness and Cost of Retrieval Structures for Multi-Tool Requests in LLM Agents</small></h2><div class="callout"><b>核心研究判断：</b>多个工具缺任何一个时，topK 的单工具召回再好也可能完全无法完成任务；集合完整率应替代只看平均相似度的局部思维。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>8.2/10 <small>（范式 8.9、工业 7.4、创新 8.8、相关 8.7、研究空间 9.4、复现 4.6，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>AppWorld/ MCP-Bench 离线工具集合完整性与执行测试</td></tr>
+<tr><th>创新性</th><td>Completeness@K 衡量所需工具集是否全部被取出，并联立 LLM calls、token 与延迟成本</td></tr>
+<tr><th>与你方向的相关度</th><td>高（多属性评价证据、工具依赖、集合完整性）</td></tr>
+<tr><th>是否官方开源</th><td>未核验作者官方完整代码/数据开源（公开测试平台不等于本论文实现）</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；仅基准环境 Agent 任务完成率</td></tr>
+<tr><th>阅读优先级</th><td>S ⑧</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>复杂 Agent 需要一组依赖调用（查商品→查订单→查售后），检索一个 API 还不够；查询分解、层级导航很贵，必须看最终集合 completeness。</p>
+<h3>现有方法的核心问题</h3><p>单工具测试只验证“最相关工具有没有”，多工具任务中 topK 必须含全部必需工具；与其追求 individual Recall@K，不如测 all-required coverage 并记录模型调用开销。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>比较 flat BM25/dense、LLM Query decomposition、层级导航、server-to-tool 匹配、依赖图与学习式 set-level retriever 六条路线；将工具依赖视为集合检索，把一次错误漏召回追踪到 prerequisite retrieval。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>论文比较结构，训练式 set retriever 在约 75–90 个域内 query 有标注后能复用结构，未推出通用新 Loss。迁移到评价场景可引入集合缺失惩罚或 supervised submodular coverage，而非只做单文档 BCE。</p>
+<h3>推理与 Serving 数据流</h3><p>召回候选 tool set 后运行依赖闭包校验，优先补全必需 prerequisite；避免层级 Agent 多次串行导航，设置成本上限、工具权限与失败回退。</p>
+<h3>实验设置、数据及基线</h3><p>345 条 AppWorld 专家依赖 Query、103 条 MCP-Bench/257 工具；额外分析 7,961 ToolRet Query。指标 Completeness@K、LLM 调用、token、单查询耗时和下游任务执行成功率。</p>
+<h3>离线指标与精读结论</h3><p>ToolRet 对≥4 所需工具的 Query，Completeness@10 仅约 0.08–0.17；AppWorld 上 75–90 样本训练的 Set Retriever 完整率 0.33，MCP-Bench 0.58，0 LLM 查询；层级导航约 0.30/0.40，却需要中位数 31–38 次 LLM 调用与约 5 分钟。后续 AppWorld 成功 21/21（集合完整）对 2/39（不完整）。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；仅基准环境 Agent 任务完成率</p>
+<h3>效率、训练与 Serving 成本</h3><p>集合检索少几次模型调用就可能省大量时延；加入 dependency graph 构建和在线维护会增加治理成本。应以完整任务成功/元、P95 与授权合规来量化效用。</p>
+<h3>相较主流方法的优势与代价</h3><p>和简单 topK 相比更适合多工具 Agent；相比层级 LLM 导航，低调用成本 set retriever 有优势，但小样本域内训练的泛化能力未被工业验证。</p>
+<h3>适用场景与业务迁移</h3><p>评价多证据工具链：召回商品属性、评价正负证据、评价欺诈检测、用户购买历史等全部必要来源；不完整则补取或返回需要进一步确认。</p>
+<h3>局限和尚未解决的问题</h3><p>性能对任务定义/工具 schema/标注完整性敏感；无线上业务 A/B，复杂领域工具变更与隐性依赖可能使 completeness 指标虚高。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>做评论生成 Agent 依赖图的 Completeness@K 评估：需要几种评价证据、是否漏召回关键差评；检验 Set-level retrieval 是否比更多轮 Agent 自检更省钱。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.41905" target="_blank" rel="noopener noreferrer">Completeness and Cost of Retrieval Structures for Multi-Tool Requests in LLM Agents · arXiv:2610.41905</a>；<a href="https://arxiv.org/html/2610.41905v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-10-29/30 UTC，2026-11-02 出现在 arXiv 当日分类新列表；不称为过去 24h 首次提交。）</p>
+<p>② <b>官方项目/技术博客：</b>未核验独立官方项目页或技术博客。</p>
+<p>③ <b>官方代码 / 模型 / 数据：</b>未核验官方完整代码开源；不虚构官方 GitHub。。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article>
+<article class="paper" id="p-2610-40726"><div class="phase">RL / 异步训练 / Advantage Bootstrapping · S ⑨ · arXiv 首稿以 abs 页日期为准</div>
+<h2>Li²SAO <small>· Lifting Light Single-Rollout Asynchronous RL Optimization via Group-Relative Actor-Critic Bootstrapping</small></h2><div class="callout"><b>核心研究判断：</b>长尾的 Agent rollout 使成组 GRPO 同步等待低效；但直接换单样本 Actor-Critic 会遭遇不可靠的冷启动 Critic，分阶段优势估计是关键。</div><div style="overflow-x:auto"><table class="table"><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>8.6/10 <small>（范式 8.7、工业 7.1、创新 9、相关 9.1、研究空间 9、复现 9.3，权重 25/20/20/15/10/10）</small></td></tr>
+<tr><th>工业成熟度</th><td>开源官方复现与多任务训练研究；未提供推荐工业线上 A/B</td></tr>
+<tr><th>创新性</th><td>冷启动 Critic 阶段以 Group-relative return 联训 Actor/Critic，稳定后切换单 rollout GAE</td></tr>
+<tr><th>与你方向的相关度</th><td>高（List Generator RL 训练稳定与昂贵 rollout 预算）</td></tr>
+<tr><th>是否官方开源</th><td>是：作者对应项目 jd-cc-coder/Li2SAO</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；文中 online/asynchronous 指训练时间反馈，而非推荐业务 A/B</td></tr>
+<tr><th>阅读优先级</th><td>S ⑨</td></tr>
+</tbody></table></div>
+<h3>业务背景与研究动机</h3><p>异步 RL 可边收集 Agent trajectory 边更新模型，缩短等待长尾任务的时间；GRPO 组采样不适配不同 trajectory 完成顺序。SAO 则依赖昂贵或封闭的 value 预训练模型。</p>
+<h3>现有方法的核心问题</h3><p>简化 SAO（LiSAO）在 Agentic task 后期有优势却在普通 reasoning 冷启动弱于 GRPO，因为 Critic 初始价值预测偏差大、Actor 从错误优势学习。</p>
+<h3>模型架构、技术方案与关键模块</h3><p>Li²SAO 在前期使用 GRPO group-relative advantage 给 Actor，给 Critic 用组均值居中的 return 构造训练目标；当 Critic 基础校准达到阶段切换条件后改用单 rollout GAE，减少组间同步依赖。</p>
+<h3>训练方法、Loss 和样本构造</h3><p>阶段 1：组相对优势加权 policy loss + group-centered value regression；阶段 2：异步单样本 GAE/actor-critic 训练，在离策略偏差约束下更新。具体 value loss 系数、截断与采样策略应以原论文代码为准，不混同标准 GRPO 公式。</p>
+<h3>推理与 Serving 数据流</h3><p>Serving 模型本身仍按一般 LLM/Generator 调用；变化发生在训练基础设施的 rollout queue、Critic、版本一致性和 off-policy correction。线上不会因为异步训练自动更快。</p>
+<h3>实验设置、数据及基线</h3><p>论文对 reasoning 与多轮 agentic 任务比较 GRPO、无预训练 value 的 LiSAO、SAO 思想与 Li²SAO；显示冷启动早期追平/超过 GRPO，随后训练更高的表现上限。未见可安全引用的单一跨任务百分比，站点不编造。</p>
+<h3>离线指标与精读结论</h3><p>定性结论：早期 Actor 不再被冷 Critic 拖累，后期转单采样改善效率/质量折中；具体 benchmark 的准确率与 GPU-hrs 需要对原文表格逐任务复现。</p>
+<h3>线上 A/B / 因果解释边界</h3><p>无；文中 online/asynchronous 指训练时间反馈，而非推荐业务 A/B</p>
+<h3>效率、训练与 Serving 成本</h3><p>需要组样本预热 Critic，后期可异步收敛减少长尾等待；增加 value head/critic 存储、checkpoint、rollout 样本一致性与版本追踪。训练吞吐提升不等于最优策略收益。</p>
+<h3>相较主流方法的优势与代价</h3><p>对比纯 GRPO 的同步批次等待问题，结合单 rollout 的数据效率；风险是切换点难标定、离策略漂移与 Reward 非平稳导致优势噪声。</p>
+<h3>适用场景与业务迁移</h3><p>评价 List-level Generator 以低频成交/满意度为 Reward 时，先用组内 Reward 建立 value baseline，再针对线上日志的长尾更新异步训练。要分离 sample quality 与 learner 算法的贡献。</p>
+<h3>局限和尚未解决的问题</h3><p>尚无评价列表业务 A/B，也未证明在极稀疏二元成交 Reward 下 Critic 一定可学习；新的 reward drift 与异常 outlier 会放大 value 误差。</p>
+<h3>下一步研究与推荐算法工程启发</h3><p>做固定 GPU-hour + 固定高质量样本预算下的 GRPO vs Li²SAO 对照，记录 reward calibration、有效 trajectory/s、value bias 和最终 List Reward / 线上满意度。</p>
+<h3>论文资源区 · 四类来源</h3><div class="resources">
+<p>① <b>原始 Paper：</b><a href="https://arxiv.org/abs/2610.40726" target="_blank" rel="noopener noreferrer">Lifting Light Single-Rollout Asynchronous RL Optimization via Group-Relative Actor-Critic Bootstrapping · arXiv:2610.40726</a>；<a href="https://arxiv.org/html/2610.40726v1" target="_blank" rel="noopener noreferrer">全文 HTML</a>。（首稿 2026-10-29/30 UTC，2026-11-02 出现在 arXiv 当日分类新列表；不称为过去 24h 首次提交。）</p>
+<p>② <b>官方项目/技术博客：</b><a href="https://github.com/jd-cc-coder/Li2SAO" target="_blank" rel="noopener noreferrer">作者项目 / 官方项目入口</a></p>
+<p>③ <b>官方代码 / 模型 / 数据：</b><a href="https://github.com/jd-cc-coder/Li2SAO" target="_blank" rel="noopener noreferrer">作者或论文指向的代码仓库</a>。</p>
+<p>④ <b>中文/高质量第三方解读：</b>检索后未找到可可靠核验的知乎、微信公众号或独立深度精读，不以摘要聚合站冒充原作者或人工解读。</p>
+</div></article></div></section>
+<section id="sources"><div class="wrap"><div class="paper"><h3>本期一手来源与口径</h3><p>选题核验：<a href="https://arxiv.org/list/cs.IR/new">arXiv cs.IR · 2026-11-02 新列表</a>、<a href="https://arxiv.org/list/cs.CL/new">arXiv cs.CL · 2026-11-02 新列表</a>；结论与数据优先逐项核对作者 arXiv abs/HTML 及其指向的项目。评分按范式变化 25%、工业证据 20%、技术创新 20%、方向相关度 15%、研究空间 10%、开放可复现性 10%，均为本站主观研究判断，不是学术公认评分。</p><p>不对论文未披露的线上 A/B、GPU-ms、闭源代码或中文解读虚构结果；历史研究按原始首稿日和本次公告/收录日分别叙述。</p></div></div></section></main>
+<footer><div class="wrap">AI × 推荐算法研究站 · updated 2026-11-03 · <a href="../index.html#archive">返回完整归档</a></div></footer></body></html>
