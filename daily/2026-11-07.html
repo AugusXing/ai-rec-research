@@ -1,0 +1,233 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="2026-11-07 AI × 推荐算法研究日报，10 项论文：ICE、Reward mean、BRIDGE、GINGER、OptST、CORE、CacheGraft、MEMOIR、Jev、DUMP Prefix。"><title>2026-11-07｜AI × 推荐算法深度日报</title><link rel="stylesheet" href="../style.css"></head><body><header><div class="wrap nav"><div class="brand"><a href="../index.html">AI × 推荐算法研究站</a></div><nav><a href="../index.html#latest">最新进展</a><a href="../year.html">年度综述</a><a href="../paper-map.html">Paper Map</a><a href="../pipeline-map.html">推荐链路</a><a href="../index.html#archive">每日归档</a></nav></div></header>
+<main><div class="wrap hero"><span class="kicker">AI × Recommendation / Search Research · 2026.11.07 · Asia/Shanghai</span><h1>重排别只预测点击，Reward 别把热门当个性化</h1>
+<p class="lead">11 月 6 日 arXiv cs.IR 公告聚焦三种被忽视的成本：真实浏览/曝光路径、RL Reward 的用户无关偏置、Semantic ID 量化后的语义结构丢失。工程基础设施方面 Google GINGER 开源了压缩图向量搜索库；跨域 CORE/MEMOIR/CacheGraft 给 Agentic RAG 低成本证据管理提供新思路。</p>
+<p class="note">发现窗口：2026-11-06 10:00 至 2026-11-07 10:00 北京时间。10 项选择基于 2026-11-06 cs.IR 公告：9 项该分类新提交 + 1 项 cs.CL 首发后的 cs.IR cross-list；论文原始首稿均为 2026-11-05 UTC。公告/首稿日期不等于今日首次研究完成日。全部数据为作者公开报告，本站未独立复现实验。</p></div>
+<section><div class="wrap"><div class="callout"><b>核心结论：</b>① 淘宝 ICE 先校正真实曝光与点击竞争，再用 Evaluator 排 List，14 天 A/B 点击 +0.70%、商业收入 +3.67%；② RL 的 CF Reward 中 item-mean 可导致曝光塌缩，per-item standardization 的 distinct top-1 最多增至 9.8×（离线）；③ BRIDGE 把码本几何知识回灌 SID 解码，广告一周 5% A/B eCPM +0.65%；④ Google GINGER 在 95% Recall 约束下 ANN 平均吞吐优于各数据集最快对手 1.8×（基准测试）；⑤ 大模型系统正在转向“离线重处理 + 在线轻推理 + 证据来源可回查”。</div>
+<div class="grid"><div class="paper"><h3>最值得读 ① ICE + Reward</h3><p>对“成交+满意度”的评价生成式重排最直接：先把未真正读到的尾部评论从点击目标中区分，再剔除跨用户共享的热门奖励偏置。优先修 Reward 与曝光数据，随后再做策略优化。</p></div><div class="paper"><h3>最值得读 ② BRIDGE + OptST</h3><p>SID 不仅是字符串地址，更含连续语义簇与量化层级。精读“码本先验如何回灌生成”和“离散画像如何下游任务适配”，注意训练/Serving 的 snapshot 与成本边界。</p></div><div class="paper"><h3>工程试验 ③ GINGER + CORE</h3><p>同等语义 Recall 下的向量检索 QPS/内存，与长段召回→短 span 证据引用，是比盲目加深模型更可控的两条路线。</p></div></div>
+<div class="section-title"><h2>技术趋势 / 阅读优先级</h2><p>10 项 · 真实线上 A/B 仅 ICE、BRIDGE；其余是离线/基准，不混淆业务指标</p></div><div style="overflow-x:auto"><table class="table"><thead><tr><th>阅读优先级</th><th>论文</th><th>研究主线</th><th>Impact /100</th><th>线上证据</th></tr></thead><tbody><tr><td>S+ ①</td><td><a href="#p-2611-07591">ICE / Joint Behavior Modeling</a></td><td>重排 / List-level Reward / 曝光链路</td><td>93</td><td>有：Impressions +0.58%、Clicks +0.70%、Revenue +3.67%，LT-14d +0.23%</td></tr><tr><td>S+ ②</td><td><a href="#p-2611-07588">Collaborative Reward Mean / Reward Hacking</a></td><td>RL / Reward 去偏 / 探索覆盖</td><td>90</td><td>无；仅离线 Beauty、Sports 和跨 backbone 干预</td></tr><tr><td>S+ ③</td><td><a href="#p-2611-07425">BRIDGE / Semantic Quantization Gap</a></td><td>Generative Retrieval / Semantic ID / Latent Reasoning</td><td>88</td><td>有：大型电商广告 5% 流量 1 周，eCPM +0.65%（作者报告）</td></tr><tr><td>S ④</td><td><a href="#p-2611-08306">GINGER / Google Vector ANN</a></td><td>召回 / ANN / Quantization / Serving</td><td>86</td><td>无：仅性能和精度 benchmark</td></tr><tr><td>S ⑤</td><td><a href="#p-2611-07523">OptST / Task-aware Semantic Tokenizer</a></td><td>Semantic ID / Precision Ranking / User Profile</td><td>80</td><td>无</td></tr><tr><td>S ⑥</td><td><a href="#p-2611-07859">CORE / Deep Research Context</a></td><td>Agentic Search / RAG / Context Ranking</td><td>78</td><td>无；闭域 benchmark</td></tr><tr><td>S ⑦</td><td><a href="#p-2611-07393">CacheGraft / KV RAG</a></td><td>RAG / KV Cache / 训练 Serving 解耦</td><td>76</td><td>无</td></tr><tr><td>S ⑧</td><td><a href="#p-2611-07631">MEMOIR / Agent Memory</a></td><td>Agent / Memory / Retrieval Feedback</td><td>75</td><td>无</td></tr><tr><td>S ⑨</td><td><a href="#p-2611-08014">Probabilistic Decisions / Jev</a></td><td>重排 / Decision Models / TypeSafe Jev</td><td>73</td><td>无</td></tr><tr><td>S ⑩</td><td><a href="#p-2611-07298">Trainable [DUMP] Prefix Embedding</a></td><td>Dense Retrieval / Embedding / 训练优化</td><td>70</td><td>无</td></tr></tbody></table></div><p class="note">评分的“研究价值”和成熟度为本站人工研究判断，非作者原始指标。跨论文百分比、不同 benchmark 的离线收益不可直接比较；所有“有线上 A/B”仅复述论文公开声称的随机流量结果。</p></div></section>
+<section><div class="wrap"><h2>重点论文深度精读</h2><p class="lead">按论文→问题→机制→Loss→Serving→数据与证据→局限→实验计划组织，每篇固定七字段与四类资源。重点放大真实线上效应与模型幻觉式线下增益之间的边界。</p><article class="paper" id="p-2611-07591"><div class="phase">S+ ① · 重排 / List-level Reward / 曝光链路 · Research Impact 93/100</div>
+<h2>ICE / Joint Behavior Modeling</h2><p class="note">Beyond Independent Predictions: Learning the Browsing Journey for Sequence-Level Re-ranking · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">同一展示 List 不是所有位置都会被用户看到：仅将各 item 的 pCTR 相加会给尾部高估、把未曝光 item 当作真实上下文。ICE 不改 Generator，把业务价值提升放在 Evaluator 物理一致性。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>93/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>工业全量部署；淘宝猜你喜欢 5% 流量、14 天 A/B</td></tr><tr><th>创新性</th><td>曝光深度分布 + 软曝光 Mask + 点击分布竞争联合建模</td></tr>
+<tr><th>与你方向的相关度</th><td>极高｜商品评价 Generator 的 List-level Reward 可信度</td></tr><tr><th>是否官方开源</th><td>未找到可核验官方开源</td></tr>
+<tr><th>是否有线上 A/B</th><td>有：Impressions +0.58%、Clicks +0.70%、Revenue +3.67%，LT-14d +0.23%</td></tr><tr><th>阅读优先级</th><td>S+ ①</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>工业 Generator–Evaluator 用多个候选 List 的预测收益选择最终曝光排序，评估器偏差直接放大为上线收益损失。对商品评价列表亦如此：尾部评价可能从未进入可视区域，长评价会挤占其他观点的注意力。</p>
+<h3>传统方法与核心矛盾</h3><p>传统 Independent Behavior Modeling 把列表行为分解为独立点击，默认每个展示位都有机会被读且 item 之间互不争夺注意力，导致多点点击分布与真实浏览过程不一致。即使是 Transformer Evaluator，也可能只在架构层交互但训练目标仍是点式。</p>
+<h3>技术方案与关键模块</h3><p>提出 Joint Behavior Modeling：p(impression,click | S,U)=p(impression | S,U)·p(click | impression,S,U)。浏览深度 T 的分类分布经尾部累加形成 pITR(k)=P(T≥k)，天然保证随位置单调；点击头的 Transformer attention 添加 log[pITR(a)pITR(b)+ε] 作为 bias，DNN 使用 confidence gating；最后让 List 内点击概率归一化并用 KL 约束真实点击分布，显式表达竞争。</p>
+<h3>训练 Loss / 优化方法</h3><p>共享 embedding、Impression Branch 与 Click Branch。L=L_ITR(BCE 所有展示位置)+L_CTR(只在已曝光位置加权 BCE)+λ KL(真实 List 点击分布 || 预测分布)。应防止真实未来曝光作为推理输入；在线时仅用预测的浏览深度与输入候选。</p>
+<h3>推理 / Serving</h3><p>每条候选 List 计算 pITR(k)×pCTR(k|impressed)×价值 w_k，再求和选最大 R(List)。可作为现有 PRM/Transformer 重排 Evaluator 的 plug-in，Generator 固定，有利于识别改进来源；增加一条曝光头与 mask/归一化运算，需实测单 List 推理 P99。</p>
+<h3>实验设置与离线/线上证据</h3><p>工业日志多 backbone 验证；PRM+ICE 消融：SeqAUC 85.65，去曝光建模 83.29，去动态 Mask 85.58，去点击分布损失 85.50（各数值来自论文表3，百分制）。淘宝猜你喜欢 14 天 A/B，5% 流量，曝光 +0.58%、点击 +0.70%、商业收入 +3.67%，长期价值 LT-14d +0.23%。</p>
+<h3>对比主流方法与效率/成本</h3><p>比简单 List-wise sum of pCTR 更符合展示→真实曝光→点击的先后顺序，优于只调 Generator 的方法，因为可先修正上游 Reward 目标；但依赖深度标注、曝光可靠性及列表位置的物理意义。</p>
+<h3>适用场景与尚未解决的局限</h3><p>论文 A/B 是淘宝猜你喜欢 feed，不是商品评价页；收入升幅不能直接外推到成交满意度。若页面是折叠评价、图片网格、搜索混排，则单调深度假设和阅读路径需要修改；离线数据存在旧策略选择偏差。</p>
+<h3>未来研究路线</h3><p>把单一点击链扩为展开阅读→停留→加购→成交→满意度多状态过程；建立随机小流量干预和 off-policy list 评估，验证 pITR 的校准、尾部负面观点覆盖和差评可信度。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>P0 先审阅评价列表真实 viewport / 展开曝光埋点；将候选评分拆为“读到概率×读后有用性×对成交/满意度贡献”，对 Reward 标定 ECE、ITCTR 和 List 顺序对准确率做 ablation。Generator 不变做一次纯 Evaluator 的 A/B，减少 Generator-Reward 联合变更的归因难度。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.07591" target="_blank" rel="noopener noreferrer">arXiv:2611.07591</a> · <a href="https://arxiv.org/html/2611.07591v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：未找到可核验的官方代码、模型或数据集发布地址；不得推定已经开源</p>
+<p>④ 中文/高质量第三方解读：暂无已核验的可靠独立中文/英文深度解读；不补造知乎/微信公众号链接</p></div>
+</article>
+<article class="paper" id="p-2611-07588"><div class="phase">S+ ② · RL / Reward 去偏 / 探索覆盖 · Research Impact 90/100</div>
+<h2>Collaborative Reward Mean / Reward Hacking</h2><p class="note">What Gets Hacked in a Collaborative Reward for LLM Recommenders: The Part That Does Not Depend on the User · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">Reward 模型在独立排序时看似个性化，作为 RL 优化目标却可能驱动 Generator 统一偏好热门 item，形成曝光塌缩；问题来自跨用户共享的 item 常数项。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>90/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>离线复现实验；无工业 A/B</td></tr><tr><th>创新性</th><td>将冻结 CF Reward 拆成 item mean 与个性化残差并做因果干预</td></tr>
+<tr><th>与你方向的相关度</th><td>极高｜List Reward 多样性与热门评价吸附</td></tr><tr><th>是否官方开源</th><td>论文公开作者提供的匿名代码镜像（未核验真实机构身份）</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；仅离线 Beauty、Sports 和跨 backbone 干预</td></tr><tr><th>阅读优先级</th><td>S+ ②</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>当把协同过滤打分当作 LLM/Generator 的奖励，策略不是仅拟合每个用户的偏好，而是最大化更容易稳定得到高分的项。这与评价重排中“大量用户都喜欢的模板化好评”可能挤出有信息密度的差评类似。</p>
+<h3>传统方法与核心矛盾</h3><p>仅看 Reward 相关系数或 HR@10 很难发现跨用户的曝光集中度。论文在 Beauty+SID 的 CF reward arm 中 distinct top-1 从 SFT 的 1,317 减为 837，HR@10 却几乎不变（0.0851→0.0843）。普通全局 reward standardization 无法移除每个 item 的独立偏置。</p>
+<h3>技术方案与关键模块</h3><p>定义 r(u,i)=m(i)+ε(u,i)，其中 m(i)=E_{u~Q}[r(u,i)]，Q 为统一训练用户分布；中心化 r_c=r-m(i)，标准化 r_s=(r-m(i))/(σ_i+ε)。对均值分量和残差分量分别训练策略，以机制干预辨认哪一部分驱动塌缩。</p>
+<h3>训练 Loss / 优化方法</h3><p>先 SFT，再使用冻结协同模型对策略输出打分进行 RL；提前从一组固定训练用户历史统计每个 item 的均值/方差，训练时实时对 Reward 做校正。与模型常规 per-user normalization 不同，校正轴是跨用户的每 item 统计。</p>
+<h3>推理 / Serving</h3><p>在线生成不必再调用统计器，只需部署修正奖励训练完成的策略；训练阶段需维护 item 统计表和冷启动回退统计。对 List Reward 可改用 position/topic/group residual baseline 并审查是否误删真实通用质量信号。</p>
+<h3>实验设置与离线/线上证据</h3><p>Amazon Beauty/Sports，两类 identifier（Semantic ID/Atomic ID），多 CF 架构和 LLM backbone；论文报告标准化相对原始 Reward 使 distinct top-1 最多增加 9.8×，同时排序准确率相近。无线上交易或用户随机实验。</p>
+<h3>对比主流方法与效率/成本</h3><p>相对“给长尾 item 加固定曝光权重”，它从奖励形成机制着手且不需要改生成器结构；但不是普适公平性保证，热门度也包含真实共识，中心化可能削弱所有用户都需要的可靠优质内容。</p>
+<h3>适用场景与尚未解决的局限</h3><p>日志的曝光机制决定 Q 的选择；冷启动或低曝光 item 方差估计噪声大。Distinct top-1、Coverage、Gini 改善不代表 GMV/满意度必升；离线训练结果需与真实 List 竞争和库存约束结合。</p>
+<h3>未来研究路线</h3><p>将 r(List,u) 分成全局 List prior、item 质量、user residual 和 interaction residual；引入不确定度 shrinkage，建立成交/满意度 Pareto 守护，联合 ICE 的浏览暴露概率避免统计偏差。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>对当前评价 List Reward 做 item/商品/评论类型的分桶均值残差审计：冻结 Reward、固定用户、替换可曝光的评价 List，看高频好评是否提供无条件 bonus。P0 对中心化、截断标准化、原 Reward 三组做离线 List diversity/满意度校准，再小流量 A/B 验证。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.07588" target="_blank" rel="noopener noreferrer">arXiv:2611.07588</a> · <a href="https://arxiv.org/html/2611.07588v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：<a href="https://anonymous.4open.science/r/LLM4Rec-CF-Bias-27EF/" target="_blank" rel="noopener noreferrer">作者论文提供的匿名代码镜像（身份未核验）</a></p>
+<p>④ 中文/高质量第三方解读：暂无已核验的可靠独立中文/英文深度解读；不补造知乎/微信公众号链接</p></div>
+</article>
+<article class="paper" id="p-2611-07425"><div class="phase">S+ ③ · Generative Retrieval / Semantic ID / Latent Reasoning · Research Impact 88/100</div>
+<h2>BRIDGE / Semantic Quantization Gap</h2><p class="note">BRIDGE: Bridging the Semantic Quantization Gap for Generative Recommendation · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">生成式 SID 的离散 token 把 RQ-VAE 码本的几何关系丢在了编码端；BRIDGE 把 codebook centroids 与邻域知识回灌到解码训练，兼顾效率。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>88/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>电商广告一周 5% 流量 A/B；未证实全量上线</td></tr><tr><th>创新性</th><td>码本语义锚点、Privileged EMA 自蒸馏、早层多算力递减 recurrence</td></tr>
+<tr><th>与你方向的相关度</th><td>高｜SID 语义保持、训练 Serving 分离</td></tr><tr><th>是否官方开源</th><td>未核验官方代码仓库</td></tr>
+<tr><th>是否有线上 A/B</th><td>有：大型电商广告 5% 流量 1 周，eCPM +0.65%（作者报告）</td></tr><tr><th>阅读优先级</th><td>S+ ③</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>TIGER 等 SID 范式解决“用生成路径召回 item”，但语义量化时的局部邻域、码本簇中心和每层 token 难度没有被逐 token CE 充分利用，造成第一层决策失误逐层放大。</p>
+<h3>传统方法与核心矛盾</h3><p>三类 Gap：Grounding（首 token 无连续语义锚）、Neighborhood（hard ID 使邻近 item 错当完全不相关）、Difficulty（所有 level 均匀分配模型计算而第一层更难）。仅增大 Decoder、Beam 不能自动弥合。</p>
+<h3>技术方案与关键模块</h3><p>CGLR 用冻结 RQ-VAE 一级码本的粗簇 centroid 做隐式 reasoning anchor；PESD 给 EMA teacher 目标 item 的 top-k 邻居均值作为 privileged view，将 soft distribution 蒸馏给仅见在线可用输入的 student；EAR right-aligned recurrence 把循环层数更多分配给早期 SID（如三层 4/2/1）。共享 recurrent block 减少参数复制。</p>
+<h3>训练 Loss / 优化方法</h3><p>基本 SID token CE + codebook anchor 的粗 prototype 分类/回归损失 + EMA teacher/student 的分布一致性（JSD 等）与 on-policy student 采样。Privileged teacher 只在训练阶段访问目标 item 的邻居；online 不得泄漏目标。</p>
+<h3>推理 / Serving</h3><p>上线只用 student 与共享 recurrence block，无 teacher 查询。优先算首层，深层少算；需固定 codebook/snapshot、Beam 合法 path 约束、冷品增量路径服务和时延分桶监控。</p>
+<h3>实验设置与离线/线上证据</h3><p>Amazon 三个公开 benchmark：相对最强基线平均 Recall@10 +10.9%、NDCG@10 +9.7%，Beauty ablation EAR R@10=0.0740，BRIDGE=0.0835；大型电商广告一周 5% 流量 A/B，eCPM +0.65%。</p>
+<h3>对比主流方法与效率/成本</h3><p>对传统逐层 SID CE，BRIDGE 显式引入连续语义结构；相对 CAP-Mix 的软 prototype 输出，它仍保留离散合法路径，工程可控性更强。但多目标损失和码本冻结增加复杂度，未直接解决实时 supply constraint。</p>
+<h3>适用场景与尚未解决的局限</h3><p>线上只报告 eCPM 单一目标，未完整公开随机设计、显著性、GMV/用户满意度；粗聚类质心稳定性、SID 更新迁移与多任务约束需进一步验证。</p>
+<h3>未来研究路线</h3><p>对一级粗簇 Vc 和 neighbor-k 做敏感性/多种子实验；与 Supply-Constrained GR 的请求级合法 prefix mask 合并，在动态商品库存下评估可用率、P99、CTR/GMV。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>可将商品评价聚类/观点表示编码成分层 SID；先做抽样 hard-negative 邻域一致性和先验分层 token entropy，再做 teacher-student；不可直接将电商广告 eCPM 移植成评价成交结论。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.07425" target="_blank" rel="noopener noreferrer">arXiv:2611.07425</a> · <a href="https://arxiv.org/html/2611.07425v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：未找到可核验的官方代码、模型或数据集发布地址；不得推定已经开源</p>
+<p>④ 中文/高质量第三方解读：<a href="https://pith.science/paper/2611.07425" target="_blank" rel="noopener noreferrer">Pith 英文独立方法点评（机器生成内容，需回查论文）</a></p></div>
+</article>
+<article class="paper" id="p-2611-08306"><div class="phase">S ④ · 召回 / ANN / Quantization / Serving · Research Impact 86/100</div>
+<h2>GINGER / Google Vector ANN</h2><p class="note">GINGER: Spicing Up Graph-Based Vector Search · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">向量检索不是只有 embedding 模型准确率，图压缩、量化和 cache/memory wall 同时决定召回 Serving 成本。GINGER 将低精度路由、高精度重排与图存储打通。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>86/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>官方 Google 开源实现 + 14 数据集离线基准；无线上 A/B</td></tr><tr><th>创新性</th><td>PiPNN II 图构建 + Nested TurboQuant 双精度导航与 rerank + AdaptiveGap 图压缩</td></tr>
+<tr><th>与你方向的相关度</th><td>高｜向量召回成本、规模化 P99</td></tr><tr><th>是否官方开源</th><td>是｜Google 官方 google/ginger 已可访问</td></tr>
+<tr><th>是否有线上 A/B</th><td>无：仅性能和精度 benchmark</td></tr><tr><th>阅读优先级</th><td>S ④</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>大规模评价语义召回需要在高维向量和大量长尾文本上保障 recall@K，同时避免全精度 embedding 对内存带宽与索引构建吞吐的成本。</p>
+<h3>传统方法与核心矛盾</h3><p>单独的 HNSW/IVF/PQ 优化往往忽略图邻接编码、向量精度和 NUMA/SIMD 实现的整体权衡；极度压缩会牺牲高 Recall 下的延迟。</p>
+<h3>技术方案与关键模块</h3><p>以 PiPNN 图构建为基础，Nested TurboQuant 形成共享双层编码：低精度近邻导航+高精度候选 rerank，保持接近 float 的精度但压缩向量；邻居图重排并用 AdaptiveGap（基于 StreamVByte）无损编码缩短跳转字节数。集成 C++ 高效 SIMD。</p>
+<h3>训练 Loss / 优化方法</h3><p>不训练推荐模型：主要是向量量化参数估计、图构建/图布局与查询搜索参数调优；与 embedding encoder 的对比学习应在独立 pipeline 完成。</p>
+<h3>推理 / Serving</h3><p>召回阶段用紧凑向量和压缩图导航，选出的候选做更高精度重排；图/量化码本、build 版本、删除更新、K、efSearch/探测预算和 warm-cache 状态影响延迟。能直接替换的是 ANN 内核，不是整个索引平台。</p>
+<h3>实验设置与离线/线上证据</h3><p>14 个数据集在 Recall 95% 条件下，平均查询吞吐相对各数据集最快竞争者 +1.8×；双层向量编码约 2.6× 省内存，图压缩最高 2.5×；高维 embedding 对比紧凑库的吞吐优势更大。论文未提供随机线上业务实验。</p>
+<h3>对比主流方法与效率/成本</h3><p>较 Faiss/ScaNN/Hnswlib/DiskANN 属检索基础设施竞争，优势是全链路图内存与量化工程；代价是 C++ 构建/部署依赖、动态索引更新、向量混合查询场景适配。</p>
+<h3>适用场景与尚未解决的局限</h3><p>基准吞吐未必覆盖在线混合过滤、热冷数据、跨机 fanout、写入频率与 tail-latency；95% recall 的对比不代表 99.9% 或多样性指标下仍占优。</p>
+<h3>未来研究路线</h3><p>做 index version/snapshot consistency，探索 Hybrid sparse+dense、过滤场景与可增量重构；以同等 Recall@K 下每千 QPS 机器成本和 P99 做选型。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>可以直接试验商品评价向量召回：对比当前 ANN 基线在 Recall@50/100、过滤后事实/差评覆盖、QPS、P95/P99、内存/百万向量和索引更新成本；官方开源可作为 PoC 起点。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.08306" target="_blank" rel="noopener noreferrer">arXiv:2611.08306</a> · <a href="https://arxiv.org/html/2611.08306v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：<a href="https://github.com/google/ginger" target="_blank" rel="noopener noreferrer">官方项目页</a></p>
+<p>③ 官方代码/模型/数据：<a href="https://github.com/google/ginger" target="_blank" rel="noopener noreferrer">作者/官方代码仓库（已核验链接）</a></p>
+<p>④ 中文/高质量第三方解读：暂无已核验的可靠独立中文/英文深度解读；不补造知乎/微信公众号链接</p></div>
+</article>
+<article class="paper" id="p-2611-07523"><div class="phase">S ⑤ · Semantic ID / Precision Ranking / User Profile · Research Impact 80/100</div>
+<h2>OptST / Task-aware Semantic Tokenizer</h2><p class="note">OptST: Optimizing Semantic Tokenization for LLM-Enhanced Recommendation · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">预训练 SID 的语义划分无法被下游 CTR/CVR/满意度目标修正；OptST 在保持可复用 token 结构的同时，让任务监督改变分桶边界和有效深度。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>80/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>四个公开数据集和多 backbone 离线验证；无线上 A/B</td></tr><tr><th>创新性</th><td>冻结 base codebook 的低秩形变 + ST 梯度 + 交互条件变长 SID prefix</td></tr>
+<tr><th>与你方向的相关度</th><td>高｜商品/评论内容离散语义特征服务</td></tr><tr><th>是否官方开源</th><td>是｜作者论文提供 github.com/chchchchc1023/wsdm27-optst</td></tr>
+<tr><th>是否有线上 A/B</th><td>无</td></tr><tr><th>阅读优先级</th><td>S ⑤</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>LLM 生成用户画像/评论语义向量可作为推荐特征，但稠密向量存储/查表昂贵；RQ-VAE 离散 token 更轻，若预先固化语义码本却可能错过交易目标相关的小差异。</p>
+<h3>传统方法与核心矛盾</h3><p>hard nearest-code 不可微；完全微调码本会破坏预训练几何；固定层数不能匹配不同用户与候选交互需要的语义分辨率。</p>
+<h3>技术方案与关键模块</h3><p>固定预训练 Encoder 与 base codebook，在每层对所有码字共享近恒等低秩变换，并以 anchor 正则限制偏离；hard forward + soft backward Straight-Through 允许下游梯度回传；另由交互条件 stop/continue gate 决定使用几层 prefix。</p>
+<h3>训练 Loss / 优化方法</h3><p>Qwen3-8B 离线产生语义画像、all-MiniLM-L6-v2 得到 384-d profile；任务损失为下游二分类推荐 BCE 结合 codebook anchoring 与 prefix-depth regularization；训练可采用 DCN 等推荐骨干。验证/测试交互不进入画像，降低未来信息泄漏。</p>
+<h3>推理 / Serving</h3><p>LLM 不在线调用；部署缓存用户画像离散 token 与自适应 prefix gate。必须验证 token 码本版本一致性与不同用户/商品变化时的特征再计算成本。</p>
+<h3>实验设置与离线/线上证据</h3><p>四个公开数据集，论文报告相较传统和 LLM 增强基线最高 AUC，且跨五个其他 recommendation backbone 仍有提升；具体绝对提升以原文表格为准，未发现随机线上 A/B。</p>
+<h3>对比主流方法与效率/成本</h3><p>相比完全冻结 SID，OptST 任务适配更强；相比端到端改写 codebook，低秩/anchor 可降低漂移；但提升的证明主要是 AUC，不代表 GMV、满意度和在线可服务性。</p>
+<h3>适用场景与尚未解决的局限</h3><p>用户画像离线提取与 tokenization 的 pipeline SLA、跨域漂移、长序列缓存更新、量化版本迁移成本未充分量化。</p>
+<h3>未来研究路线</h3><p>分别测被分桶的长尾意见/差评是否被压平，并用推荐重排目标指导 prefix-depth；联动 BRIDGE 的语义锚点和 GINGER 的向量成本。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>先在评价粗排/精排做 AUC 与满意度校准、长尾观点 recall；选固定 SID vs OptST vs 直接 384-d embedding，比较性能/缓存/内存/CTR，防止只追 AUC。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.07523" target="_blank" rel="noopener noreferrer">arXiv:2611.07523</a> · <a href="https://arxiv.org/html/2611.07523v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：<a href="https://github.com/chchchchc1023/wsdm27-optst" target="_blank" rel="noopener noreferrer">作者/官方代码仓库（已核验链接）</a></p>
+<p>④ 中文/高质量第三方解读：暂无已核验的可靠独立中文/英文深度解读；不补造知乎/微信公众号链接</p></div>
+</article>
+<article class="paper" id="p-2611-07859"><div class="phase">S ⑥ · Agentic Search / RAG / Context Ranking · Research Impact 78/100</div>
+<h2>CORE / Deep Research Context</h2><p class="note">CORE: Coarse-to-Fine Search with Context Management for Deep Research · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告（cs.CL 首发，cs.IR cross-list）</p>
+<p class="lead">检索器需要长段落保证匹配，Agent 却需要短且可复查的证据上下文；CORE 把 passage-level candidate 与 snippet-level evidence 分开。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>78/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>553M 文档规模 closed-search benchmark；无生产 A/B</td></tr><tr><th>创新性</th><td>Late interaction 复用 token 相似度裁剪证据片段 + 可扩展上下文 + 去重引用</td></tr>
+<tr><th>与你方向的相关度</th><td>中高｜商品评价长文本证据召回、Agent 推理效率</td></tr><tr><th>是否官方开源</th><td>未核验官方项目代码</td></tr>
+<tr><th>是否有线上 A/B</th><td>无；闭域 benchmark</td></tr><tr><th>阅读优先级</th><td>S ⑥</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>多轮搜索工具返回大量重叠长文本，推高 Token 成本并干扰 Agent 的下一步检索决策；商品评价里多条重复评价和引用链尤甚。</p>
+<h3>传统方法与核心矛盾</h3><p>直接截断全文损失语义，直接全文塞给 LLM 又会溢出上下文；每轮重复检索相同句子导致历史轨迹失真。</p>
+<h3>技术方案与关键模块</h3><p>dense passage retrieval 获得覆盖后，复用 late-interaction reranker 的 token-level similarity 找最相关 snippet；Agent 可按证据 id 做 context expansion，重复片段折叠成 compact reference，跨轮保留来源和消耗记录。</p>
+<h3>训练 Loss / 优化方法</h3><p>Training-free harness，不更新 LLM 或 retriever；优化对象是候选长度、token-window、上下文引用和工具动作，不是新的交叉熵损失。</p>
+<h3>推理 / Serving</h3><p>两阶段取回 passage/snippet，显式支持 expand(source,span) 与 dedup(source-id)；需建立 passage 版本与引用 checksum，并衡量 reranker token similarity 存储/计算开销。</p>
+<h3>实验设置与离线/线上证据</h3><p>3 种 Agent、BrowseComp-Plus/Wikipedia/-CM 三套 benchmark，语料最高 553M 文档；作者报告 QA accuracy/evidence recall 优势，但与真实电商业务指标无直接对应。</p>
+<h3>对比主流方法与效率/成本</h3><p>相对只返回 TopK chunk，可在预算固定时提供更高检索覆盖和证据可追踪性；代价是工具协议复杂、Agent 控制策略要会做 expand，且片段提取可能切断否定上下文。</p>
+<h3>适用场景与尚未解决的局限</h3><p>证据真实被消费的度量仍不足；snippet extraction 易漏掉“但是/并非/退换”语义；多模态评论并非纯文本。</p>
+<h3>未来研究路线</h3><p>负面观点连续 span、证据引用与 Reward 对齐；训练时不改变回答器的情况下，用 span-level verification 核验满意度解释。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>将商品评价检索改为双层：粗召回评论全文、精取“质量/尺寸/物流/差评”等关键 span，Generator 只看短证据和出处；点击展开按需取完整评论。评估证据 Recall、反证覆盖、token/决策和用户可信度。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.07859" target="_blank" rel="noopener noreferrer">arXiv:2611.07859</a> · <a href="https://arxiv.org/html/2611.07859v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：未找到可核验的官方代码、模型或数据集发布地址；不得推定已经开源</p>
+<p>④ 中文/高质量第三方解读：<a href="https://www.arxivdaily.com/papers/2611.07859" target="_blank" rel="noopener noreferrer">arXivDaily 中文概览（机器生成，仅作辅助）</a></p></div>
+</article>
+<article class="paper" id="p-2611-07393"><div class="phase">S ⑦ · RAG / KV Cache / 训练 Serving 解耦 · Research Impact 76/100</div>
+<h2>CacheGraft / KV RAG</h2><p class="note">CacheGraft: Enhancing Retrieval-Augmented Generation via Latent-Space Document Enrichment · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">昂贵教师的知识可以预先写进文档级 KV 表示，查询时小模型直接接续 KV，而不是每次重新加载 4B 模型。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>76/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>Work in progress，五个 QA 离线 benchmark；无线上 A/B</td></tr><tr><th>创新性</th><td>4B Sharer 在离线文档编码注入 0.6B Receiver 可消费的 fused KV Cache</td></tr>
+<tr><th>与你方向的相关度</th><td>中｜长评价知识增强与低成本 Agent Serving</td></tr><tr><th>是否官方开源</th><td>未找到可核验官方代码</td></tr>
+<tr><th>是否有线上 A/B</th><td>无</td></tr><tr><th>阅读优先级</th><td>S ⑦</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>传统 RAG 先检索长文档、再让小语言模型从 text prompt 理解；小模型在事实关系与细节整合上可能受限，而大模型在线执行又贵。</p>
+<h3>传统方法与核心矛盾</h3><p>文本片段失去教师隐藏态中的知识；强模型缓存跨模型架构注入难以保证语义对齐，缓存亦有模型版本兼容风险。</p>
+<h3>技术方案与关键模块</h3><p>基于 Cache-to-Cache (C2C) fusion：离线对每个 corpus passage 生成 sharer 4B→receiver 0.6B 融合 KV cache；请求时检索对应 passage，将预构建的 KV 注入小模型，在线不用再调用 4B。</p>
+<h3>训练 Loss / 优化方法</h3><p>本文初步试验中，fuser 没有在 retrieval QA 专门训练（zero-shot）；离线预计算 cache，任务训练阶段和推理检索阶段严格分离。</p>
+<h3>推理 / Serving</h3><p>离线文档缓存需按 passage/version/model/tokenizer 编址，在线检索 cache 并注入小模型 KV；内存与磁盘容量、网络传输、跨模型更新、缓存缺失回退是主要落地风险。</p>
+<h3>实验设置与离线/线上证据</h3><p>五个 QA benchmark，两个独立本地 Judge，在 30 次评审比较中 29 次优于纯文本 receiver，17/30 达显著性；论文为 workshop work in progress，未报告生产 SLA 或 A/B。</p>
+<h3>对比主流方法与效率/成本</h3><p>与 Text RAG 相比有潜在质量收益；与在线大模型 RAG 比可能降低算力。注意融合 KV 不是免费的，离线构建和缓存带宽可能吞噬省下的 FLOPs。</p>
+<h3>适用场景与尚未解决的局限</h3><p>需防缓存失效、版本不一致、证据污染；法务/隐私敏感文档缓存比纯文本更难审计与删除；评审并非业务随机实验。</p>
+<h3>未来研究路线</h3><p>研究多文档缓存组合与冲突检测、cache provenance、模型升级后无损迁移，和 Reward 对齐下的可靠性。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>对于商品评价只在长尾知识密集场景小规模试验：测被引证据准确率、P99、GPU-ms、离线缓存写放大，保留 text-based fallback 与反事实核验。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.07393" target="_blank" rel="noopener noreferrer">arXiv:2611.07393</a> · <a href="https://arxiv.org/html/2611.07393v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：未找到可核验的官方代码、模型或数据集发布地址；不得推定已经开源</p>
+<p>④ 中文/高质量第三方解读：暂无已核验的可靠独立中文/英文深度解读；不补造知乎/微信公众号链接</p></div>
+</article>
+<article class="paper" id="p-2611-07631"><div class="phase">S ⑧ · Agent / Memory / Retrieval Feedback · Research Impact 75/100</div>
+<h2>MEMOIR / Agent Memory</h2><p class="note">MEMOIR: A Training-Free Memory Lifecycle for Long-Horizon LLM Agents · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">旧记忆的价值不应由写入时一次性打分决定；应在“压缩前检查证据是否丢失”和“消费后重新估计有用性”两处闭环。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>75/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>开源原型 + LoCoMo 1905 QA 离线实验；无线上 A/B</td></tr><tr><th>创新性</th><td>Merge 前证据保存认证 + 使用后的重要度回写 + UCB 冷记忆探索</td></tr>
+<tr><th>与你方向的相关度</th><td>中高｜长期用户兴趣与评论证据管理</td></tr><tr><th>是否官方开源</th><td>是｜作者公开 AnandMayank/MEMOIR</td></tr>
+<tr><th>是否有线上 A/B</th><td>无</td></tr><tr><th>阅读优先级</th><td>S ⑧</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>长期会话和用户偏好更新时，固定 importance 的召回会鼓励重复老记忆，merge 可能丢掉未来关键细节。</p>
+<h3>传统方法与核心矛盾</h3><p>记忆压缩与检索独立优化使 data loss 无人负责；热门记忆被频繁查到形成 feedback loop，未曝光记忆难证明价值。</p>
+<h3>技术方案与关键模块</h3><p>Judge-gated consolidation：对拟合并记忆检验能否保留答案证据；Retrieval-time attribution：对被用到的证据回写重要度；UCB exploration bonus：抬升未充分检索的记忆，避免候选塌缩。</p>
+<h3>训练 Loss / 优化方法</h3><p>无需 retriever/LLM 参数训练，使用置信门控的行为反馈和周期性离线 merge judge；上线 write path 不增加额外 LLM call。</p>
+<h3>推理 / Serving</h3><p>检索优先级融合语义相似度+可审计使用贡献+UCB；merge 移到离线定时维护，支持回滚与引用来源跟踪。</p>
+<h3>实验设置与离线/线上证据</h3><p>LoCoMo 1,905 去重 QA，完整 retrieval stack 比 cosine evidence recall@5 +11.92 个百分点；置信反馈额外 +1.50pt。100 次独立审计 merge 中观察到 0 次损失，但 95% 上界仍 2.95%；库缩小 1.42%。</p>
+<h3>对比主流方法与效率/成本</h3><p>相比永不更新 memory score 有反馈适应性，相比每轮全量 LLM 总结有较低线上 write cost；但依赖 judge 可信度、反馈自增强纠偏和历史数据合规。</p>
+<h3>适用场景与尚未解决的局限</h3><p>记忆储存涉及隐私与删除权；奖励回写可能放大既有错误与偏见；样本规模不足以保证 0% 记忆丢失。</p>
+<h3>未来研究路线</h3><p>对用户多目标喜好做支持/否定证据分层，并引入 retention TTL、删除血缘、反事实检索评估。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>把商品评价观点压缩与用户长期兴趣做版本化 recall memory；每次命中记录“用户是否真正看了/采纳了证据”，对低频但有用的长尾评价保留探索配额，不可把 UCB 当作直接成交优化。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.07631" target="_blank" rel="noopener noreferrer">arXiv:2611.07631</a> · <a href="https://arxiv.org/html/2611.07631v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：<a href="https://github.com/AnandMayank/MEMOIR" target="_blank" rel="noopener noreferrer">作者/官方代码仓库（已核验链接）</a></p>
+<p>④ 中文/高质量第三方解读：暂无已核验的可靠独立中文/英文深度解读；不补造知乎/微信公众号链接</p></div>
+</article>
+<article class="paper" id="p-2611-08014"><div class="phase">S ⑨ · 重排 / Decision Models / TypeSafe Jev · Research Impact 73/100</div>
+<h2>Probabilistic Decisions / Jev</h2><p class="note">Probabilistic Relevance Decisions for Semantic Retrieval · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">将传统 embedding 相似度作为召回，决策模型对 query-doc 是否满足需求进行再评估；相同候选池上判别式打分有时明显胜出，但不能由此证明普适优越。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>73/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>SciFact 300 query 离线实验，研究性对照；无线上 A/B</td></tr><tr><th>创新性</th><td>固定 dense 召回池，对 TypeSafe Jev 与 OpenAI Decisions 的相关性决策直接做配对评估</td></tr>
+<tr><th>与你方向的相关度</th><td>高｜精排与重排模型架构选型、性价比</td></tr><tr><th>是否官方开源</th><td>未发现论文官方代码或模型权重；调用第三方 API ≠ 开源</td></tr>
+<tr><th>是否有线上 A/B</th><td>无</td></tr><tr><th>阅读优先级</th><td>S ⑨</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>检索阶段 embedding 距离捕获语义近似而不总等于业务相关性；用户评价匹配有大量属性/极性/事实约束，JEV 类判别模型值得作为高成本重排候选。</p>
+<h3>传统方法与核心矛盾</h3><p>召回排序与相关性概率判别不同：topK 截断影响所有方法的上限；加入正例的控制池与真实全库召回的偏差必须分开统计，避免“作弊候选池”。</p>
+<h3>技术方案与关键模块</h3><p>BGE-M3 dense-only 对比 TypeSafe Jev Noul 和 OpenAI Decisions Predicate，官方 SciFact test 的 300 queries；比较正例注入的固定 100-doc 池，以及无正例注入的 full-corpus 检索后 depth=50/100 rerank。</p>
+<h3>训练 Loss / 优化方法</h3><p>这项工作主要是 API 判别对照，不训练新推荐模型；不报告用于校准多任务 Reward 的参数训练 Loss。</p>
+<h3>推理 / Serving</h3><p>先 ANN 召回，再对 K=50/100 文档调用 Decision API；候选评分可以缓存，但去重、exact-zero ties、API 唯一调用成本、并发和尾延迟需要计量。</p>
+<h3>实验设置与离线/线上证据</h3><p>full-corpus depth=50 的 nDCG@10：BGE-M3 0.6413、OpenAI 0.7545、Jev 0.7805。depth 50→100 增强候选已知正例覆盖，但最终排序变化 bootstrap 区间均包括 0；作者亦强调不能证明一般性优越或概率校准。</p>
+<h3>对比主流方法与效率/成本</h3><p>可做 dense stage 的强重排对比，尤其多条件 query 与证据筛选；但同协议的 API 价格和延迟混用缓存与新请求，不能当生产端到端 P99。</p>
+<h3>适用场景与尚未解决的局限</h3><p>只覆盖 SciFact，不能外推电商评论极性、可信度或成交；成本和时延口径并不完全统一。Decision score 也未证明是真正校准概率。</p>
+<h3>未来研究路线</h3><p>统一按新鲜 API 请求测 API dollar/1k query、CPU/GPU-ms、P99，评测商品评论 query-intent/事实验证与跨域鲁棒性。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>在评价 query 相关性场景做两阶段实验：双塔 Recall@100 固定后，比较现有精排、Jev 类决策模型与交叉编码器，按 NDCG、正反观点覆盖、成本和 P99 绘 Pareto，不直接替换整个精排。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.08014" target="_blank" rel="noopener noreferrer">arXiv:2611.08014</a> · <a href="https://arxiv.org/html/2611.08014v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：未找到可核验的官方代码、模型或数据集发布地址；不得推定已经开源</p>
+<p>④ 中文/高质量第三方解读：暂无已核验的可靠独立中文/英文深度解读；不补造知乎/微信公众号链接</p></div>
+</article>
+<article class="paper" id="p-2611-07298"><div class="phase">S ⑩ · Dense Retrieval / Embedding / 训练优化 · Research Impact 70/100</div>
+<h2>Trainable [DUMP] Prefix Embedding</h2><p class="note">Reducing Representational Interference in Retrieval Embeddings with Trainable Prefix Tokens · 原始 arXiv 首稿 2026-11-05 UTC，2026-11-06 cs.IR 公告</p>
+<p class="lead">embedding 模型把长文本压成向量时，attention sink 和低信息 token 可干扰 pooled representation；可学习 prefix 提供一个更低成本的表示侧干预。</p><div style="overflow-x:auto"><table class="table"><thead><tr><th>固定研究字段</th><th>当前判断</th></tr></thead><tbody>
+<tr><th>Research Impact Score / 研究价值</th><td>70/100 · 范式变化25%、工业证据20%、技术创新20%、相关度15%、研究空间10%、开放/可复现10%：本站主观加权评分</td></tr>
+<tr><th>工业成熟度</th><td>CIKM 2026 论文，标准检索与长上下文离线测试；无线上 A/B</td></tr><tr><th>创新性</th><td>在对比训练中预置可学习 DUMP tokens 吸收无效 token 的注意力影响</td></tr>
+<tr><th>与你方向的相关度</th><td>中高｜评价长文本语义召回、负面观点完整度</td></tr><tr><th>是否官方开源</th><td>未核验官方代码</td></tr>
+<tr><th>是否有线上 A/B</th><td>无</td></tr><tr><th>阅读优先级</th><td>S ⑩</td></tr></tbody></table></div>
+<h3>背景 / 业务动机</h3><p>长商品评价混合模板好评、物流术语、细节批评，mean/EOS pooling 可能偏向高频噪声词，导致真正查询相关的观点被压平。</p>
+<h3>传统方法与核心矛盾</h3><p>扩大 encoder 或修改 pooling/contrastive objective 有部署复杂度；简单清洗可能丢必要语境，不能解决模型内部表示干扰。</p>
+<h3>技术方案与关键模块</h3><p>训练时在输入前加一个或多个 trainable [DUMP] token，通过 self-attention 与原文 token 交互，使低价值激活在新的 prefix 位置消散；整体 encoder 结构、pooling 和 contrastive retrieval loss 保持不变。</p>
+<h3>训练 Loss / 优化方法</h3><p>常规 contrastive loss 同时优化可学习前缀参数和 embedding 模型，验证 encoder 和 decoder embedding 双类架构；论文报告长上下文与标准检索有持续正增益，具体大小依模型/数据集而变。</p>
+<h3>推理 / Serving</h3><p>要明确推理是否同样需要 [DUMP] prefix 与 tokenizer/config 一致性，按 token 个数计量增加的 prefill latency；如果向量库重建则存在索引更新成本。</p>
+<h3>实验设置与离线/线上证据</h3><p>标准 IR 与长上下文 benchmark，对微调基线一致性改善；同时观察 token activation 与 attention 机制。无线上 A/B 或可直接比较的工业 CTR 指标。</p>
+<h3>对比主流方法与效率/成本</h3><p>与 LoRA/新增 reranker 相比，是 embedding 端轻量结构干预；但仅对 pooling 编码和 attention 干扰有效，不能替代 hard-negative、正负观点标注和跨域训练。</p>
+<h3>适用场景与尚未解决的局限</h3><p>任务是通用相关性，不保证评论中否定词精度；新前缀也可能学成新的 token sink 或随数据漂移。</p>
+<h3>未来研究路线</h3><p>加入商评难例：同一商品相反观点、短查询长评价、模板重复、否定极性，做 Recall@K 和语言子群鲁棒性。</p>
+<h3>商品评价推荐落地与技能启发</h3><p>可以做成本较低的 encoder ablation：基线 vs DUMP-prefix 在固定文本、固定索引和统一 Hard Negative 下看 Recall@50、跨商品泛化与推理 P99；显著后再考虑重建生产索引。</p>
+<div class="callout"><b>论文与项目资源</b><p>① 原始 Paper：<a href="https://arxiv.org/abs/2611.07298" target="_blank" rel="noopener noreferrer">arXiv:2611.07298</a> · <a href="https://arxiv.org/html/2611.07298v1" target="_blank" rel="noopener noreferrer">作者原文 HTML</a></p>
+<p>② 官方项目/技术博客：未找到独立且可核验的官方项目页/技术博客</p>
+<p>③ 官方代码/模型/数据：未找到可核验的官方代码、模型或数据集发布地址；不得推定已经开源</p>
+<p>④ 中文/高质量第三方解读：暂无已核验的可靠独立中文/英文深度解读；不补造知乎/微信公众号链接</p></div>
+</article></div></section>
+<section><div class="wrap paper"><h2>商品评价生成式重排：本期实验优先级</h2>
+<p><b>P0 · 重新定义曝光 List Reward：</b>埋点实际 viewport/展开/阅读深度，冻结 Generator，对照 Independent CTR Sum 与 ICE 的 joint exposure-click 评估器。离线评估 SeqAUC、位置校准 ECE、真实 List 收益排序一致率；线上成交、满意度、长尾观点覆盖、P99 同步守护。</p>
+<p><b>P1 · 诊断 Reward Hack：</b>冻结现有 Reward，在同一用户不同商品、同一商品跨用户计算 item-mean / user-residual；三组训练：原 Reward、per-item mean centering、Shrinkage standardized residual。检查热门好评吸附、内容信息密度和反向观点覆盖，不因 Coverage 改善自动声称收益上升。</p>
+<p><b>P2 · SID 与检索成本：</b>BRIDGE 回灌码本连续锚点、OptST 任务适配 token、GINGER 的 ANN serving 成本各自做独立消融，必须保留相同候选池、曝光和在线流量约束，记录 Recall@K、冷品召回、索引刷新、GPU/CPU-ms、P99 与 ROI。</p>
+<p><b>P3 · Agent 证据管理：</b>CORE 段落→span→引用；MEMOIR 离线合并审计与命中反馈，评测否定意见和真实差评是否在长会话中保留。所有个性化记忆都要提供 TTL、删除、血缘和纠错通道。</p></div></section>
+</main><footer><div class="wrap">AI × 推荐算法研究站 · 2026-11-07 · 10 项可核验研究梳理</div></footer></body></html>
